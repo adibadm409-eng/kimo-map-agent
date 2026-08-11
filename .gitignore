@@ -45,3 +45,7 @@ yarn-error.*
 /metro.log
 /metro.sh
 /start-metro.sh
+
+# مفاتيح التوقيع — لا ترفع أبداً
+/keystore/
+/credentials.json
