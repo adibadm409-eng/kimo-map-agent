@@ -1,0 +1,38 @@
+module.exports = {
+  apps: [{
+    name: 'metro',
+    script: 'node_modules/.bin/expo',
+    args: 'start --port 8081 --clear',
+    cwd: '/data/data/com.termux/files/home/my-app',
+    autorestart: true,
+    max_restarts: 999,
+    restart_delay: 5000,
+    watch: false,
+    max_memory_restart: '800M',
+    env: {
+      NODE_OPTIONS: '--max-old-space-size=1024',
+      EXPO_NO_TYPESCRIPT_SETUP: '1',
+      NODE_ENV: 'development',
+      EXPO_DEVTOOLS_LISTEN_ADDRESS: '0.0.0.0',
+    },
+    error_file: '/data/data/com.termux/files/home/.pm2/logs/metro-error.log',
+    out_file: '/data/data/com.termux/files/home/.pm2/logs/metro-out.log',
+    log_date_format: 'YYYY-MM-DD HH:mm:ss',
+  }, {
+    name: 'tile-server',
+    script: 'tile-server.js',
+    cwd: '/data/data/com.termux/files/home/my-app',
+    autorestart: true,
+    max_restarts: 999,
+    restart_delay: 5000,
+    watch: false,
+    max_memory_restart: '300M',
+    env: {
+      TILE_PORT: '8383',
+      TILE_CACHE: '/data/data/com.termux/files/home/.tilecache',
+    },
+    error_file: '/data/data/com.termux/files/home/.pm2/logs/tile-error.log',
+    out_file: '/data/data/com.termux/files/home/.pm2/logs/tile-out.log',
+    log_date_format: 'YYYY-MM-DD HH:mm:ss',
+  }],
+};

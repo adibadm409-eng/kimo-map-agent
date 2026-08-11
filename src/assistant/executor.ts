@@ -1,0 +1,365 @@
+import { getMessages, getSettings, createSession, listUndo, activeConfig, updateSessionMeta, getPending, clearPending, addBrainOp, listBrain, clearBrain, type Message, type BrainOp, type AgentSettings } from './store'
+import { saveAttachment } from '../database/workspace'
+import { chatWithRetry, parseToolArgs, toWireToolCall, type ChatMessage, type ToolCall } from './llm'
+import type { ProviderDef } from './providers'
+import { analyzeIntent, buildContextSummary } from './intent'
+import { persistUser, persistAssistantText, mimeOf } from './persist'
+import { buildSystemPrompt, getAgentFunctions } from './prompts'
+import { readModelHistory, messagesToLlm } from './history'
+import { handleToolCall, deleteOne, deleteApproved, deleteRefused } from './invokeTools'
+import { performUndo, toolSig } from './undo'
+import { emit, subscribeAgent, isAgentBusy, cancelAgent, markRunning, clearRunning, isCancelled, setAborter, clearAborter, type AgentEvent } from './agentRun'
+import { MAX_TOOL_ROUNDS } from './constants'
+import * as FileSystem from 'expo-file-system/legacy'
+
+function providerProxy(conn: { baseUrl: string; providerName: string }): ProviderDef {
+  return { id: 'custom', name: conn.providerName, color: '#888888', baseUrl: conn.baseUrl, defaultModels: [], modelsKind: 'none' }
+}
+
+function hashOf(s: string): string {
+  let h = 0
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0
+  return String(h)
+}
+
+function truncate(s: string, n: number): string {
+  const t = String(s ?? '')
+  return t.length > n ? t.slice(0, n) + '…' : t
+}
+
+// ---------- الحلقة الرئيسية ----------
+
+async function runLoop(
+  sessionId: string,
+  s: AgentSettings,
+  conn: { baseUrl: string; apiKey: string; providerName: string; model: string },
+  emitEvents: boolean
+): Promise<void> {
+  const aborter = new AbortController()
+  setAborter(sessionId, aborter)
+  try {
+    const callCounts = new Map<string, number>()
+    const lastObsBySig = new Map<string, string>()
+    const lastObsHashForSig = new Map<string, string>()
+    const lastUserMsg = (await getMessages(sessionId)).filter((m) => m.role === 'user').pop()
+    if (lastUserMsg) await addBrainOp(sessionId, 'task', `مهمة المستخدم: ${String(lastUserMsg.content ?? '').slice(0, 300)}`).catch(() => {})
+    // تحليل النية وسياق المحادثة: يُحقنان في سطر النظام ليتكيف الوكيل ويستمر من حيث توقف المستخدم
+    if (lastUserMsg) {
+      const intent = analyzeIntent(String(lastUserMsg.content ?? ''))
+      if (intent) await addBrainOp(sessionId, 'intent', `نية المستخدم الحالية: ${intent}`).catch(() => {})
+      const ctx = buildContextSummary(await getMessages(sessionId).catch(() => [] as Message[]))
+      if (ctx) await addBrainOp(sessionId, 'context', ctx).catch(() => {})
+    }
+    // مسار تفكير ReAct داخل الذاكرة: محادثة المستخدم فقط كبذرة، ثم نلحق بها
+    // كل أداة+ملاحظتها في الخيط الخاص (لا تدخل محادثة المستخدم الظاهرة).
+    const thread: ChatMessage[] = messagesToLlm(await readModelHistory(sessionId))
+    try {
+      let finished = false
+      for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+        if (isCancelled(sessionId)) return
+        const brainOps = await listBrain(sessionId, 12).catch(() => [] as BrainOp[])
+        const system: ChatMessage = {
+          role: 'system',
+          content: buildSystemPrompt(s, conn.providerName, conn.model, [], brainOps),
+        }
+        if (emitEvents) emit({ type: 'thinking' })
+
+        let result
+        try {
+          let liveText = ''
+          result = await chatWithRetry(
+            {
+              provider: providerProxy(conn),
+              baseUrl: conn.baseUrl,
+              apiKey: conn.apiKey,
+              model: conn.model,
+              messages: [system, ...thread],
+              functions: getAgentFunctions(),
+              maxTokens: 4000,
+              onDelta: (d) => {
+                liveText = d.content || liveText
+                if (emitEvents && liveText && (!d.toolCalls || !d.toolCalls.length)) {
+                  emit({ type: 'stream', content: liveText })
+                }
+              },
+            },
+            (attempt, delayMs) => {
+              emit({
+                type: 'error',
+                message: `تعذر الوصول للمزود (محاولة ${attempt + 1}) — إعادة المحاولة خلال ${Math.round(delayMs / 1000)} ثانية...`,
+              })
+            },
+            aborter.signal
+          )
+        } catch (e: any) {
+          if (isCancelled(sessionId)) {
+            await persistAssistantText(sessionId, 'تم إيقاف الطلب.', 'system')
+            if (emitEvents) emit({ type: 'text', content: 'تم إيقاف الطلب.' })
+            return
+          }
+          // تثبيت الخطأ في السجل حتى يراه المستخدم ويعرف السبب — لا صمت ولا إخفاء
+          const errMsg = e?.message ?? String(e)
+          const errIsRetry = typeof e?.kind === 'string' && ['network', 'timeout'].includes(e.kind)
+          const finalMsg = errIsRetry
+            ? `لم أستطع الوصول للمزود بعد إعادة المحاولة (3/5/10/30 ثانية): ${errMsg}. أعد المحاولة بعد قليل أو تحقق من اتصالك.`
+            : `تعذّر إكمال الرد: ${errMsg}`
+          await persistAssistantText(sessionId, finalMsg, 'error').catch(() => {})
+          if (emitEvents) emit({ type: 'error', message: finalMsg })
+          return
+        }
+
+        if (isCancelled(sessionId)) return
+
+        if (result.content && result.toolCalls.length) {
+          // نص مصاحب لنداء أداة = نشاط الوكيل أثناء التنفيذ (تفكير/تخطيط/شرح ما يفعله) —
+          // يُخزَّن كنوع progress منفصل عن الرد النهائي، ويُبث live للشاشة
+          const tail = String(result.content).trim()
+          if (tail) {
+            await persistAssistantText(sessionId, tail, 'progress')
+            if (emitEvents) emit({ type: 'progress', text: tail })
+          }
+          thread.push({ role: 'assistant', content: result.content, tool_calls: result.toolCalls.map(toWireToolCall) })
+        } else if (result.toolCalls.length) {
+          thread.push({ role: 'assistant', content: null, tool_calls: result.toolCalls.map(toWireToolCall) })
+        }
+
+        if (!result.toolCalls.length) {
+          // رد نصي من الوكيل = نهاية الرد مباشرة: يُعرض فوراً دون أي إجبار على الاستمرار
+          // أو اختلاق شارة اكتمال. الوكيل وحده يقرر أنهى الرد أو طلب توضيحاً.
+          const finalText = result.content ? String(result.content).trim() : ''
+          if (finalText) {
+            await persistAssistantText(sessionId, finalText, 'text')
+            if (emitEvents) {
+              emit({ type: 'stream', content: finalText })
+              emit({ type: 'stream', content: '', done: true })
+              emit({ type: 'text', content: finalText })
+            }
+          }
+          finished = true
+          break
+        }
+
+        let paused = false
+        for (const call of result.toolCalls) {
+          if (isCancelled(sessionId)) return
+          const sig = toolSig(call)
+          const nextCount = (callCounts.get(sig) ?? 0) + 1
+          callCounts.set(sig, nextCount)
+
+          const callArgs0 = parseToolArgs(call.arguments)
+          const innerTool = call.name === 'execute' ? String(callArgs0.tool ?? 'execute') : call.name
+
+          // ملاحظة التكرار: نقارن آخر نتيجة لنفس البصمة. إذا تكرر نفس النداء بنفس النتيجة
+          // فوفّر عجزاً توجيهياً في سياق الوكيل — لكن القرار يبقى بيد الوكيل وحده: قد يكرر
+          // بحق (إحضار بيانات متجددة/مواصلة) أو يغير الأسلوب. لا عائق ولا إيقاف منهي.
+          const lastObsForSig = lastObsBySig.get(sig)
+          const lastHash = hashOf(lastObsForSig ?? '')
+          const repeatedSameResult = nextCount >= 2 && lastHash === lastObsHashForSig.get(sig)
+          lastObsHashForSig.set(sig, lastHash)
+          // عند تكرار النداء بنفس النتيجة نعدّ ملاحظة توجيهية تُدمج لاحقاً في نص
+          // observation (وليس رسالة system في منتصف الخيط — البوابة ترفض ذلك).
+          const repetitionNote = repeatedSameResult
+            ? `[ملاحظة] نُفِّذ «${innerTool}» بـ ${nextCount} مرة متتالية بنفس الوسائط، وآخر نتيجة: ${truncate(lastObsForSig ?? '', 400)}. ` +
+              `الأمر لك وحدك: إن كانت المهمة قد اكتملت بهذه النتيجة فانتقل للإجابة على المستخدم مباشرة دون أدوات إضافية، وإن كانت تحتاج مواصلة أو أسوأ من ذلك (فشل) فاحكم بنفسك — كرر إن كان مبرراً، أو غيّر الوسائط/الأداة/المنهج، أو اسأل المستخدم. لا قيد عليك في الاستمرار طالما ترى تقدماً أو حاجة حقيقية.`
+            : null
+          if (repeatedSameResult && emitEvents) emit({ type: 'thinking' })
+
+          const cont = await handleToolCall(sessionId, s, call, emitEvents)
+          if (cont) {
+            const callArgs = parseToolArgs(call.arguments)
+            const innerTool = call.name === 'execute' ? String(callArgs.tool ?? 'execute') : call.name
+            const innerArgs = call.name === 'execute' ? (callArgs.args ?? {}) : callArgs
+            await addBrainOp(sessionId, 'op', `${innerTool}: ${JSON.stringify(innerArgs).slice(0, 160)}`).catch(() => {})
+            // إعادة الملاحظة (Observation) إلى مسار تفكير ReAct بعد التنفيذ
+            const toolMsgs = (await getMessages(sessionId)).filter((m) => m.role === 'tool')
+            const lastObs = toolMsgs[toolMsgs.length - 1]
+            const obsText = lastObs && lastObs.meta
+              ? String(lastObs.meta.observation ?? lastObs.meta.result ?? '')
+              : ''
+            if (lastObs && lastObs.meta) {
+              thread.push({
+                role: 'tool',
+                tool_call_id: call.id,
+                content: repetitionNote ? `${repetitionNote}\n${obsText}` : obsText,
+              })
+            }
+            // تسجيل آخر نتيجة لهذه البصمة للمقارنة عند التكرار القادم
+            lastObsBySig.set(sig, obsText)
+            lastObsHashForSig.set(sig, hashOf(obsText))
+          }
+          if (!cont) {
+            paused = true
+            break
+          }
+        }
+        if (paused) break
+      }
+      // إذا استُنفدت جولات هذه المهمة دون أن يختم الوكيل إجابته، نُسلم العنان للمستخدم
+      // ليكمل برسالة جديدة — لا نعلن فشلاً ولا نتهم الوكيل بالتكرار.
+      if (!finished && !isCancelled(sessionId)) {
+        await persistAssistantText(
+          sessionId,
+          'أنجزت ما أمكن تنفيذه ضمن هذه الجولة من الأدوات. أخبرني ما تريد إكماله أو تعديله وسأكمل من حيث توقفت.',
+          'system'
+        )
+        if (emitEvents) emit({ type: 'text', content: 'أنجزت ما أمكن تنفيذه ضمن هذه الجولة. أرسل رسالة للمتابعة.' })
+      }
+    } finally {
+      await clearBrain(sessionId).catch(() => {})
+    }
+  } finally {
+    clearAborter(sessionId, aborter)
+  }
+}
+
+// ---------- الواجهة العامة ----------
+
+interface ConnConfig {
+  settings: AgentSettings
+  providerName: string
+  model: string
+  baseUrl: string
+  apiKey: string
+}
+
+async function resolveConfig(): Promise<ConnConfig> {
+  const settings = await getSettings()
+  const cfg = await activeConfig(settings)
+  return {
+    settings,
+    providerName: cfg.providerName,
+    model: cfg.model,
+    baseUrl: cfg.baseUrl,
+    apiKey: cfg.apiKey,
+  }
+}
+
+export interface SendOptions {
+  attachments?: { uri: string; name?: string }[]
+}
+
+async function withConfig<T>(fn: (conn: ConnConfig) => Promise<T>): Promise<T> {
+  const config = await resolveConfig()
+  if (!config.model || !config.apiKey) {
+    throw new Error('لم يُعدَّ المزود بعد: أضف مفتاح API واختر موديلاً من إعدادات المساعد.')
+  }
+  return fn(config)
+}
+
+async function runGuarded(sessionId: string, conn: ConnConfig, emitEvents = true): Promise<void> {
+  markRunning(sessionId)
+  try {
+    await runLoop(sessionId, conn.settings, conn, emitEvents)
+  } finally {
+    clearRunning(sessionId)
+  }
+}
+
+/** إرسال رسالة مستخدم وتشغيل حلقة الوكيل. */
+export async function sendUserMessage(sessionId: string, text: string, opts?: SendOptions): Promise<void> {
+  if (isAgentBusy(sessionId)) return
+  let conn: ConnConfig
+  try {
+    conn = await withConfig(async (c) => c)
+  } catch (e: any) {
+    await persistAssistantText(sessionId, e?.message ?? 'إعداد ناقص', 'error')
+    emit({ type: 'error', message: e?.message ?? 'إعداد ناقص' })
+    return
+  }
+
+  let content = text
+  if (opts?.attachments?.length) {
+    for (const att of opts.attachments) {
+      try {
+        let size = 0
+        let mime: string | undefined
+        try {
+          const fsInfo = await FileSystem.getInfoAsync(att.uri)
+          if (fsInfo.exists && 'size' in fsInfo) size = fsInfo.size ?? 0
+        } catch {}
+        const name = att.name ?? (att.uri.split('/').pop() ?? 'ملف')
+        mime = mimeOf(name)
+        await saveAttachment({ sessionId, name, uri: att.uri, size, mime })
+        content += `\n\n[ملف مرفق من المستخدم: "${name}" — الحجم ${(size / 1024).toFixed(0)} كيلوبايت. يمكنك معاينته بـ read_uploaded_file أو تحويله لمشروع منظم بـ import_project_file]`
+      } catch {}
+    }
+  }
+
+  await updateSessionMeta(sessionId, { providerLabel: conn.providerName, model: conn.model })
+  const first = await getMessages(sessionId).catch(() => [])
+  if (!first.length) {
+    const title = text.replace(/\s+/g, ' ').slice(0, 40) || 'محادثة جديدة'
+    await updateSessionMeta(sessionId, { title })
+  }
+
+  await persistUser(sessionId, content)
+  // لا رسائل تقدم ثابتة — المساعد نفسه يخاطب المستخدم بما يقرره هو.
+  await runGuarded(sessionId, conn)
+  emit({ type: 'done' })
+}
+
+/** الرد على سؤال سابق (ask_user) ومواصلة عمل الوكيل. */
+export async function answerAsk(sessionId: string, answer: string): Promise<void> {
+  if (isAgentBusy(sessionId)) return
+  const pending = await getPending(sessionId)
+  if (!pending || pending.kind !== 'ask_user') return
+  let conn: ConnConfig
+  try {
+    conn = await withConfig(async (c) => c)
+  } catch (e: any) {
+    await persistAssistantText(sessionId, e?.message ?? 'إعداد ناقص', 'error')
+    emit({ type: 'error', message: e?.message ?? 'إعداد ناقص' })
+    return
+  }
+  await clearPending(sessionId)
+  await persistUser(sessionId, `[إجابة المستخدم على سؤالك] ${answer}`)
+  await runGuarded(sessionId, conn)
+  emit({ type: 'done' })
+}
+
+/** الموافقة أو الرفض على طلب تأكيد (حذف...) ومواصلة عمل الوكيل. */
+export async function answerConfirmation(sessionId: string, approve: boolean, selected?: number[]): Promise<void> {
+  if (isAgentBusy(sessionId)) return
+  const pending = await getPending(sessionId)
+  if (!pending || pending.kind !== 'confirmation') return
+  let conn: ConnConfig
+  try {
+    conn = await withConfig(async (c) => c)
+  } catch (e: any) {
+    await persistAssistantText(sessionId, e?.message ?? 'إعداد ناقص', 'error')
+    emit({ type: 'error', message: e?.message ?? 'إعداد ناقص' })
+    return
+  }
+
+  await clearPending(sessionId)
+  if (approve) {
+    const items = Array.isArray(pending.items) && pending.items.length ? pending.items : null
+    if (items) {
+      const chosen = (selected ?? items.map((_, i) => i)).filter((i) => i >= 0 && i < items.length).map((i) => items[i])
+      if (chosen.length) {
+        const labels = chosen.map((it) => it.preview).join('، ')
+        await persistUser(sessionId, `[موافقة المستخدم على حذف: ${labels}]`)
+        await persistAssistantText(sessionId, `تمت الموافقة على حذف ${chosen.length} عنصر`, 'system')
+        for (const it of chosen) {
+          const outcome = await deleteOne(sessionId, it.tool, it.id, it.entity ? { entity: it.entity, id: it.id } : { id: it.id })
+          emit({ type: 'tool', name: it.tool, args: { ...(it.entity ? { entity: it.entity } : {}), id: it.id }, result: outcome })
+        }
+      } else {
+        await persistUser(sessionId, '[لم يُحدد المستخدم أي عنصر — رفض الحذف]')
+      }
+    } else {
+      await persistUser(sessionId, '[موافقة المستخدم على الإجراء]')
+      await deleteApproved(sessionId, pending)
+    }
+  } else {
+    await persistUser(sessionId, '[رفض المستخدم للإجراء]')
+    await deleteRefused(sessionId)
+  }
+  await runGuarded(sessionId, conn)
+  emit({ type: 'done' })
+}
+
+export { createSession as newSession, listUndo }
+export type { PendingState } from './store'
+export type { AgentEvent }
+export { subscribeAgent, cancelAgent, isAgentBusy, performUndo }

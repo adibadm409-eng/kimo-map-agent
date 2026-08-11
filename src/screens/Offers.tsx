@@ -1,0 +1,183 @@
+import React, { useState, useCallback } from 'react'
+import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, RefreshControl, Alert } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
+import { useFocusEffect, useNavigation } from '@react-navigation/native'
+import { FlashList } from '@shopify/flash-list'
+import * as Haptics from 'expo-haptics'
+import { useTheme } from '../theme/ThemeContext'
+import { spacing, radius, fontSize } from '../theme/tokens'
+import { Card, StatusBadge } from '../components/ui'
+import { getAllOffers, deleteOffer } from '../database/db'
+import { formatPrice, formatDate } from '../utils/helpers'
+import { STATUS_LABELS } from '../types'
+
+const FILTERS = [
+  { key: 'all', label: 'الجميع' },
+  { key: 'buy_offer', label: 'عرض شراء' },
+  { key: 'sell_offer', label: 'عرض بيع' },
+]
+
+const TYPE_ICONS: Record<string, string> = {
+  buy_offer: 'arrow-down-circle-outline',
+  sell_offer: 'arrow-up-circle-outline',
+}
+
+export default function Offers() {
+  const { colors } = useTheme()
+  const insets = useSafeAreaInsets()
+  const navigation = useNavigation<any>()
+  const [offers, setOffers] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState('all')
+
+  useFocusEffect(useCallback(() => { load() }, []))
+
+  async function load() {
+    setLoading(true)
+    try {
+      const data = await getAllOffers()
+      setOffers(data)
+    } catch (e) {
+      console.error('Failed to load offers:', e)
+    }
+    setLoading(false)
+  }
+
+  function handleDelete(o: any) {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+    Alert.alert('حذف العرض', 'هل تريد حذف هذا العرض؟', [
+      { text: 'إلغاء', style: 'cancel' },
+      { text: 'حذف', style: 'destructive', onPress: () => deleteOffer(o.id).then(() => load()).catch(() => Alert.alert('خطأ', 'تعذر حذف العرض')) },
+    ])
+  }
+
+  const filtered = offers.filter((o) => {
+    const match = o.property_name.includes(search) || o.client_name.includes(search)
+    const pass = filter === 'all' || o.type === filter
+    return match && pass
+  })
+
+  function renderItem({ item: o }: { item: any }) {
+    const icon = TYPE_ICONS[o.type] || 'pricetag-outline'
+    return (
+      <Pressable
+        onPress={() => navigation.navigate('OfferForm', { id: o.id })}
+        style={({ pressed }) => [styles.cardWrap, pressed && { opacity: 0.8 }]}
+      >
+        <Card style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={[styles.typeIcon, { backgroundColor: colors.accent + '15' }]}>
+              <Ionicons name={icon as any} size={20} color={colors.accent} />
+            </View>
+            <View style={styles.cardInfo}>
+              <Text style={[styles.propertyName, { color: colors.textPrimary }]} numberOfLines={1}>{o.property_name}</Text>
+              <Text style={[styles.clientName, { color: colors.textSecondary }]} numberOfLines={1}>{o.client_name}</Text>
+            </View>
+            <StatusBadge label={STATUS_LABELS[o.status] || o.status} value={o.status} />
+          </View>
+          <View style={[styles.cardFooter, { borderTopColor: colors.border }]}>
+            <Text style={[styles.amount, { color: colors.accent }]}>
+              {formatPrice(o.amount)} <Text style={[styles.amountUnit, { color: colors.textMuted }]}>ريال يمني</Text>
+            </Text>
+            <Text style={[styles.date, { color: colors.textMuted }]}>{formatDate(o.date)}</Text>
+            <Pressable
+              onPress={() => handleDelete(o)}
+              style={({ pressed }) => [{ padding: spacing.xs }, pressed && { opacity: 0.5 }]}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <Ionicons name="trash-outline" size={16} color={colors.error} />
+            </Pressable>
+          </View>
+        </Card>
+      </Pressable>
+    )
+  }
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <View style={[styles.header, { borderBottomColor: colors.border, paddingTop: insets.top + spacing.md }]}>
+        <View>
+          <Text style={[styles.pageTitle, { color: colors.textPrimary }]}>العروض</Text>
+          <Text style={[styles.pageSubtitle, { color: colors.textSecondary }]}>{offers.length} عرض</Text>
+        </View>
+        <Pressable
+          onPress={() => navigation.navigate('OfferForm', {})}
+          style={({ pressed }) => [styles.addBtn, { backgroundColor: colors.accent, opacity: pressed ? 0.8 : 1 }]}
+        >
+          <Ionicons name="add" size={20} color="#FFF" />
+          <Text style={styles.addBtnText}>عرض جديد</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.searchBar}>
+        <View style={[styles.searchWrap, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Ionicons name="search-outline" size={18} color={colors.textMuted} />
+          <TextInput value={search} onChangeText={setSearch} placeholder="بحث..." placeholderTextColor={colors.textMuted} style={[styles.searchInput, { color: colors.textPrimary }]} />
+          {search ? (
+            <Pressable onPress={() => setSearch('')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll} style={styles.filterBar}>
+        {FILTERS.map((f) => (
+          <Pressable
+            key={f.key}
+            onPress={() => { Haptics.selectionAsync(); setFilter(f.key) }}
+            style={[styles.filterTab, filter === f.key ? { backgroundColor: colors.accent } : { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}
+          >
+            <Text style={[styles.filterTabText, { color: filter === f.key ? '#FFF' : colors.textSecondary, fontFamily: 'Tajawal_500Medium' }]}>{f.label}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+
+      <FlashList
+        data={filtered}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        contentContainerStyle={styles.list}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={colors.accent} />}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <View style={styles.emptyWrap}>
+            <Ionicons name="pricetags-outline" size={56} color={colors.textMuted} />
+            <Text style={[styles.emptyText, { color: colors.textMuted }]}>{search || filter !== 'all' ? 'لا توجد نتائج' : 'لا توجد عروض بعد'}</Text>
+          </View>
+        }
+      />
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.xl, paddingBottom: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth },
+  pageTitle: { fontSize: fontSize.xxl, fontWeight: '700', fontFamily: 'Tajawal_700Bold' },
+  pageSubtitle: { fontSize: fontSize.md, marginTop: 2, fontFamily: 'Tajawal_400Regular' },
+  addBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.full },
+  addBtnText: { fontSize: fontSize.sm, fontWeight: '600', fontFamily: 'Tajawal_700Bold', color: '#FFF' },
+  searchBar: { paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
+  searchWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, height: 44, borderRadius: radius.md, borderWidth: 1 },
+  searchInput: { flex: 1, fontSize: fontSize.md, fontFamily: 'Tajawal_400Regular', textAlign: 'right' },
+  filterBar: { maxHeight: 50 },
+  filterScroll: { paddingHorizontal: spacing.xl, gap: spacing.sm, paddingBottom: spacing.md },
+  filterTab: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.full },
+  filterTabText: { fontSize: fontSize.md, fontWeight: '500' },
+  list: { padding: spacing.xl, paddingTop: spacing.md },
+  cardWrap: { paddingBottom: spacing.md },
+  card: { padding: 0 },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.lg },
+  typeIcon: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  cardInfo: { flex: 1, gap: 2 },
+  propertyName: { fontSize: fontSize.md, fontWeight: '700', fontFamily: 'Tajawal_700Bold' },
+  clientName: { fontSize: fontSize.sm, fontFamily: 'Tajawal_400Regular' },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.lg, borderTopWidth: StyleSheet.hairlineWidth },
+  amount: { fontSize: fontSize.lg, fontWeight: '800', fontFamily: 'Tajawal_800ExtraBold' },
+  amountUnit: { fontSize: fontSize.sm, fontWeight: '500', fontFamily: 'Tajawal_500Medium' },
+  date: { flex: 1, fontSize: fontSize.sm, fontFamily: 'Tajawal_400Regular' },
+  emptyWrap: { alignItems: 'center', paddingVertical: spacing.xxxl * 2, gap: spacing.md },
+  emptyText: { fontSize: fontSize.md, fontFamily: 'Tajawal_400Regular' },
+})

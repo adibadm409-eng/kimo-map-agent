@@ -1,0 +1,1036 @@
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
+import {
+  View, Text, TextInput, FlatList, StyleSheet, Pressable, Keyboard, Platform, Alert, Dimensions, Modal, ScrollView,
+} from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useFocusEffect } from '@react-navigation/native'
+import { Ionicons } from '@expo/vector-icons'
+import * as Haptics from 'expo-haptics'
+import * as DocumentPicker from 'expo-document-picker'
+import * as Clipboard from 'expo-clipboard'
+import { useTheme } from '../../theme/ThemeContext'
+import { spacing, radius, fontSize } from '../../theme/tokens'
+import {
+  subscribeAgent,
+  sendUserMessage,
+  answerAsk,
+  answerConfirmation,
+  cancelAgent,
+} from '../../assistant'
+import {
+  getSettings,
+  setSettings,
+  activeConfig,
+  listSessions,
+  createSession,
+  deleteSession,
+  getMessages,
+  getPending,
+  type Message,
+  type SessionMeta,
+  type PendingState,
+} from '../../assistant'
+import { shareFile, saveToDownloads } from '../../assistant'
+import AssistantHistory from './AssistantHistory'
+import Markdown from '../../components/ui/Markdown'
+import { TOOL_ARABIC, stepCardTitle, stepCardDetail, stepCardResult, linkCardLabel } from '../../assistant/toolLabels'
+
+interface AttachItem {
+  uri: string
+  name: string
+}
+
+export default function AssistantScreen({ navigation }: any) {
+  const { colors } = useTheme()
+  const insets = useSafeAreaInsets()
+  const [sessions, setSessions] = useState<SessionMeta[]>([])
+  const [sessionId, setSessionId] = useState<string>('')
+  const [messages, setMessages] = useState<Message[]>([])
+  const [input, setInput] = useState('')
+  const [attachments, setAttachments] = useState<AttachItem[]>([])
+  const [busy, setBusy] = useState(false)
+  const [pending, setPending] = useState<PendingState | null>(null)
+  const [mode, setMode] = useState<'read' | 'edit'>('read')
+  const [providerLabel, setProviderLabel] = useState('')
+  const [model, setModel] = useState('')
+  const [showHistory, setShowHistory] = useState(false)
+  const [streamText, setStreamText] = useState('')
+  const [askText, setAskText] = useState('')
+  const [kbHeight, setKbHeight] = useState(0)
+  const [selDel, setSelDel] = useState<number[]>([])
+  const [thinking, setThinking] = useState(false)
+  const [liveProgress, setLiveProgress] = useState<string[]>([])
+  const [liveSteps, setLiveSteps] = useState<string[]>([])
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const listRef = useRef<FlatList>(null)
+  /** طلب «انزل لأسفل» نشط: يُعاد التمرير عند كل تغيّر حجم للمحتوى حتى الالتحام
+      الفعلي بالقاع — لأن FlatList افتراضية: حجم المحتوى وقت التمرير جزئي
+      (الخلايا غير المركّبة بلا ارتفاع) فينزل التمرير عند آخر خلية مركّبة ≈ المنتصف،
+      ثم تكبر القائمة وتحتاج التكرار حتى تكتمل. يُلغى عند بلوغ القاع فعلاً أو
+      توقف إصبع المستخدم فوق النهاية. */
+  const wantedBottom = useRef(false)
+  /** هل المستخدم في نهاية المحادثة فعلاً؟ يتحكم بإظهار زر النزول فوق زر الإرسال */
+  const [atBottom, setAtBottom] = useState(true)
+
+  useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide'
+    const showSub = Keyboard.addListener(showEvt, (ev: any) => {
+      // حساب المسافة الفعلية التي يغطيها الكيبورد: يعمل في وضعي adjustResize و adjustPan دون مضاعفة
+      const screenY = Math.round(ev?.endCoordinates?.screenY ?? -1)
+      const screenH = Math.round(Dimensions.get('window').height)
+      const endH = Math.round(ev?.endCoordinates?.height ?? 0)
+      const pad = screenY > 0 && screenY < screenH ? screenH - screenY : endH
+      setKbHeight(Math.max(0, pad))
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 80)
+    })
+    const hideSub = Keyboard.addListener(hideEvt, () => setKbHeight(0))
+    return () => {
+      showSub.remove()
+      hideSub.remove()
+    }
+  }, [])
+
+  const reload = useCallback(async (sid: string) => {
+    const msgs = await getMessages(sid).catch(() => [])
+    setMessages(msgs)
+    const p = await getPending(sid).catch(() => null)
+    setPending(p)
+    // عند فتح أي محادثة (بما فيها العودة بعد إغلاق التطبيق) نمرّر لأسفل المحادثة
+    // وليس لمنتصفها، ثم نعيد التمرير بعد اكتمال الترسيم الأول.
+    // والطلب يُسجَّل في wantedBottom لضمان التنفيذ عند أول ظهور فعلي للمحتوى.
+    wantedBottom.current = true
+    setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 120)
+  }, [])
+
+  useFocusEffect(
+    useCallback(() => {
+      wantedBottom.current = true
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 260)
+    }, [sessionId, messages.length])
+  )
+
+  const loadSessions = useCallback(async () => {
+    const list = await listSessions().catch(() => [])
+    setSessions(list)
+    if (list.length && !list.some((s) => s.id === sessionId)) {
+      setSessionId(list[0].id)
+      reload(list[0].id)
+    }
+  }, [sessionId, reload])
+
+  const loadSettings = useCallback(async () => {
+    const s = await getSettings().catch(() => null)
+    if (s) {
+      setMode(s.mode)
+      setProviderLabel(providerLabelOf(s))
+      setModel(modelOf(s))
+      if (!s.models[s.activeProvider]) {
+        const config = await activeConfig(s).catch(() => null)
+        if (config?.model) setModel(config.model)
+      }
+    }
+  }, [])
+
+  useFocusEffect(
+    useCallback(() => {
+      loadSettings().catch(() => {})
+    }, [loadSettings])
+  )
+
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      const list = await listSessions().catch(() => [])
+      if (mounted) {
+        setSessions(list)
+        let sid = list[0]?.id ?? ''
+        if (!sid) sid = await createSession().catch(() => '')
+        setSessionId(sid)
+        if (sid) reload(sid)
+      }
+    })()
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    const unsub = subscribeAgent((e) => {
+      if (e.type === 'stream') {
+        if (e.done) setStreamText('')
+        else setStreamText(e.content ?? '')
+        return
+      }
+      if (e.type === 'progress') {
+        // نشاط الوكيل (تفكيره/تخطيطه) يبث لحظياً: يظهر فوراً في القائمة
+        setLiveProgress((prev) => [...prev, e.text])
+        return
+      }
+      if (e.type === 'tool') {
+        // خطوة تنفيذ فعلية (نداء أداة بنتيجتها): تُراكم لحظياً لتُظهر ما يفعله الوكيل الآن
+        setLiveSteps((prev) => [...prev, formatStep((e as any).name, (e as any).args, (e as any).result)])
+        return
+      }
+      if (e.type === 'text') {
+        setLiveProgress([])
+        return
+      }
+      if (e.type === 'thinking') {
+        setThinking(true)
+        return
+      }
+      if (e.type === 'done') {
+        setThinking(false)
+        setStreamText('')
+        setLiveProgress([])
+        setLiveSteps([])
+        reload(sessionId).catch(() => {})
+        return
+      }
+      reload(sessionId).catch(() => {})
+    })
+    return unsub
+  }, [sessionId, reload])
+
+  useEffect(() => {
+    if (pending?.kind === 'confirmation' && Array.isArray(pending.items)) {
+      setSelDel(pending.items.map((_, i) => i))
+    } else if (pending?.kind === 'confirmation') {
+      setSelDel([])
+    }
+  }, [pending])
+
+  useEffect(() => {
+    if (messages.length) {
+      wantedBottom.current = true
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 60)
+    }
+  }, [messages.length, pending?.kind])
+
+  function providerLabelOf(s: any): string {
+    const active = s.activeProvider
+    if (active.startsWith('custom:')) {
+      const c = (s.customProviders ?? []).find((x: any) => x.id === active.slice(7))
+      return c?.name ?? 'مزود مخصص'
+    }
+    return active
+  }
+
+  // يصف خطوة التنفيذ بأسلوب بشري بلا معرفات/أسماء جداوTechniques: اسم الأداة مدرج في toolLabels
+  function formatStep(name: string, args: any, result: any): string {
+    const label = (TOOL_ARABIC as Record<string, string>)[name] ?? name
+    let detail = ''
+    const a = (args && typeof args === 'object') ? args : {}
+    if (name === 'create' && a.entity) detail = ` على ${a.entity}`
+    else if (name === 'update' && a.entity) detail = ` ${String(a.entity)}`
+    else if (name === 'delete' && a.entity) detail = ` حذف ${a.entity}`
+    else if (name === 'query') detail = a.entity ? ` على ${a.entity}` : ''
+    else if (name === 'generate_file' && a.format) detail = ` (${a.format})`
+    else if (name === 'workspace_create' && a.name) detail = `: ${a.name}`
+    else if (name === 'workspace_add_table' && a.name) detail = `: ${a.name}`
+    else if (name === 'import_project_file' && a.name) detail = `: ${a.name}`
+    const outcome = !result || typeof result === 'string' && result.trim() === 'محظور في وضع القراءة فقط'
+      ? ''
+      : ' ✓'
+    return `خطوة: ${label}${detail}${outcome}`
+  }
+
+  function modelOf(s: any): string {
+    return s.models?.[s.activeProvider] ?? ''
+  }
+
+  async function ensureSession(): Promise<string> {
+    if (sessionId) return sessionId
+    const id = await createSession()
+    setSessionId(id)
+    return id
+  }
+
+  async function handleSend(text: string) {
+    const trimmed = text.trim()
+    if (!trimmed || busy) return
+    const sid = await ensureSession()
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+    setInput('')
+    setAskText('')
+    // أظهر رسالة المستخدم محلياً فوراً حتى لا تختفي لحظة كتحضير الإرسال
+    setMessages((prev) => [
+      ...prev,
+      { id: `local-user-${Date.now()}`, sessionId: sid, role: 'user', kind: 'text', content: trimmed, createdAt: Date.now() },
+    ])
+    const atts = attachments.length ? [...attachments] : undefined
+    setAttachments([])
+    setBusy(true)
+    setPending(null)
+    setThinking(true)
+    setStreamText('')
+    setLiveProgress([])
+    try {
+      await sendUserMessage(sid, trimmed, atts ? { attachments: atts } : undefined)
+    } finally {
+      setBusy(false)
+      setThinking(false)
+      setStreamText('')
+      setLiveProgress([])
+      reload(sid).catch(() => {})
+      loadSessions().catch(() => {})
+    }
+  }
+
+  async function handleChoice(answer: string) {
+    setBusy(true)
+    setThinking(true)
+    setStreamText('')
+    setLiveProgress([])
+    try {
+      await answerAsk(sessionId, answer)
+    } finally {
+      setBusy(false)
+      setThinking(false)
+      setStreamText('')
+      setLiveProgress([])
+      reload(sessionId).catch(() => {})
+    }
+  }
+
+  async function handleConfirm(approve: boolean, selected?: number[]) {
+    setBusy(true)
+    setThinking(true)
+    setStreamText('')
+    setLiveProgress([])
+    try {
+      await answerConfirmation(sessionId, approve, selected)
+    } finally {
+      setBusy(false)
+      setThinking(false)
+      setStreamText('')
+      setLiveProgress([])
+      setSelDel([])
+      reload(sessionId).catch(() => {})
+    }
+    setPending(null)
+  }
+
+  async function handleCopy(id: string, text: string) {
+    try {
+      await Clipboard.setStringAsync(text)
+      setCopiedId(id)
+      setTimeout(() => setCopiedId((cur) => (cur === id ? null : cur)), 1500)
+    } catch {}
+  }
+
+  async function toggleMode() {
+    const next = mode === 'read' ? 'edit' : 'read'
+    Haptics.selectionAsync().catch(() => {})
+    await setSettings({ mode: next })
+    setMode(next)
+  }
+
+  async function pickFiles() {
+    try {
+      const res = await DocumentPicker.getDocumentAsync({ multiple: true, copyToCacheDirectory: true })
+      if (res.canceled || !res.assets?.length) return
+      const items = res.assets.map((a) => ({ uri: a.uri, name: a.name ?? 'ملف' }))
+      setAttachments((prev) => [...prev, ...items])
+    } catch {}
+  }
+
+  async function handleNewSession() {
+    const id = await createSession()
+    setSessionId(id)
+    setShowHistory(false)
+    reload(id).catch(() => {})
+    loadSessions().catch(() => {})
+  }
+
+  async function handleDeleteSession(sid: string) {
+    Alert.alert('حذف المحادثة', 'سيتم حذف هذه المحادثة نهائياً. هل أنت متأكد؟', [
+      { text: 'إلغاء', style: 'cancel' },
+      {
+        text: 'حذف',
+        style: 'destructive',
+        onPress: async () => {
+          await deleteSession(sid).catch(() => {})
+          if (sid === sessionId) {
+            const list = await listSessions().catch(() => [])
+            const next = list[0]?.id ?? ''
+            setSessionId(next)
+            if (next) reload(next).catch(() => {})
+            else setMessages([])
+          }
+          loadSessions().catch(() => {})
+        },
+      },
+    ])
+  }
+
+  function selectSession(sid: string) {
+    setSessionId(sid)
+    setShowHistory(false)
+    reload(sid).catch(() => {})
+  }
+
+  const configured = !!(providerLabel && model)
+
+  const visibleMessages = useMemo(() => {
+    // إخفاء رسائل tool_call الأبتر (بدون ملاحظة tool تابعة) حتى لا تظهر بطاقات معلقة
+    // وأيضا عرض كل tool_call له ملاحظة لاحقة (إذ يمثّل خطوة "running" تُعقبها "done")
+    // كما نخفي confirmation المعروض عبر الـ modal (الحذف) لتفادي الازدواجية
+    const pendingDelete = pending?.kind === 'confirmation' && Array.isArray(pending.items) && pending.items.length > 0
+    return messages.filter((m) => {
+      if (m.kind === 'tool') return false
+      if (m.kind === 'tool_call') {
+        const hasToolMeta = m.meta?.tool_calls?.[0]
+        return !!hasToolMeta
+      }
+      if (m.kind === 'confirmation' && pendingDelete) return false
+      return true
+    })
+  }, [messages, pending])
+
+  interface StepCardData {
+    tool: string
+    args: Record<string, any>
+    result: any
+    ok: boolean
+  }
+  // دمج نداء الأداة بنتيجته في بطاقة واحدة دائمة (أثر مرئي لكل خطوة نُفذت):
+  // تُبنى من الرسائل المحفوظة فلا تختفي بعد انتهاء الوكيل بل تبقى في سجل المحادثة.
+  const stepCards = useMemo(() => {
+    const map = new Map<string, StepCardData>()
+    for (const m of messages) {
+      if (m.kind !== 'tool' || !m.meta?.tool_call_id) continue
+      const callId = String(m.meta.tool_call_id)
+      const name = String(m.meta?.name ?? 'execute')
+      const args = m.meta?.args && typeof m.meta.args === 'object' ? (m.meta.args as Record<string, any>) : {}
+      map.set(callId, {
+        tool: name,
+        args,
+        result: m.meta?.observation ?? m.meta?.result ?? '',
+        ok: m.meta?.ok !== false,
+      })
+    }
+    return map
+  }, [messages])
+
+  function safeParseArgs(raw: string): Record<string, any> {
+    try {
+      const p = JSON.parse(raw)
+      return p && typeof p === 'object' ? p : {}
+    } catch {
+      return {}
+    }
+  }
+
+  function stepIcon(tool: string): string {
+    if (tool === 'create' || tool === 'workspace_create' || tool === 'workspace_create_full_table') return 'add-circle-outline'
+    if (tool === 'update' || tool === 'workspace_update' || tool === 'workspace_update_row') return 'create-outline'
+    if (tool === 'delete' || tool.startsWith('workspace_delete') || tool === 'remove_attachment') return 'trash-outline'
+    if (tool === 'query' || tool === 'search_everything' || tool === 'search_sessions' || tool === 'get') return 'search-outline'
+    if (tool === 'import_project_file' || tool === 'read_uploaded_file') return 'document-outline'
+    if (tool === 'generate_file') return 'document-text-outline'
+    if (tool === 'undo_last') return 'arrow-undo-outline'
+    if (tool === 'custom_field_set') return 'pricetag-outline'
+    if (tool.startsWith('workspace')) return 'grid-outline'
+    return 'git-commit-outline'
+  }
+
+  function renderStepCard(callId: string, toolName: string, rawArgs: any) {
+    const done = stepCards.get(callId)
+    const tool = done ? done.tool : String(toolName ?? 'execute')
+    const args = done ? done.args : (rawArgs && typeof rawArgs === 'object' ? rawArgs : {})
+    const resultText = done ? stepCardResult(tool, done.result) : ''
+    const statusColor = !done ? colors.textMuted : done.ok ? colors.success : colors.error
+    const statusLabel = !done ? '…' : done.ok ? '✓' : '✗'
+    const detail = stepCardDetail(tool, args)
+    return (
+      <View style={[styles.stepCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View style={[styles.stepIcon, { backgroundColor: colors.accentSurface }]}>
+          <Ionicons name={stepIcon(tool) as any} size={13} color={colors.accent} />
+        </View>
+        <View style={styles.stepBody}>
+          <View style={styles.stepTitleRow}>
+            <Text style={[styles.stepTitle, { color: colors.textPrimary }]} numberOfLines={2}>
+              {stepCardTitle(tool, args)}
+              {detail ? <Text style={{ color: colors.textMuted }}> {detail}</Text> : null}
+            </Text>
+          </View>
+          {!!resultText && (
+            <Text style={[styles.stepResult, { color: statusColor }]} numberOfLines={2}>
+              <Text style={{ color: statusColor }}>{statusLabel} </Text>
+              {resultText}
+            </Text>
+          )}
+        </View>
+      </View>
+    )
+  }
+
+  function openLinkCard(link: { kind: string; id: string; label?: string }) {
+    const { kind, id } = link
+    const paramsMap: Record<string, any> = {
+      workspace: { workspaceId: id },
+      project: { projectId: id },
+      block: { blockId: id },
+      plot: { plotId: id },
+      client: { id },
+      property: { id },
+    }
+    const screenMap: Record<string, string> = {
+      workspace: 'WorkspaceDetail',
+      project: 'ProjectDetail',
+      block: 'BlockDetail',
+      plot: 'PlotDetail',
+      client: 'ClientDetail',
+      property: 'PropertyDetail',
+    }
+    const stack = kind === 'client' ? 'ClientsStack' : kind === 'property' ? 'PropertiesStack' : 'ProjectsStack'
+    const params = paramsMap[kind]
+    if (!params || !screenMap[kind]) return
+    navigation.navigate(stack, { screen: screenMap[kind], params })
+  }
+
+  function renderLinkCard(link: { kind: string; id: string; label?: string }) {
+    const label = linkCardLabel(link.kind)
+    return (
+      <Pressable
+        onPress={() => openLinkCard(link)}
+        style={({ pressed }) => [
+          styles.linkCard,
+          { backgroundColor: colors.successSurface, borderColor: colors.border, opacity: pressed ? 0.75 : 1 },
+        ]}
+      >
+        <View style={[styles.stepIcon, { backgroundColor: colors.success + '18' }]}>
+          <Ionicons name="open-outline" size={14} color={colors.success} />
+        </View>
+        <View style={styles.stepBody}>
+          <Text style={[styles.stepTitle, { color: colors.textPrimary }]} numberOfLines={1}>
+            {label}
+            {link.label ? ` — ${link.label}` : ''}
+          </Text>
+          <Text style={[styles.stepResult, { color: colors.textMuted }]}>اضغط للانتقال إلى مكان البيانات ومراجعتها</Text>
+        </View>
+        <Ionicons name="chevron-back" size={16} color={colors.success} />
+      </Pressable>
+    )
+  }
+
+  const renderMessage = ({ item }: { item: Message }) => {
+    if (item.kind === 'tool_call') {
+      // بطاقة إنجاز دائمة لكل خطوة نُفذت: تبقى في المحادثة حتى يرى المستخدم أثر الوكيل
+      // ويراقبه بعد انتهاء التنفيذ — لا نشاط يختفي بصمت.
+      const call = item.meta?.tool_calls?.[0]
+      if (!call) return null
+      const rawArgs = safeParseArgs(String(call.arguments ?? '{}'))
+      return renderStepCard(String(call.id), String(call.name ?? 'execute'), rawArgs)
+    }
+    if (item.kind === 'tool') {
+      return null
+    }
+    if (item.kind === 'link') {
+      const meta = item.meta ?? {}
+      return renderLinkCard({ kind: String(meta.kind ?? ''), id: String(meta.id ?? ''), label: meta.label ? String(meta.label) : undefined })
+    }
+    if (item.kind === 'ask_user') {
+      const meta = item.meta ?? {}
+      return (
+        <View style={[styles.askCard, { backgroundColor: colors.warningSurface, borderColor: colors.border }]}>
+          <View style={styles.askHead}>
+            <Ionicons name="help-circle" size={18} color={colors.warning} />
+            <Text style={[styles.askTitle, { color: colors.textPrimary }]}>سؤال من المساعد</Text>
+          </View>
+          <Text style={[styles.askBody, { color: colors.textPrimary }]}>{item.content}</Text>
+          {Array.isArray(meta.choices) && meta.choices.length > 0 && (
+            <View style={styles.choicesWrap}>
+              {(meta.choices as string[]).map((c, i) => (
+                <Pressable
+                  key={i}
+                  disabled={busy}
+                  onPress={() => handleChoice(c)}
+                  style={({ pressed }) => [styles.choiceChip, { backgroundColor: colors.accentSurface, borderColor: colors.borderHover, opacity: pressed ? 0.7 : 1 }]}
+                >
+                  <Text style={[styles.choiceText, { color: colors.accent }]}>{c}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+          {meta.allowFreeText !== false && (
+            <View style={styles.askInputRow}>
+              <TextInput
+                value={askText}
+                onChangeText={setAskText}
+                placeholder="أكتب إجابتك هنا..."
+                placeholderTextColor={colors.textMuted}
+                editable={!busy}
+                style={[styles.askInput, { backgroundColor: colors.bgCard, borderColor: colors.border, color: colors.textPrimary }]}
+              />
+              <Pressable
+                disabled={busy || !askText.trim()}
+                onPress={() => handleChoice(askText.trim())}
+                style={[styles.askSend, { backgroundColor: colors.accent, opacity: busy || !askText.trim() ? 0.4 : 1 }]}
+              >
+                <Ionicons name="arrow-forward" size={18} color="#fff" />
+              </Pressable>
+            </View>
+          )}
+        </View>
+      )
+    }
+    if (item.kind === 'confirmation') {
+      // confirmation للعمليات غير الـ delete تموضعه inline مرتبط بـ pending
+      // الحذف له modal مستقل — لا نعرضه inline هنا لتفادي الازدواجية
+      const meta = item.meta ?? {}
+      const hasModalDelete = Array.isArray(pending?.items) && pending?.kind === 'confirmation' && pending.items.length > 0
+      if (hasModalDelete) return null
+      return (
+        <View style={[styles.confirmCard, { backgroundColor: colors.errorSurface, borderColor: colors.border }]}>
+          <View style={styles.askHead}>
+            <Ionicons name="warning" size={18} color={colors.error} />
+            <Text style={[styles.askTitle, { color: colors.error }]}>{meta.title ?? 'طلب موافقة'}</Text>
+          </View>
+          <Text style={[styles.askBody, { color: colors.textPrimary }]}>{item.content}</Text>
+          {!!meta.details && (
+            <ScrollView
+              style={[styles.confirmDetailsBox, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              contentContainerStyle={styles.confirmDetailsContent}
+              nestedScrollEnabled
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={[styles.confirmDetails, { color: colors.textSecondary }]}>{meta.details}</Text>
+            </ScrollView>
+          )}
+          {!busy && (
+            <View style={styles.confirmBtns}>
+              <Pressable onPress={() => handleConfirm(true)} style={[styles.confirmBtn, { backgroundColor: colors.error }]}>
+                <Ionicons name="checkmark" size={16} color="#fff" />
+                <Text style={styles.confirmBtnText}>موافقة</Text>
+              </Pressable>
+              <Pressable onPress={() => handleConfirm(false)} style={[styles.confirmBtn, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]}>
+                <Ionicons name="close" size={16} color={colors.textSecondary} />
+                <Text style={[styles.confirmBtnText, { color: colors.textSecondary }]}>رفض</Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
+      )
+    }
+    if (item.kind === 'file') {
+      const meta = item.meta ?? {}
+      const format: string = meta.format ?? ''
+      const icon = format === 'excel' ? 'grid-outline' : format === 'word' ? 'document-text-outline' : 'print-outline'
+      return (
+        <View style={[styles.fileCard, { backgroundColor: colors.successSurface, borderColor: colors.border }]}>
+          <Ionicons name={icon as any} size={18} color={colors.success} />
+          <View style={styles.fileInfo}>
+            <Text style={[styles.fileName, { color: colors.textPrimary }]} numberOfLines={1}>{meta.name ?? 'ملف'}</Text>
+            <Text style={[styles.formatBadge, { color: colors.textSecondary }]}>
+              {format === 'excel' ? 'جدول إكسل' : format === 'word' ? 'مستند وورد' : 'ملف PDF'}
+            </Text>
+          </View>
+          <Pressable
+            onPress={async () => {
+              const res = await saveToDownloads(String(meta.uri ?? ''), String(meta.name ?? 'ملف'))
+              if (res.ok) Alert.alert('تم التحميل', `تم حفظ الملف "${res.savedName}" في جهازك بنجاح.`)
+            }}
+            style={[styles.fileBtn, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]}
+          >
+            <Ionicons name="download-outline" size={14} color={colors.textPrimary} />
+            <Text style={[styles.fileBtnText, { color: colors.textPrimary }]}>تحميل</Text>
+          </Pressable>
+          <Pressable onPress={() => shareFile(String(meta.uri ?? ''), String(meta.name ?? '')).catch(() => {})} style={[styles.fileBtn, { backgroundColor: colors.accent }]}>
+            <Ionicons name="share-outline" size={14} color="#fff" />
+            <Text style={styles.fileBtnText}>فتح/مشاركة</Text>
+          </Pressable>
+        </View>
+      )
+    }
+    if (item.kind === 'error') {
+      return (
+        <View style={[styles.errorCard, { backgroundColor: colors.errorSurface, borderColor: colors.border }]}>
+          <Ionicons name="alert-circle" size={16} color={colors.error} />
+          <Text style={[styles.errorText, { color: colors.error }]}>{item.content}</Text>
+        </View>
+      )
+    }
+    if (item.kind === 'system') {
+      return (
+        <View style={[styles.systemCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Ionicons name="information-circle-outline" size={14} color={colors.textMuted} />
+          <Text style={[styles.systemText, { color: colors.textSecondary }]}>{item.content}</Text>
+        </View>
+      )
+    }
+    if (item.kind === 'progress') {
+      // منطقة تفكير ونشاط الوكيل أثناء التنفيذ: محللة منفصلة وم تمييز بصري خفيف
+      // بحيث يرى المستخدم خطوات العمل دون خلطها بالرد النهائي
+      return (
+        <View style={[styles.progressWrap, { backgroundColor: colors.accentSurface, borderColor: colors.border }]}>
+          <View style={[styles.progressDot, { backgroundColor: colors.accent }]} />
+          <Text style={[styles.progressText, { color: colors.textSecondary }]}>{item.content}</Text>
+        </View>
+      )
+    }
+    const isUser = item.role === 'user'
+    return (
+      <View style={[styles.bubbleRow, isUser ? styles.userRow : styles.assistantRow]}>
+        {isUser ? (
+          <View
+            style={[
+              styles.bubble,
+              {
+                backgroundColor: colors.accent,
+                borderColor: colors.accent,
+              },
+            ]}
+          >
+            <Text style={[styles.bubbleText, { color: '#FFFFFF', textAlign: 'right', writingDirection: 'rtl' }]}>{item.content}</Text>
+          </View>
+        ) : (
+          <View style={styles.assistantBlock}>
+            <View style={styles.assistantPlain}>
+              <Markdown content={item.content} streamEnded />
+            </View>
+            {!!item.content && (
+              <Pressable onPress={() => handleCopy(item.id, item.content)} hitSlop={8} style={styles.copyBtn}>
+                <Ionicons
+                  name={copiedId === item.id ? 'checkmark' : 'copy-outline'}
+                  size={14}
+                  color={copiedId === item.id ? colors.success : colors.textMuted}
+                />
+                <Text style={[styles.copyText, { color: copiedId === item.id ? colors.success : colors.textMuted }]}>
+                  {copiedId === item.id ? 'تم النسخ' : 'نسخ'}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+      </View>
+    )
+  }
+
+  return (
+    <View style={[styles.root, { backgroundColor: colors.bg }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: colors.bgSecondary, borderBottomColor: colors.border }]}>
+        <View style={styles.headerRow}>
+          <View style={styles.headerTitleWrap}>
+            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>كيمو</Text>
+            <Text numberOfLines={1} style={[styles.headerSub, { color: colors.textMuted }]}>
+              {configured ? `${providerLabel} — ${model}` : 'لم يُعدَّ المزود بعد'}
+            </Text>
+          </View>
+          <Pressable onPress={() => setShowHistory(true)} style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
+            <Ionicons name="time-outline" size={20} color={colors.textPrimary} />
+          </Pressable>
+        </View>
+        <View style={styles.modeRow}>
+          <Pressable onPress={toggleMode} style={[styles.modeChip, { backgroundColor: mode === 'edit' ? colors.successSurface : colors.surface }]}>
+            <Ionicons name={mode === 'edit' ? 'create-outline' : 'eye-outline'} size={13} color={mode === 'edit' ? colors.success : colors.textSecondary} />
+            <Text style={[styles.modeChipText, { color: mode === 'edit' ? colors.success : colors.textSecondary }]}>
+              {mode === 'edit' ? 'وضع التعديل مفعّل' : 'قراءة فقط'}
+            </Text>
+          </Pressable>
+          {!configured && (
+            <Pressable onPress={() => navigation.navigate('AgentSettings')} style={[styles.setupChip, { backgroundColor: colors.warningSurface }]}>
+              <Text style={[styles.modeChipText, { color: colors.warning }]}>الإعداد الآن</Text>
+            </Pressable>
+          )}
+        </View>
+      </View>
+
+      <FlatList
+        ref={listRef}
+        data={visibleMessages}
+        keyExtractor={(m) => m.id}
+        renderItem={renderMessage}
+        contentContainerStyle={styles.listContent}
+        style={{ flex: 1 }}
+        keyboardShouldPersistTaps="handled"
+        onContentSizeChange={() => {
+          // أعد التمرير عند كل تغيّر حجم — لا تمسح الطلب (المحتوى يُركَّب تدريجياً،
+          // والتمرير الواحد قد ينزل عند آخر خلية مركّبة فقط = المنتصف)
+          if (!wantedBottom.current) return
+          listRef.current?.scrollToEnd({ animated: false })
+        }}
+        onScroll={(e) => {
+          // بلوغ القاع فعلاً = نهاية الطلب (سيُعاد تلقائياً عند وصول رسائل جديدة)
+          const ns = e.nativeEvent
+          const h = ns.contentSize?.height ?? 0
+          let nearBottom = true
+          if (h > 0) {
+            nearBottom = ns.contentOffset.y >= h - ns.layoutMeasurement.height - 60
+            if (nearBottom) wantedBottom.current = false
+          }
+          // إخفاء/إظهار زر النزول: يظهر فقط عندما يكون المستخدم فوق آخر رسالة
+          if (nearBottom !== atBottom) setAtBottom(nearBottom)
+        }}
+        onScrollEndDrag={(e) => {
+          // توقف المستخدم فوق نهاية المحادثة (لا في القاع) → ألغِ الطلب، لا نطارد إصبعه
+          const ns = e.nativeEvent
+          if ((ns.contentSize?.height ?? 0) > 0 && ns.contentOffset.y < ns.contentSize.height - ns.layoutMeasurement.height - 60) {
+            wantedBottom.current = false
+          }
+        }}
+        onMomentumScrollEnd={(e) => {
+          const ns = e.nativeEvent
+          if ((ns.contentSize?.height ?? 0) > 0 && ns.contentOffset.y < ns.contentSize.height - ns.layoutMeasurement.height - 60) {
+            wantedBottom.current = false
+          }
+        }}
+        ListEmptyComponent={
+          <View style={styles.emptyWrap}>
+            <Ionicons name="sparkles-outline" size={34} color={colors.textMuted} />
+            <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>مساحة عمل المساعد</Text>
+            <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+              اسأل عن بياناتك، أنشئ مشروعاً من الصفر، نظّم مشروعك بجدول حر، أو ارفع ملفات (Excel/CSV) ليقرأها الوكيل ويحوّل المنظم منها إلى مشروع، والبقية يستخرج منها ما يلزم.
+            </Text>
+          </View>
+        }
+        ListFooterComponent={
+          busy || thinking ? (
+            <>
+              {liveProgress.length > 0 ? (
+                <View style={styles.liveProgressWrap}>
+                  {liveProgress.map((p, i) => (
+                    <View key={i} style={[styles.progressWrap, { backgroundColor: colors.accentSurface, borderColor: colors.border }]}>
+                      <View style={[styles.progressDot, { backgroundColor: colors.accent }]} />
+                      <Text style={[styles.progressText, { color: colors.textSecondary }]}>{p}</Text>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+              {liveSteps.length > 0 ? (
+                <View style={styles.liveProgressWrap}>
+                  {liveSteps.map((s, i) => (
+                    <View key={i} style={[styles.progressWrap, { backgroundColor: colors.accentSurface, borderColor: colors.border }]}>
+                      <Ionicons name="git-commit-outline" size={13} color={colors.accent} />
+                      <Text style={[styles.progressText, { color: colors.textSecondary }]}>{s}</Text>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+              {streamText ? (
+                <View style={styles.assistantPlain}>
+                  <Markdown content={streamText} streamEnded={false} />
+                </View>
+              ) : null}
+            </>
+          ) : null
+        }
+      />
+
+      <View style={[styles.inputArea, { paddingBottom: kbHeight > 0 ? kbHeight + 6 : Math.max(insets.bottom, 6), backgroundColor: colors.bgSecondary, borderTopColor: colors.border }]}>
+          {/* زر النزول لآخر رسالة — يطفو فوق زر الإرسال ولا يظهر إلا خارج نهاية المحادثة */}
+          {!atBottom && (
+            <Pressable
+              onPress={() => {
+                // ضغطة واحدة تكفي: أبقِ الطلب نشطاً حتى الالتحام الفعلي بالقاع
+                wantedBottom.current = true
+                listRef.current?.scrollToEnd({ animated: true })
+              }}
+              hitSlop={8}
+              style={({ pressed }) => [styles.downBtn, { backgroundColor: colors.surface, borderColor: colors.border, shadowColor: '#000', opacity: pressed ? 0.7 : 1 }]}
+            >
+              <Ionicons name="arrow-down" size={20} color={colors.accent} />
+            </Pressable>
+          )}
+          {attachments.length > 0 && (
+            <View style={styles.attWrap}>
+              {attachments.map((a, i) => (
+                <View key={i} style={[styles.attChip, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <Ionicons name="attach" size={12} color={colors.textSecondary} />
+                  <Text numberOfLines={1} style={[styles.attName, { color: colors.textSecondary }]}>{a.name}</Text>
+                  <Pressable onPress={() => setAttachments((prev) => prev.filter((_, j) => j !== i))}>
+                    <Ionicons name="close-circle" size={14} color={colors.textMuted} />
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          )}
+          <View style={styles.inputRow}>
+            <Pressable onPress={pickFiles} disabled={busy} style={[styles.attachBtn, { backgroundColor: colors.surface, opacity: busy ? 0.4 : 1 }]}>
+              <Ionicons name="attach-outline" size={20} color={colors.textSecondary} />
+            </Pressable>
+            <TextInput
+              value={input}
+              onChangeText={setInput}
+              placeholder={pending?.kind === 'ask_user' ? 'أجب على سؤال المساعد...' : 'اكتب للمساعد...'}
+              placeholderTextColor={colors.textMuted}
+              multiline
+              editable={!busy}
+              style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.textPrimary }]}
+            />
+            <Pressable
+              disabled={!busy && !input.trim() && !attachments.length}
+              onPress={busy ? () => cancelAgent(sessionId) : () => handleSend(input || 'اقرأ المرفقات المرسلة ونفّذ ما يلزم')}
+              style={[styles.sendBtn, { backgroundColor: busy ? colors.error : colors.accent, opacity: !busy && !input.trim() && !attachments.length ? 0.4 : 1 }]}
+            >
+              <Ionicons name={busy ? 'stop' : 'arrow-up'} size={18} color="#fff" />
+            </Pressable>
+          </View>
+        </View>
+
+      <Modal
+        visible={!!pending && pending.kind === 'confirmation' && Array.isArray(pending.items) && !busy}
+        transparent
+        animationType="fade"
+        onRequestClose={() => handleConfirm(false)}
+      >
+        {pending && pending.items ? (
+          <View style={styles.modalOverlay}>
+            <View style={[styles.confirmModal, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+              <View style={styles.askHead}>
+                <Ionicons name="warning" size={20} color={colors.error} />
+                <Text style={[styles.confirmTitle, { color: colors.textPrimary }]}>{pending.title ?? 'تأكيد الحذف'}</Text>
+              </View>
+              <Text style={[styles.confirmIntro, { color: colors.textSecondary }]} numberOfLines={2}>
+                {pending.question}
+              </Text>
+              <ScrollView
+                style={styles.delList}
+                contentContainerStyle={styles.delListContent}
+                nestedScrollEnabled
+                showsVerticalScrollIndicator
+              >
+                {pending.items.map((it, i) => {
+                  const checked = selDel.includes(i)
+                  return (
+                    <Pressable
+                      key={`${it.tool}-${i}`}
+                      onPress={() =>
+                        setSelDel((prev) => (prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]))
+                      }
+                      style={[styles.delItem, { backgroundColor: colors.surface, borderColor: checked ? colors.error : colors.border }]}
+                    >
+                      <Ionicons name={checked ? 'checkbox' : 'square-outline'} size={20} color={checked ? colors.error : colors.textMuted} />
+                      <Text style={[styles.delItemText, { color: colors.textPrimary }]}>{it.preview}</Text>
+                    </Pressable>
+                  )
+                })}
+              </ScrollView>
+              <View style={styles.confirmBtns}>
+                <Pressable
+                  disabled={!selDel.length}
+                  onPress={() => handleConfirm(true, selDel)}
+                  style={[styles.confirmBtn, { backgroundColor: colors.error, opacity: selDel.length ? 1 : 0.4 }]}
+                >
+                  <Ionicons name="checkmark" size={16} color="#fff" />
+                  <Text style={styles.confirmBtnText}>حذف المحدد ({selDel.length})</Text>
+                </Pressable>
+                <Pressable onPress={() => handleConfirm(false)} style={[styles.confirmBtn, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]}>
+                  <Ionicons name="close" size={16} color={colors.textSecondary} />
+                  <Text style={[styles.confirmBtnText, { color: colors.textSecondary }]}>إلغاء</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        ) : null}
+      </Modal>
+
+      <AssistantHistory
+        visible={showHistory}
+        onClose={() => setShowHistory(false)}
+        sessions={sessions}
+        activeId={sessionId}
+        onSelect={selectSession}
+        onDelete={handleDeleteSession}
+        onNew={handleNewSession}
+        onOpenSettings={() => {
+          setShowHistory(false)
+          navigation.navigate('AgentSettings')
+        }}
+        onRefresh={loadSessions}
+      />
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  header: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headerTitleWrap: { flex: 1 },
+  headerTitle: { fontSize: fontSize.xl, fontWeight: '700', fontFamily: 'Tajawal_700Bold' },
+  headerSub: { fontSize: fontSize.xs, marginTop: 2, fontFamily: 'Tajawal_400Regular' },
+  iconBtn: { width: 38, height: 38, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', marginStart: spacing.md },
+  modeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
+  modeChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.full },
+  modeChipText: { fontSize: fontSize.xs, fontWeight: '600', fontFamily: 'Tajawal_700Bold' },
+  setupChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.full },
+  listContent: { padding: spacing.lg, paddingBottom: 24, gap: spacing.sm },
+  emptyWrap: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 24, gap: spacing.sm },
+  emptyTitle: { fontSize: fontSize.lg, fontWeight: '700', fontFamily: 'Tajawal_700Bold' },
+  emptyText: { fontSize: fontSize.md, textAlign: 'center', lineHeight: 24, fontFamily: 'Tajawal_400Regular' },
+  bubbleRow: { flexDirection: 'row', marginVertical: 2 },
+  userRow: { justifyContent: 'flex-start' },
+  assistantRow: { justifyContent: 'flex-end' },
+  assistantPlain: { flex: 1, paddingVertical: 4 },
+  assistantBlock: { flex: 1 },
+  copyBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', marginTop: 2, paddingHorizontal: 6, paddingVertical: 3 },
+  copyText: { fontSize: fontSize.xs, fontFamily: 'Tajawal_500Medium' },
+  bubble: { maxWidth: '85%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth },
+  streamBubble: { marginVertical: 4 },
+  bubbleText: { fontSize: fontSize.md, lineHeight: 22, fontFamily: 'Tajawal_400Regular' },
+  askCard: { borderWidth: 1, borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm, marginVertical: 4 },
+  askHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  askTitle: { fontSize: fontSize.sm, fontWeight: '700', fontFamily: 'Tajawal_700Bold' },
+  askBody: { fontSize: fontSize.md, lineHeight: 22, fontFamily: 'Tajawal_400Regular' },
+  choicesWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  choiceChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: radius.full, borderWidth: 1 },
+  choiceText: { fontSize: fontSize.sm, fontWeight: '600', fontFamily: 'Tajawal_700Bold' },
+  askInputRow: { flexDirection: 'row', gap: spacing.sm },
+  askInput: { flex: 1, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 12, paddingVertical: 8, fontSize: fontSize.md, fontFamily: 'Tajawal_400Regular', minHeight: 42 },
+  askSend: { width: 42, height: 42, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  confirmCard: { borderWidth: 1, borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm, marginVertical: 4 },
+  confirmDetailsBox: { maxHeight: 190, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 10, paddingVertical: 8 },
+  confirmDetailsContent: { paddingBottom: 4 },
+  confirmDetails: { fontSize: fontSize.xs, fontFamily: 'Tajawal_400Regular', lineHeight: 20 },
+  confirmBtns: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
+  confirmBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8, borderRadius: radius.full },
+  confirmBtnText: { color: '#fff', fontSize: fontSize.sm, fontWeight: '700', fontFamily: 'Tajawal_700Bold' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
+  confirmModal: { width: '100%', maxWidth: 460, borderRadius: radius.xl, borderWidth: 1, padding: spacing.lg, gap: spacing.sm, maxHeight: '85%' },
+  confirmTitle: { fontSize: fontSize.lg, fontWeight: '700', fontFamily: 'Tajawal_700Bold' },
+  confirmIntro: { fontSize: fontSize.sm, lineHeight: 20, fontFamily: 'Tajawal_400Regular' },
+  delList: { flexGrow: 0, flexShrink: 1, gap: spacing.sm },
+  delListContent: { gap: spacing.sm, paddingBottom: 4 },
+  delItem: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 12, paddingVertical: 10 },
+  delItemText: { flex: 1, fontSize: fontSize.md, lineHeight: 22, fontFamily: 'Tajawal_400Regular' },
+  fileCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderWidth: 1, borderRadius: radius.md, padding: spacing.sm, marginVertical: 2 },
+  fileInfo: { flex: 1, gap: 2, minWidth: 0 },
+  fileName: { fontSize: fontSize.sm, fontWeight: '600', fontFamily: 'Tajawal_700Bold' },
+  formatBadge: { fontSize: fontSize.xs, fontFamily: 'Tajawal_400Regular' },
+  fileBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.full },
+  fileBtnText: { color: '#fff', fontSize: fontSize.xs, fontWeight: '700', fontFamily: 'Tajawal_700Bold' },
+  errorCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, borderWidth: 1, borderRadius: radius.md, padding: spacing.sm, marginVertical: 2 },
+  errorText: { flex: 1, fontSize: fontSize.sm, fontFamily: 'Tajawal_400Regular' },
+  systemCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, padding: spacing.sm, marginVertical: 2 },
+  systemText: { flex: 1, fontSize: fontSize.xs, fontFamily: 'Tajawal_400Regular', textAlign: 'right', writingDirection: 'rtl' },
+  progressWrap: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, paddingVertical: 6, paddingHorizontal: 10, marginVertical: 1 },
+  progressDot: { width: 7, height: 7, borderRadius: 4, marginTop: 7, flexShrink: 0 },
+  progressText: { flex: 1, fontSize: fontSize.sm, lineHeight: 20, fontFamily: 'Tajawal_400Regular', fontStyle: 'italic' },
+  liveProgressWrap: { gap: 2, paddingHorizontal: spacing.lg },
+  inputArea: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  downBtn: {
+    position: 'absolute', top: -56, left: spacing.lg,
+    width: 42, height: 42, borderRadius: radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center', justifyContent: 'center',
+    shadowOpacity: 0.18, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 6,
+    zIndex: 30,
+  },
+  attWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.sm },
+  attChip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 5, maxWidth: 200 },
+  attName: { fontSize: fontSize.xs, fontFamily: 'Tajawal_400Regular', flexShrink: 1 },
+  inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
+  attachBtn: { width: 42, height: 42, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  input: { flex: 1, borderWidth: 1, borderRadius: radius.lg, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 10, fontSize: fontSize.md, fontFamily: 'Tajawal_400Regular', maxHeight: 110 },
+  sendBtn: { width: 42, height: 42, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  stepCard: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, paddingVertical: 6, paddingHorizontal: 10, marginVertical: 1 },
+  stepIcon: { width: 22, height: 22, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  stepBody: { flex: 1, gap: 1, minWidth: 0 },
+  stepTitleRow: { flexDirection: 'row', flexWrap: 'wrap' },
+  stepTitle: { fontSize: fontSize.sm, fontWeight: '700', fontFamily: 'Tajawal_700Bold' },
+  stepResult: { fontSize: fontSize.xs, fontFamily: 'Tajawal_400Regular', lineHeight: 18 },
+  linkCard: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, paddingVertical: 8, paddingHorizontal: 12, marginVertical: 2 },
+})
