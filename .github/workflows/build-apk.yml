@@ -1,0 +1,56 @@
+name: Build Signed APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Android project
+        run: npx expo prebuild --platform android
+
+      - name: Configure signing (keystore + properties)
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/realestate-app.keystore
+          cat > android/keystore.properties <<EOF
+          storeFile=realestate-app.keystore
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          EOF
+
+      - name: Build signed release APK
+        working-directory: android
+        run: ./gradlew assembleRelease
+
+      - name: Verify APK signature
+        working-directory: android
+        run: |
+          APK=$(ls app/build/outputs/apk/release/*release*.apk | head -1)
+          echo "APK: $APK"
+          $ANDROID_HOME/build-tools/*/apksigner verify --print-certs "$APK" | head -8
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: realestate-app-release
+          path: android/app/build/outputs/apk/release/*release*.apk
+          if-no-files-found: error
