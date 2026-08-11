@@ -7,3 +7,4 @@
 
 - 2026-08-11 | 472dff0 | مدير العقارات: التطبيق الكامل (Expo/React Native)
 - 2026-08-11 | a036b3a | نظام الذاكرة وتتبع التعديلات: memory/ + مهارة project-memory + خطاف post-commit
+- 2026-08-11 | 7ea48c9 | خطاف post-commit: إصلاح shebang لمسار Termux
