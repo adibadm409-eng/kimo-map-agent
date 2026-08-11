@@ -37,6 +37,25 @@ jobs:
           keyPassword=${{ secrets.KEY_PASSWORD }}
           EOF
 
+      - name: Cache Gradle (تسريع البناءات القادمة)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Tune Gradle (parallel + caching)
+        run: |
+          cat >> android/gradle.properties <<EOF
+          org.gradle.parallel=true
+          org.gradle.caching=true
+          org.gradle.daemon=true
+          org.gradle.configureondemand=true
+          org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=2048m
+          EOF
+
       - name: Build signed release APK
         working-directory: android
         run: ./gradlew assembleRelease
