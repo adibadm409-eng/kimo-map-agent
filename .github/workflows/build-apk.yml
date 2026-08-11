@@ -46,13 +46,11 @@ jobs:
           key: gradle-${{ runner.os }}-${{ hashFiles('android/gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: gradle-${{ runner.os }}-
 
-      - name: Tune Gradle (parallel + caching)
+      - name: Tune Gradle (caching + memory only)
         run: |
           cat >> android/gradle.properties <<EOF
-          org.gradle.parallel=true
           org.gradle.caching=true
           org.gradle.daemon=true
-          org.gradle.configureondemand=true
           org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=2048m
           EOF
 
