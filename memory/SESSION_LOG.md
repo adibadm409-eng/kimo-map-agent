@@ -63,3 +63,23 @@
   الحقيقي `strictNullChecks` معطّل في tsconfig الحزمة؛ عولج بتمكينه.
 - **الملفات**: `toolSchemas.ts` (منطق if/else)، `tsconfig.json` (strictNullChecks).
 - **قرارات**: انظر DECISIONS.md.
+
+---
+
+## 2026-08-11 — اكتمال أول بناء APK موقّع بمفتاحنا (نجاح كامل)
+- **المُلخّص**: خط عمل GitHub Actions `build-apk.yml` يبني APK موقّعاً رسمياً
+  ويتحقق آلياً من تطابق بصمة التوقيع (f3049ac1...). آخر تشغيل: success،
+  "SIGNATURE MATCH" مؤكدة.
+- **الإصلاحات أثناء الرحلة**:
+  1. كراش الفتح ← `expo-clipboard` كان 57.0.1 بدل ~8.0.8 المطلوب لـ SDK 54.
+  2. حذف مكتبات غير مستخدمة: expo-media-library, expo-web-browser,
+     react-native-reanimated, leaflet, fuse.js.
+  3. تقليص: abiFilters arm64-v8a + proguard + shrinkResources → 41.5MB.
+  4. فخ قالب SDK 54: يوقّع release بـ debug.keystore دائماً → رقعة build.gradle
+     (signingConfigs.release من خصائص RELEASE_*).
+  5. فخ org.gradle.parallel يكسّر codegen/CMake → أُزيل.
+  6. فخ apksigner المكسور على الـ runner → java -jar apksigner.jar.
+- **الأسرار على GitHub**: KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS,
+  KEY_PASSWORD (تفاصيلها في keystore/README.txt خارج الجيت).
+- **وثائق جديدة**: `docs/BUILD.md` (عامة) + تحديث `keystore/README.txt` (سرية).
+- **حالة الـ APK**: في Artifacts بأحدث تشغيل أخضر — app-release.apk (~41.5MB).
