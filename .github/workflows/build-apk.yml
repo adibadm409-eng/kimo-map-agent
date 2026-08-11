@@ -41,12 +41,19 @@ jobs:
         working-directory: android
         run: ./gradlew assembleRelease
 
-      - name: Verify APK signature
+      - name: Verify APK signature (real check, no masking)
         working-directory: android
         run: |
+          set -e
           APK=$(ls app/build/outputs/apk/release/*release*.apk | head -1)
           echo "APK: $APK"
-          $ANDROID_HOME/build-tools/*/apksigner verify --print-certs "$APK" | head -8
+          APKSIGNER_JAR=$(ls $ANDROID_HOME/build-tools/*/lib/apksigner.jar | tail -1)
+          echo "Using: $APKSIGNER_JAR"
+          APK_DIGEST=$(java -jar "$APKSIGNER_JAR" verify --print-certs "$APK" | grep -i "sha-256 digest" | awk '{print $NF}')
+          echo "APK SHA-256 digest: $APK_DIGEST"
+          KEY_DIGEST=$(keytool -list -v -keystore realestate-app.keystore -storepass "${{ secrets.KEYSTORE_PASSWORD }}" -alias "${{ secrets.KEY_ALIAS }}" 2>/dev/null | grep -i "sha256:" | awk '{print $2}' | tr -d ':' | tr 'A-Z' 'a-z')
+          echo "Keystore SHA-256:   $KEY_DIGEST"
+          [ "$APK_DIGEST" = "$KEY_DIGEST" ] && echo "SIGNATURE MATCH: APK موقّع بمفتاحنا" || { echo "MISMATCH: التوقيع لا يطابق المفتاح!"; exit 1; }
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
