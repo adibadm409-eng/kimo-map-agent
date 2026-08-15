@@ -50,6 +50,10 @@ function pickData(fields: { name: string }[], data: Record<string, any>): Record
   return out
 }
 
+function assertNonEmptyPatch(entity: string, data: Record<string, any>): void {
+  if (!data || Object.keys(data).length === 0) throw new Error(`لا توجد حقول صالحة لتعديل ${entity}. لم يتم تنفيذ أي تغيير.`)
+}
+
 function num(v: any, dflt = 0): number {
   if (v == null || v === '') return dflt
   const n = typeof v === 'number' ? v : Number(v)
@@ -213,16 +217,7 @@ export async function agentCreate(spec: CreateSpec): Promise<{ id: string; plot_
         return { id: await upsertPlot(blockId, d) }
       }
     case 'plot_payments':
-      if (!d.plot_id) throw new Error('plot_id is required')
-      return { id: await recordPayment(str(d.plot_id), {
-        amount: num(d.amount),
-        pay_date: str(d.pay_date, new Date().toISOString().slice(0, 10)),
-        method: (d.method || 'cash') as any,
-        cash_recipient: str(d.cash_recipient),
-        cash_receipt_no: str(d.cash_receipt_no),
-        bank_name: str(d.bank_name),
-        bank_ref_no: str(d.bank_ref_no),
-      }) }
+      throw new Error('إنشاء سجل plot_payments الخام محظور؛ استخدم ledger_record_payment حتى تُحدّث القطعة والدفتر معاً.')
     case 'custom_fields':
       return { id: await createCustomField({
         entity_type: (d.entity_type || 'plot') as any,
@@ -244,22 +239,32 @@ export async function agentUpdate(spec: UpdateSpec): Promise<{ id: string }> {
 
   switch (spec.entity) {
     case 'properties':
+      assertNonEmptyPatch(spec.entity, d)
       await updateProperty(spec.id, d as any)
       return { id: spec.id }
     case 'clients':
+      assertNonEmptyPatch(spec.entity, d)
       await updateClient(spec.id, d as any)
       return { id: spec.id }
     case 'waypoints':
+      assertNonEmptyPatch(spec.entity, d)
       await updateWaypoint(spec.id, d as any)
       return { id: spec.id }
     case 'areas':
+      assertNonEmptyPatch(spec.entity, d)
       await updateArea(spec.id, d as any)
       return { id: spec.id }
-    case 'projects':
-      await updateProject(spec.id, { name: str(d.name), description: str(d.description) })
+    case 'projects': {
+      const projectPatch: { name?: string; description?: string } = {}
+      if (Object.prototype.hasOwnProperty.call(d, 'name')) projectPatch.name = str(d.name)
+      if (Object.prototype.hasOwnProperty.call(d, 'description')) projectPatch.description = str(d.description)
+      assertNonEmptyPatch(spec.entity, projectPatch)
+      await updateProject(spec.id, projectPatch)
       return { id: spec.id }
+    }
     case 'blocks':
       {
+        assertNonEmptyPatch(spec.entity, d)
         const blockPatch: { name?: string; plot_count?: number; notes?: string } = {}
         if (d.name != null && d.name !== '') blockPatch.name = str(d.name)
         if (d.plot_count != null && d.plot_count !== '') blockPatch.plot_count = num(d.plot_count)
@@ -267,10 +272,18 @@ export async function agentUpdate(spec: UpdateSpec): Promise<{ id: string }> {
         await updateBlock(spec.id, blockPatch)
       }
       return { id: spec.id }
-    case 'plots':
-      await savePlot(spec.id, d as any)
+    case 'plots': {
+      const normalized = normalizePlotFields(d)
+      if (Object.prototype.hasOwnProperty.call(normalized, 'paid_amount') || Object.prototype.hasOwnProperty.call(normalized, 'remaining_amount')) {
+        throw new Error('لا تعدل المجاميع المالية للقطعة مباشرة؛ استخدم دفتر النقد لتسجيل دفعة أو عكسها.')
+      }
+      const patch = plotPatch(normalized)
+      assertNonEmptyPatch(spec.entity, patch)
+      await savePlot(spec.id, patch as any)
       return { id: spec.id }
+    }
     case 'custom_fields':
+      assertNonEmptyPatch(spec.entity, d)
       await updateCustomField(spec.id, d as any)
       return { id: spec.id }
     case 'custom_field_values':

@@ -41,6 +41,7 @@ import { queryChangeLog, changeLogStats, dailyActorStats } from '../database/aud
 import { searchEntities, setCustomValue } from '../database/projects'
 import { DOMAIN_TOOLS } from './domainTools'
 import { getScreenCatalog } from './screenCatalog'
+import type { EntityKey } from './catalog'
 
 export interface ToolArg {
   name: string
@@ -102,6 +103,26 @@ export const TOOLS: ToolDef[] = [
         args.query ? String(args.query) : undefined
       ),
     }),
+  },
+  {
+    name: 'preview_update',
+    description: 'معاينة آمنة لتعديل سجل: تقرأ الحالة الحالية وتعرض الفرق المقترح دون أي كتابة. استخدمها قبل update في العقارات والعملاء والعروض والحملات وأي كيان غير مغطى بأداة مجال متخصصة.',
+    args: [
+      { name: 'entity', type: 'string', required: true },
+      { name: 'id', type: 'string', required: true },
+      { name: 'data', type: 'object', required: true, description: 'الحقول التي تريد تعديلها فقط' },
+    ],
+    handler: async (args) => {
+      const entity = String(args.entity ?? '')
+      const id = String(args.id ?? '')
+      const data = args.data && typeof args.data === 'object' ? args.data as Record<string, any> : {}
+      if (!entity || !id || Object.keys(data).length === 0) throw new Error('preview_update يتطلب كياناً ومعرفاً وحقول تعديل غير فارغة.')
+      const current = await queryEntityById(entity as EntityKey, id)
+      if (!current) throw new Error('السجل المطلوب غير موجود؛ لم تتم أي كتابة.')
+      const before = current as Record<string, any>
+      const changedFields = Object.keys(data).filter((key) => JSON.stringify(before[key]) !== JSON.stringify(data[key]))
+      return { entity, id, before, proposed: data, changedFields, noChanges: changedFields.length === 0 }
+    },
   },
   {
     name: 'query',

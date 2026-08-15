@@ -190,8 +190,21 @@ async function runLoop(
 
           const callArgs0 = parseToolArgs(call.arguments)
           const innerTool = call.name === 'execute' ? String(callArgs0.tool ?? 'execute') : call.name
+          const universalTools = new Set(['ask_user', 'request_confirmation', 'catalog', 'app_screen_catalog', 'list_entities', 'query', 'get', 'search_everything', 'data_snapshot', 'audit_log_query', 'review_my_work', 'generate_file', 'preview_update', 'undo_last', 'project_memory_save', 'project_memory_read', 'list_generated_files', 'review_generated_file'])
+          const skillAllowsTool = !runtimeSkill || universalTools.has(innerTool) || runtimeSkill.readTools.includes(innerTool) || runtimeSkill.writeTools.includes(innerTool) || runtimeSkill.preferredTools.includes(innerTool)
+          if (!skillAllowsTool) {
+            const denied = `[فشل] المهارة «${runtimeSkill?.label ?? 'الحالية'}» لا تستخدم الأداة «${innerTool}» في هذا المسار. سأعود إلى أدوات القراءة أو أسأل عن تغيير الهدف بدلاً من تنفيذ مسار غير مناسب.`
+            await persistAssistantText(sessionId, denied, 'system').catch(() => {})
+            thread.push({ role: 'tool', tool_call_id: call.id, content: denied })
+            if (emitEvents) {
+              publishRuntimeEvent(sessionId, { type: 'observation', title: 'حُجبت أداة خارج نطاق المهارة', detail: denied, status: 'warning' })
+              publishRuntimeEvent(sessionId, { type: 'recovery', title: 'أعيد توجيه التنفيذ إلى المهارة الحالية', detail: 'لم أسمح بتغيير مسار المهمة دون مبرر واضح.', strategy: 'replan' })
+            }
+            continue
+          }
 
-          // ملاحظة التكرار: نقارن آخر نتيجة لنفس البصمة. إذا تكرر نفس النداء بنفس النتيجة
+          // ملاحظة التكرار: نقارن آخر نتيجة لنفس البصمة.
+          // إذا تكرر نفس النداء بنفس النتيجة
           // فوفّر عجزاً توجيهياً في سياق الوكيل — لكن القرار يبقى بيد الوكيل وحده: قد يكرر
           // بحق (إحضار بيانات متجددة/مواصلة) أو يغير الأسلوب. لا عائق ولا إيقاف منهي.
           const lastObsForSig = lastObsBySig.get(sig)

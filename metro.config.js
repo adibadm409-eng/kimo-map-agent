@@ -14,6 +14,7 @@ config.resolver = {
   ...config.resolver,
   unstable_enableSymlinks: true,
   sourceExts: ['js', 'jsx', 'json', 'ts', 'tsx', 'cjs', 'mjs'],
+  assetExts: [...getDefaultConfig(__dirname).resolver.assetExts, 'wasm'],
   // استبعاد المسارات الضخمة غير الضرورية من فحص/مراقبة المترو، للتخفيف من
   // استهلاك حد inotify (عدد المراقبين) على الأجهزة التي لا تستطيع رفعه —
   // يمنع انهيار ENOSPC عند فحص شيفرة جافا/كوتلن للتطبيقات الأصلية.
