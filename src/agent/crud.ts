@@ -35,6 +35,7 @@ import {
   genId,
 } from '../database/projects'
 import { getEntityDef, type EntityKey } from './catalog'
+import { logChange } from '../database/audit'
 
 export type CreateSpec = { entity: EntityKey; data: Record<string, any> }
 export type UpdateSpec = { entity: EntityKey; id: string; data: Record<string, any> }
@@ -383,13 +384,19 @@ async function dbGenericUpdate(entityKey: EntityKey, id: string, d: Record<strin
   const entity = getEntityDef(entityKey)
   if (!entity) throw new Error(`Unknown entity: ${entityKey}`)
   const db = await getDB()
+  const before = await db.getFirstAsync<Record<string, any>>(`SELECT * FROM ${entity.table} WHERE id = ?`, [id])
+  if (!before) throw new Error(`السجل (${id}) غير موجود في ${entityKey}.`)
   const keys = Object.keys(d)
-  if (keys.length === 0) return { id }
+  if (keys.length === 0) throw new Error(`لا توجد حقول صالحة لتعديل ${entityKey}.`)
+  const allowed = new Set(entity.fields.map((field) => field.name))
+  const unknown = keys.filter((key) => !allowed.has(key))
+  if (unknown.length) throw new Error(`حقول غير معروفة في ${entityKey}: ${unknown.join('، ')}`)
   const sets = keys.map((k) => `${k} = ?`)
   await db.runAsync(
     `UPDATE ${entity.table} SET ${sets.join(', ')} WHERE id = ?`,
     [...keys.map((k) => d[k]), id]
   )
+  await logChange({ action: 'update', scope: entityKey, scopeId: id, before, after: d, summary: `تعديل ${entity.label ?? entityKey} (${id})` })
   return { id }
 }
 

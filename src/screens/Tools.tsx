@@ -5,7 +5,8 @@ import { Ionicons } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
 import { useTheme } from "../theme/ThemeContext"
 import { spacing, fontSize, radius } from "../theme/tokens"
-import { getAllProperties, getAllWaypoints, getAllAreas, createWaypoint, createArea } from "../database/db"
+import { getAllProperties, getAllWaypoints, getAllAreas } from "../database/db"
+import { importSpatialItems } from "../database/spatialImport"
 import { exportGeoJSON, exportKML, exportGPX, writeExportFile, parseImportAny } from "./map/io"
 
 export default function ToolsScreen() {
@@ -60,17 +61,8 @@ export default function ToolsScreen() {
       }
       const parsed = parseImportAny(text)
       if (parsed.length === 0) { Alert.alert("تنبيه", "لم يتم التعرف على صيغة النص"); return }
-      let nW = 0, nA = 0
-      for (const item of parsed) {
-        if (item.kind === "waypoint") {
-          await createWaypoint({ name: item.data.name, description: item.data.description || "", latitude: item.data.latitude, longitude: item.data.longitude, category: "general" })
-          nW++
-        } else if (item.kind === "area") {
-          await createArea({ name: item.data.name, description: item.data.description || "", geojson: item.data.geojson, area_sqm: 0, perimeter_m: 0 })
-          nA++
-        }
-      }
-      Alert.alert("تم الاستيراد", `نقاط: ${nW} · مناطق: ${nA}`)
+      const result = await importSpatialItems(parsed.map((item: any) => ({ kind: item.kind, data: item.data })))
+      Alert.alert("تم الاستيراد", `نقاط جديدة: ${result.waypoints} · مناطق جديدة: ${result.areas} · تم تجاوزها كتكرار: ${result.skipped}`)
       setImportText("")
     } catch (e: any) {
       Alert.alert("خطأ", "تعذر الاستيراد: " + (e?.message || String(e)))
@@ -150,7 +142,7 @@ export default function ToolsScreen() {
           <Ionicons name="information-circle-outline" size={18} color={colors.accent} />
           <Text style={[s.noteText, { color: colors.textSecondary }]}>
             - التصدير يشمل العقارات مع محيطاتها (إن وُجدت) + النقاط + المناطق.
-            {"\n"}- الاستيراد يضيف العناصر دون تكرار (لا يحلّ محل الموجود).
+            {"\n"}- الاستيراد يعاين التكرار ويكتب العناصر داخل معاملة واحدة؛ لا يحلّ محل الموجود.
             {"\n"}- الصيغ المدعومة للاستيراد: GeoJSON, KML, GPX.
           </Text>
         </View>

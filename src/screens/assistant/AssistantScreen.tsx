@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import {
-  View, Text, TextInput, FlatList, StyleSheet, Pressable, Keyboard, Platform, Alert, Dimensions, Modal, ScrollView,
+  View, Text, TextInput, FlatList, StyleSheet, Pressable, Keyboard, Platform, Alert, Dimensions, Modal, ScrollView, ActivityIndicator,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
@@ -51,6 +51,8 @@ export default function AssistantScreen({ navigation }: any) {
   const [input, setInput] = useState('')
   const [attachments, setAttachments] = useState<AttachItem[]>([])
   const [busy, setBusy] = useState(false)
+  const [initializing, setInitializing] = useState(true)
+  const [actionError, setActionError] = useState<string | null>(null)
   const [pending, setPending] = useState<PendingState | null>(null)
   const [mode, setMode] = useState<'read' | 'edit'>('read')
   const [providerLabel, setProviderLabel] = useState('')
@@ -159,13 +161,19 @@ export default function AssistantScreen({ navigation }: any) {
   useEffect(() => {
     let mounted = true
     ;(async () => {
-      const list = await listSessions().catch(() => [])
-      if (mounted) {
+      try {
+        const list = await listSessions().catch(() => [])
+        if (!mounted) return
         setSessions(list)
         let sid = list[0]?.id ?? ''
         if (!sid) sid = await createSession().catch(() => '')
+        if (!sid) throw new Error('تعذر إنشاء جلسة محادثة محلية.')
         setSessionId(sid)
-        if (sid) reload(sid)
+        await reload(sid)
+      } catch (error: any) {
+        if (mounted) setActionError(error?.message ?? 'تعذر تحميل جلسة كيمو.')
+      } finally {
+        if (mounted) setInitializing(false)
       }
     })()
     return () => {
@@ -315,7 +323,10 @@ export default function AssistantScreen({ navigation }: any) {
     setAgentDecisions([])
     setAgentObservations([])
     try {
+      setActionError(null)
       await sendUserMessage(sid, trimmed, atts ? { attachments: atts } : undefined)
+    } catch (error: any) {
+      setActionError(error?.message ?? 'تعذر تنفيذ الطلب. راجع اتصال مزود الذكاء الاصطناعي أو إعداداته.')
     } finally {
       setBusy(false)
       setThinking(false)
@@ -632,6 +643,8 @@ export default function AssistantScreen({ navigation }: any) {
     const label = linkCardLabel(link.kind)
     return (
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`فتح ${label}`}
         onPress={() => openLinkCard(link)}
         style={({ pressed }) => [
           styles.linkCard,
@@ -683,6 +696,8 @@ export default function AssistantScreen({ navigation }: any) {
               {(meta.choices as string[]).map((c, i) => (
                 <Pressable
                   key={i}
+                  accessibilityRole="button"
+                  accessibilityLabel={`اختيار: ${c}`}
                   disabled={busy}
                   onPress={() => handleChoice(c)}
                   style={({ pressed }) => [styles.choiceChip, { backgroundColor: colors.accentSurface, borderColor: colors.borderHover, opacity: pressed ? 0.7 : 1 }]}
@@ -703,6 +718,8 @@ export default function AssistantScreen({ navigation }: any) {
                 style={[styles.askInput, { backgroundColor: colors.bgCard, borderColor: colors.border, color: colors.textPrimary }]}
               />
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="إرسال إجابة كيمو"
                 disabled={busy || !askText.trim()}
                 onPress={() => handleChoice(askText.trim())}
                 style={[styles.askSend, { backgroundColor: colors.accent, opacity: busy || !askText.trim() ? 0.4 : 1 }]}
@@ -765,8 +782,11 @@ export default function AssistantScreen({ navigation }: any) {
               {format === 'excel' ? 'جدول إكسل' : format === 'word' ? 'مستند وورد' : 'ملف PDF'}
             </Text>
           </View>
-          <Pressable
-            onPress={async () => {
+                            <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`تحميل ${String(meta.name ?? 'الملف')}`}
+                    onPress={async () => {
+
               const res = await saveToDownloads(String(meta.uri ?? ''), String(meta.name ?? 'ملف'))
               if (res.ok) Alert.alert('تم التحميل', `تم حفظ الملف "${res.savedName}" في جهازك بنجاح.`)
             }}
@@ -829,7 +849,7 @@ export default function AssistantScreen({ navigation }: any) {
               <Markdown content={item.content} streamEnded />
             </View>
             {!!item.content && (
-              <Pressable onPress={() => handleCopy(item.id, item.content)} hitSlop={8} style={styles.copyBtn}>
+              <Pressable accessibilityRole="button" accessibilityLabel={copiedId === item.id ? 'تم نسخ الرد' : 'نسخ رد كيمو'} onPress={() => handleCopy(item.id, item.content)} hitSlop={8} style={styles.copyBtn}>
                 <Ionicons
                   name={copiedId === item.id ? 'checkmark' : 'copy-outline'}
                   size={14}
@@ -856,19 +876,19 @@ export default function AssistantScreen({ navigation }: any) {
               {configured ? `${providerLabel} — ${model}` : 'لم يُعدَّ المزود بعد'}
             </Text>
           </View>
-          <Pressable onPress={() => setShowHistory(true)} style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
+          <Pressable accessibilityRole="button" accessibilityLabel="فتح سجل محادثات كيمو" onPress={() => setShowHistory(true)} style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
             <Ionicons name="time-outline" size={20} color={colors.textPrimary} />
           </Pressable>
         </View>
         <View style={styles.modeRow}>
-          <Pressable onPress={toggleMode} style={[styles.modeChip, { backgroundColor: mode === 'edit' ? colors.successSurface : colors.surface }]}>
+          <Pressable accessibilityRole="switch" accessibilityState={{ checked: mode === 'edit' }} accessibilityLabel={mode === 'edit' ? 'إيقاف وضع التعديل' : 'تفعيل وضع التعديل'} onPress={toggleMode} style={[styles.modeChip, { backgroundColor: mode === 'edit' ? colors.successSurface : colors.surface }]}>
             <Ionicons name={mode === 'edit' ? 'create-outline' : 'eye-outline'} size={13} color={mode === 'edit' ? colors.success : colors.textSecondary} />
             <Text style={[styles.modeChipText, { color: mode === 'edit' ? colors.success : colors.textSecondary }]}>
               {mode === 'edit' ? 'وضع التعديل مفعّل' : 'قراءة فقط'}
             </Text>
           </Pressable>
           {!configured && (
-            <Pressable onPress={() => navigation.navigate('AgentSettings')} style={[styles.setupChip, { backgroundColor: colors.warningSurface }]}>
+            <Pressable accessibilityRole="button" accessibilityLabel="فتح إعدادات مزود كيمو" onPress={() => navigation.navigate('AgentSettings')} style={[styles.setupChip, { backgroundColor: colors.warningSurface }]}>
               <Text style={[styles.modeChipText, { color: colors.warning }]}>الإعداد الآن</Text>
             </Pressable>
           )}
@@ -877,6 +897,15 @@ export default function AssistantScreen({ navigation }: any) {
 
       {renderAgentPanel()}
 
+      {actionError ? (
+        <View style={[styles.errorCard, { backgroundColor: colors.errorSurface, borderColor: colors.error }]} accessibilityRole="alert">
+          <Ionicons name="alert-circle" size={17} color={colors.error} />
+          <Text style={[styles.errorText, { color: colors.error }]}>{actionError}</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="إغلاق رسالة الخطأ" onPress={() => setActionError(null)} hitSlop={8}>
+            <Ionicons name="close" size={18} color={colors.error} />
+          </Pressable>
+        </View>
+      ) : null}
       <FlatList
         ref={listRef}
         data={visibleMessages}
@@ -918,10 +947,10 @@ export default function AssistantScreen({ navigation }: any) {
         }}
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
-            <Ionicons name="sparkles-outline" size={34} color={colors.textMuted} />
-            <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>مساحة عمل المساعد</Text>
+            {initializing ? <ActivityIndicator color={colors.accent} /> : <Ionicons name="sparkles-outline" size={34} color={colors.textMuted} />}
+            <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>{initializing ? 'جارٍ فتح مساحة كيمو…' : 'مساحة عمل المساعد'}</Text>
             <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-              اسأل عن بياناتك، أنشئ مشروعاً من الصفر، نظّم مشروعك بجدول حر، أو ارفع ملفات (Excel/CSV) ليقرأها الوكيل ويحوّل المنظم منها إلى مشروع، والبقية يستخرج منها ما يلزم.
+              {initializing ? 'يتم تحميل المحادثات المحلية دون إرسال بياناتك إلى السحابة.' : 'اسأل عن بياناتك، أنشئ مشروعاً من الصفر، نظّم مشروعك بجدول حر، أو ارفع ملفات (Excel/CSV) ليقرأها الوكيل ويحوّل المنظم منها إلى مشروع، والبقية يستخرج منها ما يلزم.'}
             </Text>
           </View>
         }
@@ -962,6 +991,8 @@ export default function AssistantScreen({ navigation }: any) {
           {/* زر النزول لآخر رسالة — يطفو فوق زر الإرسال ولا يظهر إلا خارج نهاية المحادثة */}
           {!atBottom && (
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="الانتقال إلى آخر رسالة"
               onPress={() => {
                 // ضغطة واحدة تكفي: أبقِ الطلب نشطاً حتى الالتحام الفعلي بالقاع
                 wantedBottom.current = true
@@ -979,7 +1010,7 @@ export default function AssistantScreen({ navigation }: any) {
                 <View key={i} style={[styles.attChip, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                   <Ionicons name="attach" size={12} color={colors.textSecondary} />
                   <Text numberOfLines={1} style={[styles.attName, { color: colors.textSecondary }]}>{a.name}</Text>
-                  <Pressable onPress={() => setAttachments((prev) => prev.filter((_, j) => j !== i))}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={`إزالة المرفق ${a.name}`} onPress={() => setAttachments((prev) => prev.filter((_, j) => j !== i))}>
                     <Ionicons name="close-circle" size={14} color={colors.textMuted} />
                   </Pressable>
                 </View>
@@ -987,10 +1018,12 @@ export default function AssistantScreen({ navigation }: any) {
             </View>
           )}
           <View style={styles.inputRow}>
-            <Pressable onPress={pickFiles} disabled={busy} style={[styles.attachBtn, { backgroundColor: colors.surface, opacity: busy ? 0.4 : 1 }]}>
+            <Pressable accessibilityRole="button" accessibilityLabel="إرفاق ملفات" onPress={pickFiles} disabled={busy} style={[styles.attachBtn, { backgroundColor: colors.surface, opacity: busy ? 0.4 : 1 }]}>
               <Ionicons name="attach-outline" size={20} color={colors.textSecondary} />
             </Pressable>
             <TextInput
+              accessibilityLabel={pending?.kind === 'ask_user' ? 'إجابة سؤال كيمو' : 'رسالة إلى كيمو'}
+              accessibilityHint="اكتب رسالتك ثم اضغط إرسال"
               value={input}
               onChangeText={setInput}
               placeholder={pending?.kind === 'ask_user' ? 'أجب على سؤال المساعد...' : 'اكتب للمساعد...'}
@@ -1000,6 +1033,8 @@ export default function AssistantScreen({ navigation }: any) {
               style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.textPrimary }]}
             />
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={busy ? 'إيقاف تنفيذ كيمو' : 'إرسال الرسالة إلى كيمو'}
               disabled={!busy && !input.trim() && !attachments.length}
               onPress={busy ? () => cancelAgent(sessionId) : () => handleSend(input || 'اقرأ المرفقات المرسلة ونفّذ ما يلزم')}
               style={[styles.sendBtn, { backgroundColor: busy ? colors.error : colors.accent, opacity: !busy && !input.trim() && !attachments.length ? 0.4 : 1 }]}
@@ -1036,6 +1071,9 @@ export default function AssistantScreen({ navigation }: any) {
                   return (
                     <Pressable
                       key={`${it.tool}-${i}`}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked }}
+                      accessibilityLabel={it.preview}
                       onPress={() =>
                         setSelDel((prev) => (prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]))
                       }

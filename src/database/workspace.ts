@@ -610,12 +610,15 @@ export async function createFullTable(
 }
 
 /** نسخ جدول كامل (هيكل + صفوف) إلى جدول جديد. */
-export async function duplicateTable(tableId: string, name?: string): Promise<{ id: string; name: string }> {
+export async function duplicateTable(tableId: string, name?: string, targetWorkspaceId?: string): Promise<{ id: string; name: string }> {
   const d = await db()
   const t = await d.getFirstAsync<any>('SELECT workspace_id, name, columns FROM workspace_tables WHERE id = ?', tableId)
   if (!t) throw new Error('الجدول غير موجود')
+  const destinationWorkspaceId = targetWorkspaceId ?? t.workspace_id
+  const destination = await d.getFirstAsync<{ id: string }>('SELECT id FROM workspaces WHERE id = ?', destinationWorkspaceId)
+  if (!destination) throw new Error('مساحة العمل الهدف غير موجودة')
   const newName = name || `${t.name ?? 'جدول'} (نسخة)`
-  const newId = await createTable(t.workspace_id, newName, safeJson<WorkspaceColumn[]>(t.columns, []))
+  const newId = await createTable(destinationWorkspaceId, newName, safeJson<WorkspaceColumn[]>(t.columns, []))
   const rows = await d.getAllAsync<any>('SELECT data FROM workspace_rows WHERE table_id = ?', tableId)
   if (rows.length) await bulkInsertRows(newId, rows.map((r) => safeJson<Record<string, string>>(r.data, {})))
   return { id: newId, name: newName }
@@ -626,11 +629,16 @@ export async function duplicateWorkspace(workspaceId: string, name?: string): Pr
   const d = await db()
   const w = await d.getFirstAsync<any>('SELECT * FROM workspaces WHERE id = ?', workspaceId)
   if (!w) throw new Error('مساحة العمل غير موجودة')
-  const newName = name || `${(w.name ?? 'مساحة').trim()} (نسخة)`
+  const baseName = name || `${(w.name ?? 'مساحة').trim()} (نسخة)`
+  let newName = baseName
+  let suffix = 2
+  while (await d.getFirstAsync<{ id: string }>('SELECT id FROM workspaces WHERE name = ? COLLATE NOCASE LIMIT 1', newName)) {
+    newName = `${baseName} ${suffix++}`
+  }
   const newId = await createWorkspace({ name: newName, description: w.description ?? '' })
   const tables = await d.getAllAsync<any>('SELECT id, name FROM workspace_tables WHERE workspace_id = ?', workspaceId)
   for (const t of tables) {
-    await duplicateTable(t.id, t.name)
+    await duplicateTable(t.id, t.name, newId)
   }
   return { id: newId, name: newName, tables: tables.length }
 }

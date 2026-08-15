@@ -293,16 +293,18 @@ export async function createProperty(p: Partial<Property>): Promise<string> {
 export async function updateProperty(id: string, p: Partial<Property>): Promise<void> {
   const db = await getDB()
   const before = await db.getFirstAsync('SELECT * FROM properties WHERE id = ?', [id])
-  await db.runAsync(
-    'UPDATE properties SET name=?,description=?,price=?,area=?,latitude=?,longitude=?,address=?,status=?,type=?,owner_name=?,owner_phone=?,owner_email=?,geojson=?,category=?,area_sqm=? WHERE id=?',
-    [p.name || '', p.description || '', p.price || 0, p.area || 0, p.latitude || 0, p.longitude || 0, p.address || '', p.status || 'for_sale', p.type || 'apartment', p.owner_name || '', p.owner_phone || '', p.owner_email || '', (p as any).geojson || '', (p as any).category || 'general', (p as any).area_sqm || 0, id]
-  )
-  await logChange({ action: 'update', scope: 'properties', scopeId: id, before, after: p, summary: `تعديل عقار (${id})` })
+  if (!before) throw new Error(`العقار (${id}) غير موجود.`)
+  const allowed = new Set(['name', 'description', 'price', 'area', 'latitude', 'longitude', 'address', 'status', 'type', 'owner_name', 'owner_phone', 'owner_email', 'geojson', 'category', 'area_sqm'])
+  const entries = Object.entries(p).filter(([key]) => allowed.has(key))
+  if (!entries.length) return
+  await db.runAsync(`UPDATE properties SET ${entries.map(([key]) => `${key} = ?`).join(', ')} WHERE id = ?`, [...entries.map(([, value]) => value), id])
+  await logChange({ action: 'update', scope: 'properties', scopeId: id, before, after: Object.fromEntries(entries), summary: `تعديل عقار (${id})` })
 }
 
 export async function deleteProperty(id: string): Promise<void> {
   const db = await getDB()
   const before = await db.getFirstAsync('SELECT * FROM properties WHERE id = ?', [id])
+  if (!before) throw new Error(`العقار (${id}) غير موجود.`)
   await db.runAsync('DELETE FROM properties WHERE id = ?', [id])
   await logChange({ action: 'delete', scope: 'properties', scopeId: id, before, summary: `حذف عقار (${id})` })
 }
@@ -332,16 +334,18 @@ export async function createClient(c: Partial<Client>): Promise<string> {
 export async function updateClient(id: string, c: Partial<Client>): Promise<void> {
   const db = await getDB()
   const before = await db.getFirstAsync('SELECT * FROM clients WHERE id = ?', [id])
-  await db.runAsync(
-    'UPDATE clients SET name=?,phone=?,email=?,type=?,notes=?,budget_min=?,budget_max=? WHERE id=?',
-    [c.name || '', c.phone || '', c.email || '', c.type || 'buyer', c.notes || '', c.budget_min || 0, c.budget_max || 0, id]
-  )
-  await logChange({ action: 'update', scope: 'clients', scopeId: id, before, after: c, summary: `تعديل عميل (${id})` })
+  if (!before) throw new Error(`العميل (${id}) غير موجود.`)
+  const allowed = new Set(['name', 'phone', 'email', 'type', 'notes', 'budget_min', 'budget_max'])
+  const entries = Object.entries(c).filter(([key]) => allowed.has(key))
+  if (!entries.length) return
+  await db.runAsync(`UPDATE clients SET ${entries.map(([key]) => `${key} = ?`).join(', ')} WHERE id = ?`, [...entries.map(([, value]) => value), id])
+  await logChange({ action: 'update', scope: 'clients', scopeId: id, before, after: Object.fromEntries(entries), summary: `تعديل عميل (${id})` })
 }
 
 export async function deleteClient(id: string): Promise<void> {
   const db = await getDB()
   const before = await db.getFirstAsync('SELECT * FROM clients WHERE id = ?', [id])
+  if (!before) throw new Error(`العميل (${id}) غير موجود.`)
   await db.runAsync('DELETE FROM clients WHERE id = ?', [id])
   await logChange({ action: 'delete', scope: 'clients', scopeId: id, before, summary: `حذف عميل (${id})` })
 }
@@ -372,6 +376,7 @@ export async function createOffer(o: Partial<Offer>): Promise<string> {
 export async function deleteOffer(id: string): Promise<void> {
   const db = await getDB()
   const before = await db.getFirstAsync('SELECT * FROM offers WHERE id = ?', [id])
+  if (!before) throw new Error(`العرض (${id}) غير موجود.`)
   await db.runAsync('DELETE FROM offers WHERE id = ?', [id])
   await logChange({ action: 'delete', scope: 'offers', scopeId: id, before, summary: `حذف عرض (${id})` })
 }
@@ -396,6 +401,7 @@ export async function createCampaign(c: Partial<Campaign>): Promise<string> {
 export async function deleteCampaign(id: string): Promise<void> {
   const db = await getDB()
   const before = await db.getFirstAsync('SELECT * FROM campaigns WHERE id = ?', [id])
+  if (!before) throw new Error(`الحملة (${id}) غير موجودة.`)
   await db.runAsync('DELETE FROM campaigns WHERE id = ?', [id])
   await logChange({ action: 'delete', scope: 'campaigns', scopeId: id, before, summary: `حذف حملة (${id})` })
 }
@@ -426,6 +432,7 @@ export async function createViewing(v: Partial<Viewing>): Promise<string> {
 export async function deleteViewing(id: string): Promise<void> {
   const db = await getDB()
   const before = await db.getFirstAsync('SELECT * FROM viewings WHERE id = ?', [id])
+  if (!before) throw new Error(`المعاينة (${id}) غير موجودة.`)
   await db.runAsync('DELETE FROM viewings WHERE id = ?', [id])
   await logChange({ action: 'delete', scope: 'viewings', scopeId: id, before, summary: `حذف معاينة (${id})` })
 }
@@ -520,16 +527,18 @@ export async function createWaypoint(data: {
 export async function updateWaypoint(id: string, data: Partial<{ name: string; description: string; latitude: number; longitude: number; type: string; media: string }>): Promise<void> {
   const db = await getDB()
   const before = await db.getFirstAsync('SELECT * FROM waypoints WHERE id = ?', [id])
-  await db.runAsync(
-    'UPDATE waypoints SET name=?,description=?,latitude=?,longitude=?,type=?,media=? WHERE id=?',
-    [data.name || '', data.description || '', data.latitude || 0, data.longitude || 0, data.type || 'custom', data.media || '[]', id]
-  )
-  await logChange({ action: 'update', scope: 'waypoints', scopeId: id, before, after: data, summary: `تعديل نقطة (${id})` })
+  if (!before) throw new Error(`النقطة (${id}) غير موجودة.`)
+  const allowed = new Set(['name', 'description', 'latitude', 'longitude', 'type', 'media'])
+  const entries = Object.entries(data).filter(([key]) => allowed.has(key))
+  if (!entries.length) return
+  await db.runAsync(`UPDATE waypoints SET ${entries.map(([key]) => `${key} = ?`).join(', ')} WHERE id = ?`, [...entries.map(([, value]) => value), id])
+  await logChange({ action: 'update', scope: 'waypoints', scopeId: id, before, after: Object.fromEntries(entries), summary: `تعديل نقطة (${id})` })
 }
 
 export async function deleteWaypoint(id: string): Promise<void> {
   const db = await getDB()
   const before = await db.getFirstAsync('SELECT * FROM waypoints WHERE id = ?', [id])
+  if (!before) throw new Error(`النقطة (${id}) غير موجودة.`)
   await db.runAsync('DELETE FROM waypoints WHERE id = ?', [id])
   await logChange({ action: 'delete', scope: 'waypoints', scopeId: id, before, summary: `حذف نقطة (${id})` })
 }
@@ -558,16 +567,18 @@ export async function createArea(data: { name: string; description: string; geoj
 export async function updateArea(id: string, data: Partial<{ name: string; description: string; geojson: string; area_sqm: number; perimeter_m: number; media: string }>): Promise<void> {
   const db = await getDB()
   const before = await db.getFirstAsync('SELECT * FROM areas WHERE id = ?', [id])
-  await db.runAsync(
-    'UPDATE areas SET name=?,description=?,geojson=?,area_sqm=?,perimeter_m=?,media=? WHERE id=?',
-    [data.name || '', data.description || '', data.geojson || '{}', data.area_sqm || 0, data.perimeter_m || 0, data.media || '[]', id]
-  )
-  await logChange({ action: 'update', scope: 'areas', scopeId: id, before, after: data, summary: `تعديل مساحة (${id})` })
+  if (!before) throw new Error(`المساحة (${id}) غير موجودة.`)
+  const allowed = new Set(['name', 'description', 'geojson', 'area_sqm', 'perimeter_m', 'media'])
+  const entries = Object.entries(data).filter(([key]) => allowed.has(key))
+  if (!entries.length) return
+  await db.runAsync(`UPDATE areas SET ${entries.map(([key]) => `${key} = ?`).join(', ')} WHERE id = ?`, [...entries.map(([, value]) => value), id])
+  await logChange({ action: 'update', scope: 'areas', scopeId: id, before, after: Object.fromEntries(entries), summary: `تعديل مساحة (${id})` })
 }
 
 export async function deleteArea(id: string): Promise<void> {
   const db = await getDB()
   const before = await db.getFirstAsync('SELECT * FROM areas WHERE id = ?', [id])
+  if (!before) throw new Error(`المساحة (${id}) غير موجودة.`)
   await db.runAsync('DELETE FROM areas WHERE id = ?', [id])
   await logChange({ action: 'delete', scope: 'areas', scopeId: id, before, summary: `حذف مساحة (${id})` })
 }

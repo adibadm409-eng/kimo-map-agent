@@ -2,16 +2,17 @@ import React from "react"
 import { View, Text, Pressable, StyleSheet } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import * as Haptics from "expo-haptics"
+import { useTheme } from "../../../theme/ThemeContext"
 
 export type CtrlKey =
   | "gps" | "layers" | "mapType" | "spatial" | "track" | "waypoint-list"
 
-const ITEMS: { key: CtrlKey; icon: string; label: string; color: string }[] = [
-  { key: "gps", icon: "navigate", label: "موقعي", color: "#2563EB" },
-  { key: "layers", icon: "layers", label: "الطبقات", color: "#7C3AED" },
-  { key: "spatial", icon: "analytics", label: "تحليلات", color: "#059669" },
-  { key: "track", icon: "radio-button-on", label: "تسجيل", color: "#DC2626" },
-  { key: "waypoint-list", icon: "list", label: "العناصر", color: "#475569" },
+const ITEMS: { key: CtrlKey; icon: string; label: string; tone: 'accent' | 'info' | 'success' | 'error' | 'text' }[] = [
+  { key: "gps", icon: "navigate", label: "موقعي", tone: "accent" },
+  { key: "layers", icon: "layers", label: "الطبقات", tone: "info" },
+  { key: "spatial", icon: "analytics", label: "تحليلات", tone: "success" },
+  { key: "track", icon: "radio-button-on", label: "تسجيل", tone: "error" },
+  { key: "waypoint-list", icon: "list", label: "العناصر", tone: "text" },
 ]
 
 type Props = {
@@ -21,6 +22,8 @@ type Props = {
 }
 
 export function ControlCard({ onAction, trackRunning, activePanel }: Props) {
+  const { colors } = useTheme()
+  const toneColor = (tone: (typeof ITEMS)[number]['tone']) => tone === 'success' ? colors.success : tone === 'error' ? colors.error : tone === 'info' ? colors.info : tone === 'text' ? colors.textSecondary : colors.accent
   const handle = (k: CtrlKey) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     onAction(k)
@@ -31,12 +34,15 @@ export function ControlCard({ onAction, trackRunning, activePanel }: Props) {
       {ITEMS.map((it) => {
         const isTrackingActive = it.key === "track" && trackRunning
         const isPanelOpen = it.key === activePanel
-        const color = isTrackingActive ? "#16A34A" : it.color
+        const color = isTrackingActive ? colors.success : toneColor(it.tone)
         const label = isTrackingActive ? "إيقاف" : it.label
         const icon = isTrackingActive ? "stop-circle" : it.icon
         return (
           <Pressable
             key={it.key}
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            accessibilityState={{ selected: isPanelOpen, busy: isTrackingActive }}
             onPress={() => handle(it.key)}
             style={({ pressed }) => [
               s.ctrlBtn,
@@ -62,7 +68,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "transparent",
     minHeight: CONTROL_BAR_HEIGHT,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
@@ -91,9 +97,10 @@ const s = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 3,
   },
-  ctrlLabel: {
+      ctrlLabel: {
     fontSize: 10,
     fontFamily: "Tajawal_700Bold",
     textAlign: "center",
   },
+
 })

@@ -14,10 +14,10 @@ import {
 } from '../database/workspace'
 import { withAuditCtx } from '../database/audit'
 import type { AgentSettings, PendingState, UndoEntry, PendingDeleteItem } from './store'
-import { getPending, setPending, popUndo, pushUndo, searchSessions as storeSearch } from './store'
+import { getPending, setPending, peekUndo, removeUndo, pushUndo, searchSessions as storeSearch } from './store'
 import { adaptToolArgs, runToolWithFeedback } from './toolSchemas'
 import { persistPair, persistAssistantText } from './persist'
-import { captureBefore, recordUndo, performUndo } from './undo'
+import { captureBefore, captureToolUndoBefore, recordUndo, performUndo } from './undo'
 import { emit } from './agentRun'
 import { WRITE_TOOLS, DELETE_CONFIRM_TOOLS } from './prompts'
 import { parseToolArgs, type ToolCall } from './llm'
@@ -181,6 +181,7 @@ export async function runRegistryTool(
     return true
   }
 
+  const undoBefore = await captureToolUndoBefore(tool, args)
   const { ok, observation, result } = await withAuditCtx({ actor: 'agent', sessionId, tool }, () =>
     runToolWithFeedback(tool, args)
   )
@@ -189,7 +190,7 @@ export async function runRegistryTool(
   if (emitEvents) emit({ type: 'tool', name: tool, args, result: ok ? result : result })
 
   if (ok) {
-    await recordUndo(sessionId, tool, args, result)
+    await recordUndo(sessionId, tool, args, result, undoBefore)
     // أثر مرئي: بطاقة "افتح" بعد إنشاء/استيراد/نسخ — تعيد المستخدم إلى مكان البيانات الجديدة
     const link = openLinkFor(tool, args, result)
     if (link) await persistOpenLink(sessionId, link)
@@ -282,10 +283,18 @@ export async function handleToolCall(
   }
 
   if (name === 'undo_last') {
-    const entry = await popUndo(sessionId)
-    const result = entry
-      ? await withAuditCtx({ actor: 'undo', sessionId, tool: 'undo_last' }, () => performUndo(entry))
-      : 'لا توجد عمليات قابلة للتراجع في هذه الجلسة'
+    const entry = await peekUndo(sessionId)
+    let result: string
+    if (!entry) {
+      result = 'لا توجد عمليات قابلة للتراجع في هذه الجلسة'
+    } else {
+      try {
+        result = await withAuditCtx({ actor: 'undo', sessionId, tool: 'undo_last' }, () => performUndo(entry))
+        await removeUndo(entry.id)
+      } catch (error: any) {
+        result = `فشل التراجع ولم يُحذف سجله: ${error?.message ?? String(error)}`
+      }
+    }
     await persistPair(sessionId, call, result)
     if (emitEvents) emit({ type: 'tool', name: 'undo_last', args, result })
     return true

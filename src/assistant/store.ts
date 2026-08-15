@@ -48,6 +48,7 @@ export interface UndoEntry {
   entity: string
   entityId: string
   before?: any
+  after?: any
   summary: string
   createdAt: number
 }
@@ -87,7 +88,7 @@ function db(): Promise<SQLite.SQLiteDatabase> {
           id TEXT PRIMARY KEY, session_id TEXT, role TEXT, kind TEXT, content TEXT, meta TEXT, created_at INTEGER
         );
         CREATE TABLE IF NOT EXISTS agent_undo (
-          id TEXT PRIMARY KEY, session_id TEXT, kind TEXT, entity TEXT, entity_id TEXT, before TEXT, summary TEXT, created_at INTEGER
+          id TEXT PRIMARY KEY, session_id TEXT, kind TEXT, entity TEXT, entity_id TEXT, before TEXT, after TEXT, summary TEXT, created_at INTEGER
         );
         CREATE TABLE IF NOT EXISTS agent_pending (
           session_id TEXT PRIMARY KEY, kind TEXT, payload TEXT, created_at INTEGER
@@ -102,7 +103,10 @@ function db(): Promise<SQLite.SQLiteDatabase> {
         CREATE INDEX IF NOT EXISTS idx_agent_undo ON agent_undo (session_id, created_at);
         CREATE INDEX IF NOT EXISTS idx_agent_brain ON agent_brain (session_id, created_at);
         CREATE INDEX IF NOT EXISTS idx_agent_runtime_events ON agent_runtime_events (session_id, created_at);
+
+        -- ترحيل قواعد البيانات التي أنشئت قبل إضافة صورة after لسجل التراجع.
       `)
+      try { await d.runAsync('ALTER TABLE agent_undo ADD COLUMN after TEXT') } catch {}
       return d
     })()
   }
@@ -250,12 +254,13 @@ export async function setSettings(patch: Partial<AgentSettings>): Promise<AgentS
   const current = await getSettings()
   const next = { ...current, ...patch }
   const d = await db()
+  const secretState = await persistSecrets(next.keys, next.customProviders)
   await d.withTransactionAsync(async () => {
     const entries: [string, string][] = [
       ['activeProvider', next.activeProvider],
       ['models', JSON.stringify(next.models)],
-      ['keys', JSON.stringify((await persistSecrets(next.keys, next.customProviders)).keys)],
-      ['customProviders', JSON.stringify((await persistSecrets(next.keys, next.customProviders)).customProviders)],
+      ['keys', JSON.stringify(secretState.keys)],
+      ['customProviders', JSON.stringify(secretState.customProviders)],
       ['modelLists', JSON.stringify(next.modelLists)],
       ['mode', next.mode],
     ]
@@ -452,13 +457,14 @@ export async function searchSessions(query: string): Promise<{ session: SessionM
 export async function pushUndo(entry: Omit<UndoEntry, 'id' | 'createdAt'>): Promise<void> {
   const d = await db()
   await d.runAsync(
-    'INSERT INTO agent_undo (id, session_id, kind, entity, entity_id, before, summary, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO agent_undo (id, session_id, kind, entity, entity_id, before, after, summary, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
     genId(),
     entry.sessionId,
     entry.kind,
     entry.entity,
     entry.entityId,
     entry.before ? JSON.stringify(entry.before) : null,
+    entry.after ? JSON.stringify(entry.after) : null,
     entry.summary,
     Date.now()
   )
@@ -477,17 +483,27 @@ export async function listUndo(sessionId: string): Promise<UndoEntry[]> {
     entity: r.entity,
     entityId: r.entity_id,
     before: r.before ? safeJson(r.before) : undefined,
+    after: r.after ? safeJson(r.after) : undefined,
     summary: r.summary ?? '',
     createdAt: r.created_at ?? 0,
   }))
 }
 
-export async function popUndo(sessionId: string): Promise<UndoEntry | null> {
+export async function peekUndo(sessionId: string): Promise<UndoEntry | null> {
   const all = await listUndo(sessionId)
-  if (!all.length) return null
-  const entry = all[0]
+  return all[0] ?? null
+}
+
+export async function removeUndo(id: string): Promise<void> {
   const d = await db()
-  await d.runAsync('DELETE FROM agent_undo WHERE id = ?', entry.id)
+  await d.runAsync('DELETE FROM agent_undo WHERE id = ?', id)
+}
+
+/** توافق خلفي مع المستدعي القديم؛ يستهلك السجل فوراً. استخدم peekUndo/removeUndo لمسار آمن. */
+export async function popUndo(sessionId: string): Promise<UndoEntry | null> {
+  const entry = await peekUndo(sessionId)
+  if (!entry) return null
+  await removeUndo(entry.id)
   return entry
 }
 

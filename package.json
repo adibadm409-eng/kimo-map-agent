@@ -5,6 +5,7 @@
   "dependencies": {
     "@expo-google-fonts/tajawal": "^0.4.1",
     "@expo/vector-icons": "^15.0.3",
+    "@react-native-async-storage/async-storage": "2.2.0",
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/native": "^7.1.6",
     "@react-navigation/native-stack": "^7.3.10",
@@ -42,6 +43,8 @@
   "devDependencies": {
     "@types/crypto-js": "^4.2.2",
     "@types/react": "~19.1.10",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "^57.0.1",
     "pm2": "^7.0.3",
     "typescript": "~5.9.2"
   },
@@ -51,7 +54,10 @@
     "postinstall": "bash postinstall.sh",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "check": "tsc --noEmit",
+    "lint": "eslint src audit --max-warnings 0",
+    "test:invariants": "node audit/safe_edit_invariants.mjs && node audit/domain_workflow_invariants.mjs && npx tsx audit/kimo_agent_invariants.mjs && npx tsx audit/screen_catalog_invariants.mjs && node audit/secret_storage_invariants.mjs && node audit/spatial_import_invariants.mjs && npx tsx audit/property_invariant_tests.mjs && node audit/partial_update_invariants.mjs"
   },
   "private": true
 }

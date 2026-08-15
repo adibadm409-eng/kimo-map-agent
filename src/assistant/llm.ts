@@ -118,13 +118,31 @@ export interface ChatOpts {
   onDelta?: (delta: { content: string; toolCalls: ToolCall[]; done?: boolean }) => void
 }
 
-/** بث النص فور صدوره من المزود — يقسم تيار JSON إلى أجزاء نصية تظهر live في الشاشة. */
-export function splitSse(buf: string): { data: string }[] {
-  const out: { data: string }[] = []
-  for (const line of buf.split('\n')) {
-    if (line.startsWith('data:')) out.push({ data: line.slice(5).trim() })
+/**
+ * تحليل SSE مع الاحتفاظ بالجزء غير المكتمل بين قراءات الشبكة. بعض المزودين
+ * يقسمون JSON داخل data بين chunks؛ لذلك لا يجوز محاولة JSON.parse قبل وصول
+ * فاصل الحدث الفارغ (أو نهاية التيار).
+ */
+export function parseSseBuffer(buf: string, final = false): { events: { data: string }[]; rest: string } {
+  const normalized = String(buf ?? '').replace(/\r\n/g, '\n')
+  const blocks = normalized.split('\n\n')
+  let rest = blocks.pop() ?? ''
+  if (final && rest.trim()) {
+    blocks.push(rest)
+    rest = ''
   }
-  return out
+  const events = blocks.flatMap((block) => {
+    const dataLines = block.split('\n')
+      .filter((line) => line.startsWith('data:'))
+      .map((line) => line.slice(5).trim())
+    return dataLines.length ? [{ data: dataLines.join('\n') }] : []
+  })
+  return { events, rest }
+}
+
+/** تحليل نص SSE مكتمل، مع إبقاء هذه الدالة للتوافق مع أدوات الاختبار والمزودات غير المتدفقة. */
+export function splitSse(buf: string): { data: string }[] {
+  return parseSseBuffer(buf, true).events
 }
 
 /**
@@ -200,13 +218,9 @@ async function postChatStream(opts: ChatOpts, signal: AbortSignal): Promise<Chat
     opts.onDelta?.({ content: fullContent, toolCalls, done })
   }
 
-  try {
-    for (;;) {
-      const { done, value } = await reader.read()
-      if (done) break
-      const chunk = decoder.decode(value, { stream: true })
-      const events = splitSse(chunk)
-      for (const ev of events) {
+  let sseBuffer = ''
+  const consumeEvents = (events: { data: string }[]) => {
+    for (const ev of events) {
         if (!ev.data || ev.data === '[DONE]') continue
         let payload: any
         try {
@@ -259,6 +273,18 @@ async function postChatStream(opts: ChatOpts, signal: AbortSignal): Promise<Chat
         }
       }
     }
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      sseBuffer += decoder.decode(value, { stream: true })
+      const parsed = parseSseBuffer(sseBuffer)
+      sseBuffer = parsed.rest
+      consumeEvents(parsed.events)
+    }
+    sseBuffer += decoder.decode()
+    consumeEvents(parseSseBuffer(sseBuffer, true).events)
   } catch (e: any) {
     if (e?.name === 'AbortError') throw new LlmError('timeout', 'انتهت مهلة الاتصال بالمزود أثناء البث')
     throw new LlmError('parse', `خطأ في قراءة تيار الاستجابة: ${e?.message ?? String(e)}`)

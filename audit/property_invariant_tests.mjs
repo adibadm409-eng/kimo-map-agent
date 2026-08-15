@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import assert from 'node:assert/strict'
+import { parseSseBuffer } from '../src/assistant/llm.ts'
 
 function splitSse(buf) {
   const out = []
@@ -25,15 +26,15 @@ function toWireToolCall(call) {
   return { id: call.id ?? raw.id ?? 'generated', type: 'function', function: fn }
 }
 
-const sseChunk1 = 'data: {"choices":[{"delta":{"content":"مرحبا"}}]}\n\ndata: {"choices":[{"delta":'
+const sseChunk1 = 'data: {"choices":[{"delta":{"content":"مرحبا"}}]}\n\ndata: {"choices":[{"delta":{'
 const sseChunk2 = '"content":"تكملة"}}]}\n\ndata: [DONE]\n\n'
-const parsed1 = splitSse(sseChunk1)
-const parsed2 = splitSse(sseChunk2)
-assert.equal(parsed1.length, 2, 'first network chunk returns one complete event plus one incomplete fragment')
-assert.equal(parsed2.length, 1, 'second network chunk returns only the DONE event because the continuation has no data prefix')
-let lostBoundaryEvent = false
-try { JSON.parse(parsed1[1].data) } catch { lostBoundaryEvent = true }
-assert.equal(lostBoundaryEvent, true, 'chunk-boundary JSON is lost by splitSse when caller does not buffer')
+const first = parseSseBuffer(sseChunk1)
+assert.equal(first.events.length, 1, 'the complete first SSE event is emitted immediately')
+assert.ok(first.rest.includes('data: {"choices"'), 'the incomplete event remains buffered')
+const second = parseSseBuffer(first.rest + sseChunk2, true)
+assert.equal(second.events.length, 2, 'the buffered JSON event and DONE event are recovered together')
+assert.deepEqual(JSON.parse(second.events[0].data), { choices: [{ delta: { content: 'تكملة' } }] })
+assert.equal(second.events[1].data, '[DONE]')
 
 assert.deepEqual(parseToolArgs('{"n":7}'), { n: 7 })
 assert.deepEqual(parseToolArgs({ n: 7 }), { n: 7 })
@@ -46,15 +47,15 @@ assert.equal('index' in wire.function, false)
 const workspace = fs.readFileSync('/home/ubuntu/property-manager-app/src/database/workspace.ts', 'utf8')
 const duplicateBlock = workspace.slice(workspace.indexOf('export async function duplicateWorkspace'), workspace.indexOf('// ---------- المرفقات ----------'))
 assert.match(duplicateBlock, /const newId = await createWorkspace/)
-assert.match(duplicateBlock, /await duplicateTable\(t\.id, t\.name\)/)
-assert.doesNotMatch(duplicateBlock, /duplicateTable\(t\.id, t\.name, newId\)/)
+assert.match(duplicateBlock, /await duplicateTable\(t\.id, t\.name, newId\)/)
+assert.match(duplicateBlock, /while \(await d\.getFirstAsync/)
 
 const tools = fs.readFileSync('/home/ubuntu/property-manager-app/src/screens/Tools.tsx', 'utf8')
 const importBlock = tools.slice(tools.indexOf('async function doImport'), tools.indexOf('async function pasteFromClipboard'))
-assert.match(importBlock, /for \(const item of parsed\)/)
-assert.doesNotMatch(importBlock, /withTransactionAsync|findDuplicate|dedupe|rollback/i)
+assert.match(importBlock, /importSpatialItems\(parsed\.map/)
+assert.doesNotMatch(importBlock, /for \(const item of parsed\)/)
 
 console.log('PASS: llm helper invariants')
-console.log('PASS: chunk-boundary loss reproduced for current splitSse call pattern')
-console.log('PASS: duplicateWorkspace static defect reproduced')
-console.log('PASS: spatial import lacks dedupe/transaction path reproduced')
+console.log('PASS: chunk-boundary SSE JSON is preserved across reads')
+console.log('PASS: duplicateWorkspace keeps tables inside the new workspace')
+console.log('PASS: spatial import uses atomic dedupe service')

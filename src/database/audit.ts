@@ -78,6 +78,11 @@ export async function withAuditCtx<T>(ctx: AuditActorCtx, fn: () => Promise<T>):
 
 let ready: Promise<SQLite.SQLiteDatabase> | null = null
 
+/** يحتفظ السجل محلياً بآخر خمس سنوات افتراضياً، مع تنظيف دوري لمنع نموه بلا حدود. */
+export const DEFAULT_AUDIT_RETENTION_MS = 5 * 365 * 24 * 60 * 60 * 1000
+const AUDIT_PRUNE_INTERVAL_MS = 24 * 60 * 60 * 1000
+let lastPrunedAt = 0
+
 function db(): Promise<SQLite.SQLiteDatabase> {
   if (!ready) {
     ready = (async () => {
@@ -130,7 +135,17 @@ function parseJson<T>(s: string | null | undefined, fallback: T): T {
   }
 }
 
-/** تسجيل عملية في سجل التدقيق — لا يعيد خطأ أبداً حتى لا يكسر العمليات. */
+/** حذف السجلات الأقدم من حد الاحتفاظ. لا تسجل هذه العملية نفسها في change_log. */
+export async function pruneChangeLog(options: { now?: number; retentionMs?: number } = {}): Promise<number> {
+  const now = options.now ?? Date.now()
+  const retentionMs = options.retentionMs ?? DEFAULT_AUDIT_RETENTION_MS
+  if (!Number.isFinite(retentionMs) || retentionMs < 0) throw new Error('سياسة الاحتفاظ يجب أن تكون مدة غير سالبة.')
+  const d = await db()
+  const result = await d.runAsync('DELETE FROM change_log WHERE created_at < ?', [now - retentionMs])
+  return result.changes ?? 0
+}
+
+/** تسجيل عملية في سجل التدقيق؛ لا يكسر العملية الأصلية، لكنه يحذر بوضوح عند تعذر التسجيل. */
 export async function logChange(entry: {
   action: ChangeLogEntry['action']
   scope: string
@@ -164,8 +179,17 @@ export async function logChange(entry: {
     )
     // إعلام الواجهة بتغيّر البيانات — أي كتابة (وكيل أو واجهة) تمر بهذه النقطة
     notifyDataChanged(entry.scope)
+    if (now - lastPrunedAt >= AUDIT_PRUNE_INTERVAL_MS) {
+      lastPrunedAt = now
+      try {
+        await pruneChangeLog({ now })
+      } catch (pruneError) {
+        console.warn('[Audit] Failed to prune change_log:', pruneError)
+      }
+    }
     return id
-  } catch {
+  } catch (error) {
+    console.warn(`[Audit] Failed to record ${entry.action} on ${entry.scope}/${entry.scopeId}:`, error)
     return null
   }
 }

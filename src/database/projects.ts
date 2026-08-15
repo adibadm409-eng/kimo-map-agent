@@ -363,6 +363,7 @@ export async function updateProject(id: string, patch: { name?: string; descript
   await ensureSchema()
   const db = await getDB()
   const before = await db.getFirstAsync<Project>('SELECT * FROM projects WHERE id = ?', [id])
+  if (!before) throw new Error(`المشروع (${id}) غير موجود.`)
   const entries = Object.entries(patch)
   if (entries.length === 0) return
   const set = entries.map(([k]) => `${k} = ?`).join(', ')
@@ -375,6 +376,9 @@ export async function deleteProject(id: string): Promise<void> {
   await ensureSchema()
   const db = await getDB()
   const before = await db.getFirstAsync<Project>('SELECT * FROM projects WHERE id = ?', [id])
+  if (!before) throw new Error(`المشروع (${id}) غير موجود.`)
+  const payments = await db.getFirstAsync<{ c: number }>('SELECT COUNT(*) AS c FROM plot_payments pp JOIN plots p ON p.id = pp.plot_id JOIN blocks b ON b.id = p.block_id WHERE b.project_id = ?', [id])
+  if ((payments?.c ?? 0) > 0) throw new Error('لا يمكن حذف مشروع له دفعات مسجلة. اعكس الدفعات أو أرشف المشروع أولاً حتى لا يضيع السجل المالي.')
   await db.withTransactionAsync(async () => {
     await db.runAsync("DELETE FROM custom_field_values WHERE entity_type = 'project' AND entity_id = ?", [id])
     const blockRows = await db.getAllAsync<{ id: string }>('SELECT id FROM blocks WHERE project_id = ?', [id])
@@ -455,6 +459,7 @@ export async function updateBlock(id: string, patch: { name?: string; plot_count
   await ensureSchema()
   const db = await getDB()
   const existing = await db.getFirstAsync<Block>('SELECT * FROM blocks WHERE id = ?', [id])
+  if (!existing) throw new Error(`البلوك (${id}) غير موجود.`)
   const entries = Object.entries(patch)
   if (entries.length > 0) {
     const set = entries.map(([k]) => `${k} = ?`).join(', ')
@@ -474,6 +479,9 @@ export async function deleteBlock(id: string): Promise<void> {
   await ensureSchema()
   const db = await getDB()
   const before = await db.getFirstAsync<Block>('SELECT * FROM blocks WHERE id = ?', [id])
+  if (!before) throw new Error(`البلوك (${id}) غير موجود.`)
+  const payments = await db.getFirstAsync<{ c: number }>('SELECT COUNT(*) AS c FROM plot_payments pp JOIN plots p ON p.id = pp.plot_id WHERE p.block_id = ?', [id])
+  if ((payments?.c ?? 0) > 0) throw new Error('لا يمكن حذف بلوك يحتوي على قطع لها دفعات مسجلة. اعكس الدفعات أو أرشف الأصل أولاً حتى لا يضيع السجل المالي.')
   await db.withTransactionAsync(async () => {
     await db.runAsync("DELETE FROM custom_field_values WHERE entity_type = 'block' AND entity_id = ?", [id])
     const plotRows = await db.getAllAsync<{ id: string }>('SELECT id FROM plots WHERE block_id = ?', [id])
@@ -537,11 +545,12 @@ export async function getPlot(id: string): Promise<Plot | null> {
 export async function savePlot(id: string, patch: Partial<Plot>): Promise<void> {
   await ensureSchema()
   const db = await getDB()
+  const before = await db.getFirstAsync<Plot>('SELECT * FROM plots WHERE id = ?', [id])
+  if (!before) throw new Error(`القطعة (${id}) غير موجودة.`)
   const entries = Object.entries(patch).filter(([k]) => k !== 'id')
   if (entries.length === 0) return
   const set = entries.map(([k]) => `${k} = ?`).join(', ')
   const params = entries.map(([, v]) => v)
-  const before = await db.getFirstAsync<Plot>('SELECT * FROM plots WHERE id = ?', [id])
   await db.runAsync(
     `UPDATE plots SET ${set}, updated_at = datetime('now') WHERE id = ?`,
     [...params, id]
@@ -553,7 +562,10 @@ export async function setPlotStatus(id: string, status: PlotStatus): Promise<voi
   await ensureSchema()
   const db = await getDB()
   const before = await db.getFirstAsync<Plot>('SELECT * FROM plots WHERE id = ?', [id])
+  if (!before) throw new Error(`القطعة (${id}) غير موجودة.`)
   if (status === 'available') {
+    const payments = await db.getFirstAsync<{ c: number }>('SELECT COUNT(*) AS c FROM plot_payments WHERE plot_id = ?', [id])
+    if ((payments?.c ?? 0) > 0) throw new Error('لا يمكن جعل قطعة لها دفعات مسجلة متاحة؛ اعكس الدفعات أو صحح الحالة المالية أولاً.')
     await db.runAsync(
       "UPDATE plots SET status = ?, buyer_name = '', buyer_contact = '', sale_date = '', installment_type = '', paid_amount = 0, remaining_amount = 0, updated_at = datetime('now') WHERE id = ?",
       [status, id]
@@ -571,6 +583,9 @@ export async function deletePlot(id: string): Promise<void> {
   await ensureSchema()
   const db = await getDB()
   const before = await db.getFirstAsync<Plot>('SELECT * FROM plots WHERE id = ?', [id])
+  if (!before) throw new Error(`القطعة (${id}) غير موجودة.`)
+  const payments = await db.getFirstAsync<{ c: number }>('SELECT COUNT(*) AS c FROM plot_payments WHERE plot_id = ?', [id])
+  if ((payments?.c ?? 0) > 0) throw new Error('لا يمكن حذف قطعة لها دفعات مسجلة. اعكس الدفعات أو أرشف القطعة أولاً حتى لا يضيع السجل المالي.')
   await db.withTransactionAsync(async () => {
     await db.runAsync('DELETE FROM plot_payments WHERE plot_id = ?', [id])
     await db.runAsync("DELETE FROM custom_field_values WHERE entity_type = 'plot' AND entity_id = ?", [id])

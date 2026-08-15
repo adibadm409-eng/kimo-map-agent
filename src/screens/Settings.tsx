@@ -7,6 +7,9 @@ import { useTheme } from '../theme/ThemeContext'
 import { spacing, radius, fontSize } from '../theme/tokens'
 import { Card } from '../components/ui'
 import { getDB } from '../database/db'
+import { getAllProjects } from '../database/projects'
+import { listWorkspaces } from '../database/workspace'
+import { listSessions } from '../assistant/store'
 import { useReloadOnData } from '../database/dataSync'
 
 const countQueries = {
@@ -15,7 +18,29 @@ const countQueries = {
   offers: 'SELECT COUNT(*) as c FROM offers',
   campaigns: 'SELECT COUNT(*) as c FROM campaigns',
   viewings: 'SELECT COUNT(*) as c FROM viewings',
+  projects: 'SELECT COUNT(*) as c FROM projects',
+  blocks: 'SELECT COUNT(*) as c FROM blocks',
+  plots: 'SELECT COUNT(*) as c FROM plots',
+  plot_payments: 'SELECT COUNT(*) as c FROM plot_payments',
+  workspaces: 'SELECT COUNT(*) as c FROM workspaces',
+  workspace_rows: 'SELECT COUNT(*) as c FROM workspace_rows',
+  custom_fields: 'SELECT COUNT(*) as c FROM custom_fields',
+  custom_field_values: 'SELECT COUNT(*) as c FROM custom_field_values',
+  agent_sessions: 'SELECT COUNT(*) as c FROM agent_sessions',
+  agent_messages: 'SELECT COUNT(*) as c FROM agent_messages',
+  agent_undo: 'SELECT COUNT(*) as c FROM agent_undo',
+  agent_runtime_events: 'SELECT COUNT(*) as c FROM agent_runtime_events',
+  change_log: 'SELECT COUNT(*) as c FROM change_log',
 }
+
+/** ترتيب الحذف من الجداول التابعة إلى الأصلية؛ كل الجدولة موجودة في مخطط التطبيق الحالي. */
+const DELETE_ALL_TABLES = [
+  'plot_payments', 'plots', 'blocks', 'projects',
+  'workspace_rows', 'workspace_tables', 'workspaces',
+  'agent_runtime_events', 'agent_brain', 'agent_pending', 'agent_undo', 'agent_messages', 'agent_sessions',
+  'agent_attachments', 'agent_generated_files', 'project_memory', 'change_log',
+  'custom_field_values', 'custom_fields', 'viewings', 'offers', 'campaigns', 'properties', 'clients', 'waypoints', 'areas',
+] as const
 
 const ICONS: Record<string, string> = {
   properties: 'business-outline',
@@ -23,20 +48,31 @@ const ICONS: Record<string, string> = {
   offers: 'pricetags-outline',
   campaigns: 'megaphone-outline',
   viewings: 'calendar-outline',
+  projects: 'albums-outline',
+  blocks: 'grid-outline',
+  plots: 'map-outline',
+  plot_payments: 'cash-outline',
+  workspaces: 'file-tray-full-outline',
+  workspace_rows: 'list-outline',
+  agent_sessions: 'chatbubbles-outline',
+  agent_messages: 'chatbox-ellipses-outline',
+  change_log: 'document-text-outline',
 }
 
 export default function Settings() {
   const { colors, mode, toggle } = useTheme()
   const insets = useSafeAreaInsets()
   const navigation = useNavigation<any>()
-  const [counts, setCounts] = useState<Record<string, number>>({
-    properties: 0, clients: 0, offers: 0, campaigns: 0, viewings: 0,
-  })
+  const [counts, setCounts] = useState<Record<string, number>>(
+    Object.fromEntries(Object.keys(countQueries).map((key) => [key, 0]))
+  )
 
   useReloadOnData(load)
 
   async function load() {
     try {
+      // استدعاء دوال القراءة يضمن إنشاء مخططات المشاريع والمساحات والوكيل قبل العد.
+      await Promise.all([getAllProjects(), listWorkspaces(), listSessions()])
       const db = await getDB()
       const results = await Promise.all(Object.entries(countQueries).map(async ([key, sql]) => {
         const row = await db.getFirstAsync<{ c: number }>(sql)
@@ -60,8 +96,12 @@ export default function Settings() {
           onPress: async () => {
             try {
               const db = await getDB()
-              await db.execAsync('DELETE FROM viewings; DELETE FROM offers; DELETE FROM campaigns; DELETE FROM clients; DELETE FROM properties;')
-              setCounts({ properties: 0, clients: 0, offers: 0, campaigns: 0, viewings: 0 })
+              await db.withTransactionAsync(async () => {
+                for (const table of DELETE_ALL_TABLES) {
+                  await db.runAsync(`DELETE FROM ${table}`)
+                }
+              })
+              setCounts(Object.fromEntries(Object.keys(countQueries).map((key) => [key, 0])))
             } catch (e) {
               Alert.alert('خطأ', 'تعذر حذف البيانات')
             }
@@ -71,8 +111,15 @@ export default function Settings() {
     )
   }
 
+  const labels: Record<string, string> = {
+    properties: 'العقارات', clients: 'العملاء', offers: 'العروض', campaigns: 'الحملات', viewings: 'المعاينات',
+    projects: 'المشاريع', blocks: 'البلوكات', plots: 'القطع', plot_payments: 'دفعات القطع',
+    workspaces: 'مساحات العمل', workspace_rows: 'صفوف العمل', agent_sessions: 'جلسات كيمو',
+    agent_messages: 'رسائل كيمو', agent_undo: 'تراجعات كيمو', agent_runtime_events: 'أحداث كيمو',
+    custom_fields: 'تعريفات الحقول', custom_field_values: 'قيم الحقول', change_log: 'سجل التدقيق',
+  }
   const dbItems = Object.entries(counts).map(([key, count]) => ({
-    label: key === 'properties' ? 'العقارات' : key === 'clients' ? 'العملاء' : key === 'offers' ? 'العروض' : key === 'campaigns' ? 'الحملات' : 'المشاهدات',
+    label: labels[key] || key,
     count,
     icon: ICONS[key] || 'server-outline',
   }))

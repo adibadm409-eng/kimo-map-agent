@@ -117,11 +117,16 @@ export const TOOLS: ToolDef[] = [
       const id = String(args.id ?? '')
       const data = args.data && typeof args.data === 'object' ? args.data as Record<string, any> : {}
       if (!entity || !id || Object.keys(data).length === 0) throw new Error('preview_update يتطلب كياناً ومعرفاً وحقول تعديل غير فارغة.')
+      const def = getEntityDef(entity as EntityKey)
+      if (!def) throw new Error(`الكيان غير مدعوم: ${entity}`)
+      const allowed = new Set(def.fields.map((field) => field.name))
+      const unknownFields = Object.keys(data).filter((key) => !allowed.has(key))
+      if (unknownFields.length) throw new Error(`حقول غير معروفة في ${entity}: ${unknownFields.join('، ')}. لم تتم أي كتابة.`)
       const current = await queryEntityById(entity as EntityKey, id)
       if (!current) throw new Error('السجل المطلوب غير موجود؛ لم تتم أي كتابة.')
       const before = current as Record<string, any>
       const changedFields = Object.keys(data).filter((key) => JSON.stringify(before[key]) !== JSON.stringify(data[key]))
-      return { entity, id, before, proposed: data, changedFields, noChanges: changedFields.length === 0 }
+      return { entity, id, before, proposed: data, changedFields, unknownFields: [], noChanges: changedFields.length === 0 }
     },
   },
   {
