@@ -5,11 +5,14 @@ import type { ProviderDef } from './providers'
 import { analyzeIntent, buildContextSummary } from './intent'
 import { persistUser, persistAssistantText, mimeOf } from './persist'
 import { buildSystemPrompt, getAgentFunctions } from './prompts'
+import { matchSkill, planForSkill } from './skills'
+import { completePlanStep, type AgentPlan, type AgentSkill } from './agentContract'
+import { publishRuntimeEvent } from './runtimeEvents'
 import { readModelHistory, messagesToLlm } from './history'
 import { handleToolCall, deleteOne, deleteApproved, deleteRefused } from './invokeTools'
 import { performUndo, toolSig } from './undo'
 import { emit, subscribeAgent, isAgentBusy, cancelAgent, markRunning, clearRunning, isCancelled, setAborter, clearAborter, type AgentEvent } from './agentRun'
-import { MAX_TOOL_ROUNDS } from './constants'
+import { MAX_AGENT_RUNTIME_MS, MAX_REPEATED_TOOL_CALLS, MAX_TOOL_CALLS, MAX_TOOL_ROUNDS } from './constants'
 import * as FileSystem from 'expo-file-system/legacy'
 
 function providerProxy(conn: { baseUrl: string; providerName: string }): ProviderDef {
@@ -40,8 +43,26 @@ async function runLoop(
   try {
     const callCounts = new Map<string, number>()
     const lastObsBySig = new Map<string, string>()
+    const startedAt = Date.now()
+    let totalCalls = 0
     const lastObsHashForSig = new Map<string, string>()
     const lastUserMsg = (await getMessages(sessionId)).filter((m) => m.role === 'user').pop()
+    let runtimePlan: AgentPlan | null = null
+    let runtimeSkill: AgentSkill | null = null
+    if (lastUserMsg) {
+      const goal = String(lastUserMsg.content ?? '').trim()
+      const match = matchSkill(goal)
+      runtimeSkill = match.skill
+      runtimePlan = planForSkill(runtimeSkill, goal)
+      if (emitEvents) {
+        publishRuntimeEvent(sessionId, { type: 'phase', phase: 'understand', label: 'أفهم طلبك', detail: match.reasons.join(' ') || 'أحدد نوع المهمة قبل اختيار المسار.' })
+        publishRuntimeEvent(sessionId, { type: 'skill', skill: { id: runtimeSkill.id, label: runtimeSkill.label, description: runtimeSkill.description } })
+        publishRuntimeEvent(sessionId, { type: 'plan', plan: runtimePlan })
+        publishRuntimeEvent(sessionId, { type: 'phase', phase: 'plan', label: 'أبني الخطة', detail: runtimeSkill.systemGuidance })
+      }
+      await addBrainOp(sessionId, 'skill', `المهارة المختارة: ${runtimeSkill.id} — ${runtimeSkill.label}`).catch(() => {})
+      await addBrainOp(sessionId, 'plan', runtimePlan.steps.map((step) => step.title).join(' ← ')).catch(() => {})
+    }
     if (lastUserMsg) await addBrainOp(sessionId, 'task', `مهمة المستخدم: ${String(lastUserMsg.content ?? '').slice(0, 300)}`).catch(() => {})
     // تحليل النية وسياق المحادثة: يُحقنان في سطر النظام ليتكيف الوكيل ويستمر من حيث توقف المستخدم
     if (lastUserMsg) {
@@ -55,12 +76,19 @@ async function runLoop(
     const thread: ChatMessage[] = messagesToLlm(await readModelHistory(sessionId))
     try {
       let finished = false
-      for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+      for (let round = 0; round < MAX_TOOL_ROUNDS && Date.now() - startedAt < MAX_AGENT_RUNTIME_MS; round++) {
         if (isCancelled(sessionId)) return
         const brainOps = await listBrain(sessionId, 12).catch(() => [] as BrainOp[])
         const system: ChatMessage = {
           role: 'system',
-          content: buildSystemPrompt(s, conn.providerName, conn.model, [], brainOps),
+                      content: buildSystemPrompt(
+              s,
+              conn.providerName,
+              conn.model,
+              runtimeSkill ? [runtimeSkill.systemGuidance, `المهارة الحالية: ${runtimeSkill.label}. اتبع ترتيب الخطة الظاهر للمستخدم، واطلب المعلومات الناقصة بدلاً من التخمين.`] : [],
+              brainOps,
+            ),
+
         }
         if (emitEvents) emit({ type: 'thinking' })
 
@@ -135,6 +163,13 @@ async function runLoop(
               emit({ type: 'text', content: finalText })
             }
           }
+          if (emitEvents) {
+            publishRuntimeEvent(sessionId, { type: 'phase', phase: 'complete', label: 'اكتملت المهمة', detail: 'وصلت إلى رد نهائي بعد تنفيذ الخطوات المتاحة.' })
+            if (runtimePlan) {
+              runtimePlan = runtimePlan.steps.reduce((current, step) => completePlanStep(current, step.id), runtimePlan)
+              publishRuntimeEvent(sessionId, { type: 'plan', plan: runtimePlan })
+            }
+          }
           finished = true
           break
         }
@@ -143,6 +178,13 @@ async function runLoop(
         for (const call of result.toolCalls) {
           if (isCancelled(sessionId)) return
           const sig = toolSig(call)
+          totalCalls++
+          if (totalCalls > MAX_TOOL_CALLS) {
+            const limitMsg = `أوقفت التنفيذ الوقائي بعد ${MAX_TOOL_CALLS} استدعاء أداة في مهمة واحدة. راجع النتيجة الحالية ثم أكملها بطلب منفصل.`
+            await persistAssistantText(sessionId, limitMsg, 'system').catch(() => {})
+            if (emitEvents) emit({ type: 'text', content: limitMsg })
+            return
+          }
           const nextCount = (callCounts.get(sig) ?? 0) + 1
           callCounts.set(sig, nextCount)
 
@@ -163,7 +205,35 @@ async function runLoop(
               `الأمر لك وحدك: إن كانت المهمة قد اكتملت بهذه النتيجة فانتقل للإجابة على المستخدم مباشرة دون أدوات إضافية، وإن كانت تحتاج مواصلة أو أسوأ من ذلك (فشل) فاحكم بنفسك — كرر إن كان مبرراً، أو غيّر الوسائط/الأداة/المنهج، أو اسأل المستخدم. لا قيد عليك في الاستمرار طالما ترى تقدماً أو حاجة حقيقية.`
             : null
           if (repeatedSameResult && emitEvents) emit({ type: 'thinking' })
+          if (repeatedSameResult && nextCount > MAX_REPEATED_TOOL_CALLS) {
+            const stopMsg = `أوقفت تكرار «${innerTool}» بعد ${MAX_REPEATED_TOOL_CALLS} محاولات متطابقة بلا تقدم. سأحافظ على البيانات كما هي.`
+            await persistAssistantText(sessionId, stopMsg, 'system').catch(() => {})
+            if (emitEvents) emit({ type: 'text', content: stopMsg })
+            return
+          }
 
+          if (emitEvents) {
+            const verifyTools = runtimeSkill?.verificationTools ?? ['review_my_work', 'project_integrity_check']
+            const phase = verifyTools.includes(innerTool) ? 'verify' : innerTool === 'ask_user' || innerTool === 'request_confirmation' ? 'ask' : 'execute'
+            publishRuntimeEvent(sessionId, { type: 'phase', phase, label: phase === 'verify' ? 'أراجع النتيجة' : phase === 'ask' ? 'أحتاج قرارك' : 'أنفذ الآن', detail: `أتعامل مع ${innerTool === 'project_import_preview' ? 'معاينة البيانات' : innerTool === 'project_import_commit' ? 'اعتماد الإدخال' : innerTool}` })
+            if (phase === 'ask') {
+              publishRuntimeEvent(sessionId, {
+                type: 'decision',
+                decision: {
+                  id: `decision-${Date.now().toString(36)}`,
+                  kind: innerTool === 'request_confirmation' ? 'approval' : 'question',
+                  title: innerTool === 'request_confirmation' ? 'أحتاج موافقتك قبل المتابعة' : 'أحتاج معلومة منك قبل المتابعة',
+                  detail: 'لن أخمّن هذه المعلومة ولن أكتب بيانات قبل أن يصبح القرار واضحاً.',
+                  reversible: true,
+                  createdAt: Date.now(),
+                },
+              })
+            }
+            if (runtimePlan) {
+              const active = runtimePlan.steps.find((step) => step.status === 'active')
+              if (active) publishRuntimeEvent(sessionId, { type: 'plan_step', step: { ...active, detail: `جار تنفيذ المرحلة عبر ${innerTool}` } })
+            }
+          }
           const cont = await handleToolCall(sessionId, s, call, emitEvents)
           if (cont) {
             const callArgs = parseToolArgs(call.arguments)
@@ -177,6 +247,16 @@ async function runLoop(
               ? String(lastObs.meta.observation ?? lastObs.meta.result ?? '')
               : ''
             if (lastObs && lastObs.meta) {
+              if (emitEvents) {
+                const ok = lastObs.meta.ok !== false
+                const observationDetail = String(lastObs.meta.observation ?? lastObs.meta.result ?? '').slice(0, 600)
+                publishRuntimeEvent(sessionId, { type: 'observation', title: ok ? 'وصلت نتيجة من التطبيق' : 'توقفت خطوة بسبب نتيجة غير صالحة', detail: observationDetail, status: ok ? 'success' : 'error' })
+                if (!ok) {
+                  const strategy = runtimeSkill?.recoveryPolicy ?? 'ask_user'
+                  publishRuntimeEvent(sessionId, { type: 'recovery', title: 'أعيد تقييم المسار بدلاً من تكرار الخطأ', detail: `${observationDetail} — الاستراتيجية: ${strategy === 'replan' ? 'إعادة التخطيط' : strategy === 'rollback' ? 'التراجع الآمن' : strategy === 'retry' ? 'إعادة المحاولة بضوابط' : 'سؤال المستخدم'}.`, strategy })
+                  publishRuntimeEvent(sessionId, { type: 'phase', phase: 'recover', label: 'أعالج تعثراً', detail: 'أحلل سبب النتيجة قبل اختيار الخطوة التالية.' })
+                }
+              }
               thread.push({
                 role: 'tool',
                 tool_call_id: call.id,

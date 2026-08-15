@@ -32,6 +32,7 @@ export type FullBackup = {
   includesKeys: boolean
   kdf?: { iterations: number }
   body: string // base64 — نص JSON عادي أو كتلة مشفرة (salt|iv|ct|mac)
+  bodyHash?: string // SHA-256 على body لكشف العبث حتى في النسخ غير المشفرة
 }
 
 type SqliteObject = { kind: "index" | "view" | "trigger"; name: string; sql: string }
@@ -246,6 +247,9 @@ export async function buildFullBackup(
 
   const plain = JSON.stringify(payload)
   const now = new Date().toISOString()
+  const body = opts.password
+    ? encryptBody(plain, opts.password, PBKDF2_ITERATIONS)
+    : b64encode(plain)
   const file: FullBackup = {
     magic: MAGIC,
     version: FORMAT_VERSION,
@@ -255,9 +259,8 @@ export async function buildFullBackup(
     appVersion: "1.0.0",
     encrypted: !!opts.password,
     includesKeys,
-    body: opts.password
-      ? encryptBody(plain, opts.password, PBKDF2_ITERATIONS)
-      : b64encode(plain),
+    body,
+    bodyHash: CryptoJS.SHA256(body).toString(),
   }
   if (opts.password) file.kdf = { iterations: PBKDF2_ITERATIONS }
   return JSON.stringify(file)
@@ -273,7 +276,9 @@ export function parseFullBackup(text: string): FullBackup {
     throw new Error("الملف المحدد ليس نسخة احتياطية صالحة")
   }
   if (file.magic !== MAGIC) throw new Error("الملف المحدد ليس نسخة احتياطية صالحة (YACB1)")
+  if (file.version !== FORMAT_VERSION) throw new Error(`إصدار النسخة (${file.version}) غير متوافق مع هذا الإصدار من التطبيق`)
   if (!file.body) throw new Error("ملف النسخة تالف — لا يحتوي على بيانات")
+  if (file.bodyHash && CryptoJS.SHA256(file.body).toString() !== file.bodyHash) throw new Error("ملف النسخة عُدّل أو تالف — فشل التحقق من سلامة المحتوى")
   return file
 }
 
@@ -348,17 +353,20 @@ export async function restoreFullBackup(file: FullBackup, password?: string): Pr
 
   // 2) ملفات التطبيق + إعدادات الخريطة
   const root = FileSystem.documentDirectory || ""
+  if (payload.files.length > 0 && !root) throw new Error('تعذر تحديد مجلد ملفات التطبيق؛ أُعيدت قاعدة البيانات ولم تُكتب الملفات.')
   let written = 0
   for (const f of payload.files) {
-    if (!root) break
     try {
       const dest = root + f.path
       const dir = dest.substring(0, dest.lastIndexOf("/"))
       await FileSystem.makeDirectoryAsync(dir, { intermediates: true }).catch(() => {})
       await FileSystem.writeAsStringAsync(dest, f.data, { encoding: "base64" })
       written++
-    } catch { /* ملف غير قابل للكتابة */ }
+    } catch (e: any) {
+      throw new Error(`فشل استعادة الملف «${f.path}»: ${e?.message ?? String(e)}`)
+    }
   }
+  if (written !== payload.files.length) throw new Error('لم تُستعد كل ملفات النسخة؛ لم يُعلن نجاح الاستعادة.')
 
   // 3) إبطال الكاش حتى تُقرأ القيم الجديدة فوراً
   const { resetSettingsCache } = await import("../screens/MapScreenV2/settings")

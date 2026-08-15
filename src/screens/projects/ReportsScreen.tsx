@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import { View, Text, StyleSheet, ScrollView, Pressable, Share, Alert, ActivityIndicator } from 'react-native'
+import { useCallback, useEffect, useState } from 'react'
+import { View, Text, StyleSheet, ScrollView, Pressable, Share, ActivityIndicator } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native'
 import { useTheme } from '../../theme/ThemeContext'
 import { spacing, radius, fontSize } from '../../theme/tokens'
 import { Card, Button } from '../../components/ui'
-import { getAllProjects, getProjectReport, PLOT_STATUS_LABELS, type PlotStatus } from '../../database/projects'
+import { getAllProjects, getProjectReport, PLOT_STATUS_LABELS } from '../../database/projects'
+import { projectCashflow, projectIntegrityCheck } from '../../domain/projectDomain'
 
 export default function ReportsScreen() {
   const { colors } = useTheme()
@@ -20,6 +21,8 @@ export default function ReportsScreen() {
   const [allReport, setAllReport] = useState<any[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [mode, setMode] = useState<'project' | 'all'>(paramProjectId ? 'project' : 'all')
+  const [cashflow, setCashflow] = useState<any | null>(null)
+  const [integrity, setIntegrity] = useState<any | null>(null)
 
   useFocusEffect(useCallback(() => {
     getAllProjects().then(setProjects).catch(() => {})
@@ -44,11 +47,19 @@ export default function ReportsScreen() {
   async function loadProjectReport(id: string) {
     setLoading(true)
     try {
-      const r = await getProjectReport(id)
+      const [r, cf, check] = await Promise.all([
+        getProjectReport(id),
+        projectCashflow(id),
+        projectIntegrityCheck(id),
+      ])
       setReport(r)
+      setCashflow(cf)
+      setIntegrity(check)
       setAllReport(null)
     } catch (e) {
       setReport(null)
+      setCashflow(null)
+      setIntegrity(null)
     }
     setLoading(false)
   }
@@ -56,6 +67,8 @@ export default function ReportsScreen() {
   async function loadAllReports() {
     setLoading(true)
     setReport(null)
+    setCashflow(null)
+    setIntegrity(null)
     try {
       const all = await getAllProjects()
       const rows = await Promise.all(all.map((p) => getProjectReport(p.id).catch(() => null)))
@@ -230,6 +243,34 @@ export default function ReportsScreen() {
                   <Text style={[styles.finValue, { color: colors.warning }]}>{fmtN(reportForMode.totals.remaining)} ر.ي</Text>
                 </View>
               </View>
+              {cashflow ? (
+                <View style={[styles.cashflowCard, { backgroundColor: colors.bgSecondary, borderColor: colors.border }]}>
+                  <View style={styles.cashflowHeader}>
+                    <Text style={[styles.cashflowTitle, { color: colors.textPrimary }]}>دفتر التدفقات النقدية</Text>
+                    <Text style={[styles.cashflowTotal, { color: colors.success }]}>{fmtN(cashflow.totals.amount)} ر.ي</Text>
+                  </View>
+                  <Text style={[styles.cashflowMeta, { color: colors.textMuted }]}>{cashflow.totals.count} حركة مسجلة · حسب الوسيلة والشهر</Text>
+                  <View style={styles.cashflowMethods}>
+                    {Object.entries(cashflow.totals.byMethod ?? {}).map(([method, value]) => (
+                      <Text key={method} style={[styles.cashflowMeta, { color: colors.textSecondary }]}>{method}: {fmtN(Number(value))}</Text>
+                    ))}
+                  </View>
+                </View>
+              ) : null}
+              {integrity && !integrity.ok ? (
+                <View style={[styles.integrityCard, { backgroundColor: colors.warning + '12', borderColor: colors.warning }]}>
+                  <Ionicons name="warning-outline" size={18} color={colors.warning} />
+                  <View style={styles.integrityTextWrap}>
+                    <Text style={[styles.integrityTitle, { color: colors.warning }]}>تحتاج البيانات إلى مراجعة</Text>
+                    <Text style={[styles.integrityText, { color: colors.textSecondary }]}>{integrity.warnings.join(' ')}</Text>
+                  </View>
+                </View>
+              ) : integrity ? (
+                <View style={[styles.integrityCard, { backgroundColor: colors.success + '12', borderColor: colors.success }]}>
+                  <Ionicons name="checkmark-circle-outline" size={18} color={colors.success} />
+                  <Text style={[styles.integrityTitle, { color: colors.success }]}>سلامة المشروع المالية والهيكلية سليمة</Text>
+                </View>
+              ) : null}
             </Card>
 
             {reportForMode.blocks.map((b: any) => (
@@ -274,7 +315,17 @@ const styles = StyleSheet.create({
   statLabel: { fontSize: fontSize.xs, fontFamily: 'Tajawal_500Medium' },
   statValue: { fontSize: fontSize.lg, fontFamily: 'Tajawal_700Bold' },
   finSummary: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.md, gap: spacing.sm },
-  finItem: { flex: 1, alignItems: 'center', gap: 2, padding: spacing.sm, borderRadius: radius.md, backgroundColor: '#F8FAFC' },
+  finItem: { flex: 1, alignItems: 'center', gap: 2, padding: spacing.sm, borderRadius: radius.md },
+  cashflowCard: { marginTop: spacing.md, padding: spacing.md, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, gap: 4 },
+  cashflowHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cashflowTitle: { fontSize: fontSize.sm, fontFamily: 'Tajawal_700Bold' },
+  cashflowTotal: { fontSize: fontSize.md, fontFamily: 'Tajawal_700Bold' },
+  cashflowMeta: { fontSize: fontSize.xs, fontFamily: 'Tajawal_500Medium' },
+  cashflowMethods: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.xs },
+  integrityCard: { marginTop: spacing.sm, padding: spacing.sm, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  integrityTextWrap: { flex: 1, gap: 2 },
+  integrityTitle: { fontSize: fontSize.sm, fontFamily: 'Tajawal_700Bold' },
+  integrityText: { fontSize: fontSize.xs, fontFamily: 'Tajawal_400Regular', lineHeight: 18 },
   finLabel: { fontSize: fontSize.xs, fontFamily: 'Tajawal_500Medium' },
   finValue: { fontSize: fontSize.sm, fontFamily: 'Tajawal_700Bold' },
   blockName: { fontSize: fontSize.md, fontFamily: 'Tajawal_700Bold' },

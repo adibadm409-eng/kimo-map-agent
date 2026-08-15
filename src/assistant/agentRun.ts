@@ -2,6 +2,8 @@ import type { PendingDeleteItem } from './store'
 
 // ---------- بث الأحداث ----------
 
+import type { VisibleAgentEvent } from './agentContract'
+
 export type AgentEvent =
   | { type: 'text'; content: string }
   | { type: 'tool'; name: string; args: any; result: any }
@@ -14,6 +16,7 @@ export type AgentEvent =
   | { type: 'error'; message: string }
   | { type: 'thinking' }
   | { type: 'done' }
+  | VisibleAgentEvent
 
 export type Listener = (e: AgentEvent) => void
 

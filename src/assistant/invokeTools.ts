@@ -103,6 +103,39 @@ export async function runRegistryTool(
 ): Promise<boolean> {
   const args = adaptToolArgs(tool, rawArgs ?? {})
 
+  if (tool === 'update' && String(args.entity ?? '') === 'plots' && args.data && (Object.prototype.hasOwnProperty.call(args.data, 'paid_amount') || Object.prototype.hasOwnProperty.call(args.data, 'remaining_amount'))) {
+    const obs = '[فشل] لا تعدل paid_amount أو remaining_amount مباشرة؛ استخدم مسار دفتر النقد لتسجيل دفعة أو عكسها حتى تبقى الأرقام قابلة للمراجعة.'
+    await persistPair(sessionId, call, obs, undefined, { name: tool, args, result: 'financial_columns_protected', ok: false })
+    if (emitEvents) emit({ type: 'tool', name: tool, args, result: 'financial_columns_protected' })
+    return true
+  }
+  if (tool === 'create' && String(args.entity ?? '') === 'plot_payments') {
+    const obs = '[فشل] تسجيل الأقساط لا يتم عبر إنشاء سجل خام؛ استخدم دفتر النقد الموحّد مع المشروع والأصل والتاريخ والمبلغ.'
+    await persistPair(sessionId, call, obs, undefined, { name: tool, args, result: 'ledger_required', ok: false })
+    if (emitEvents) emit({ type: 'tool', name: tool, args, result: 'ledger_required' })
+    return true
+  }
+  if (tool === 'project_import_commit') {
+    if (!Array.isArray(args.rows) || args.rows.length === 0) {
+      const obs = '[فشل] اعتماد المشروع يتطلب صفوفاً بعد المعاينة؛ لا أستطيع إنشاء مشروع فارغ من هذا المسار.'
+      await persistPair(sessionId, call, obs, undefined, { name: tool, args, result: 'rows_required', ok: false })
+      if (emitEvents) emit({ type: 'tool', name: tool, args, result: 'rows_required' })
+      return true
+    }
+    if (args.rows.length > 10000) {
+      const obs = '[فشل] الدفعة أكبر من الحد المحلي 10000 صف؛ قسّمها إلى دفعات بعد التأكد من مفاتيح التكرار.'
+      await persistPair(sessionId, call, obs, undefined, { name: tool, args: { ...args, rows: `[${args.rows.length} صف]` }, result: 'batch_too_large', ok: false })
+      if (emitEvents) emit({ type: 'tool', name: tool, args, result: 'batch_too_large' })
+      return true
+    }
+  }
+  if (tool === 'ledger_record_payment' && (!(Number(args.amount) > 0) || !args.project_id || (!args.node_id && !args.plot_id) || (args.node_id && args.plot_id))) {
+    const obs = '[فشل] الدفعة تحتاج مشروعاً وأصلاً واحداً ومبلغاً موجباً وتاريخاً واضحاً؛ اختر node_id أو plot_id وليس الاثنين.'
+    await persistPair(sessionId, call, obs, undefined, { name: tool, args, result: 'payment_contract_invalid', ok: false })
+    if (emitEvents) emit({ type: 'tool', name: tool, args, result: 'payment_contract_invalid' })
+    return true
+  }
+
   if (WRITE_TOOLS.has(tool) && s.mode === 'read') {
     const obs = '[فشل] العملية تتطلب وضع التعديل، والوضع الحالي للقراءة فقط. فعّل وضع التعديل من إعدادات المساعد ثم أعد المحاولة.'
     await persistPair(sessionId, call, obs, undefined, { name: tool, args, result: 'محظور في وضع القراءة فقط', ok: false })

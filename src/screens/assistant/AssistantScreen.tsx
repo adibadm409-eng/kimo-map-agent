@@ -34,6 +34,8 @@ import { shareFile, saveToDownloads } from '../../assistant'
 import AssistantHistory from './AssistantHistory'
 import Markdown from '../../components/ui/Markdown'
 import { TOOL_ARABIC, stepCardTitle, stepCardDetail, stepCardResult, linkCardLabel } from '../../assistant/toolLabels'
+import type { AgentDecision, AgentPhase, AgentPlan, AgentSkill, VisibleAgentEvent } from '../../assistant/agentContract'
+import { restoreRuntimeEvents } from '../../assistant/runtimeEvents'
 
 interface AttachItem {
   uri: string
@@ -60,6 +62,11 @@ export default function AssistantScreen({ navigation }: any) {
   const [selDel, setSelDel] = useState<number[]>([])
   const [thinking, setThinking] = useState(false)
   const [liveProgress, setLiveProgress] = useState<string[]>([])
+  const [agentPhase, setAgentPhase] = useState<AgentPhase>('understand')
+  const [agentPlan, setAgentPlan] = useState<AgentPlan | null>(null)
+  const [activeSkill, setActiveSkill] = useState<Pick<AgentSkill, 'id' | 'label' | 'description'> | null>(null)
+  const [agentDecisions, setAgentDecisions] = useState<AgentDecision[]>([])
+  const [agentObservations, setAgentObservations] = useState<VisibleAgentEvent[]>([])
   const [liveSteps, setLiveSteps] = useState<string[]>([])
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const listRef = useRef<FlatList>(null)
@@ -96,6 +103,17 @@ export default function AssistantScreen({ navigation }: any) {
     setMessages(msgs)
     const p = await getPending(sid).catch(() => null)
     setPending(p)
+    const runtimeEvents = await restoreRuntimeEvents(sid).catch(() => [])
+    const lastPlan = runtimeEvents.filter((event) => event.type === 'plan').pop()
+    const lastSkill = runtimeEvents.filter((event) => event.type === 'skill').pop()
+    const decisions = runtimeEvents.filter((event) => event.type === 'decision').slice(-4).map((event) => (event as Extract<VisibleAgentEvent, { type: 'decision' }>).decision)
+    const observations = runtimeEvents.filter((event) => event.type === 'observation' || event.type === 'recovery').slice(-3)
+    const lastPhase = runtimeEvents.filter((event): event is Extract<VisibleAgentEvent, { type: 'phase' }> => event.type === 'phase').pop()
+    setAgentPlan(lastPlan && lastPlan.type === 'plan' ? lastPlan.plan : null)
+    setActiveSkill(lastSkill && lastSkill.type === 'skill' ? lastSkill.skill : null)
+    setAgentDecisions(decisions)
+    setAgentObservations(observations)
+    if (lastPhase) setAgentPhase((lastPhase as Extract<VisibleAgentEvent, { type: 'phase' }>).phase)
     // عند فتح أي محادثة (بما فيها العودة بعد إغلاق التطبيق) نمرّر لأسفل المحادثة
     // وليس لمنتصفها، ثم نعيد التمرير بعد اكتمال الترسيم الأول.
     // والطلب يُسجَّل في wantedBottom لضمان التنفيذ عند أول ظهور فعلي للمحتوى.
@@ -157,6 +175,30 @@ export default function AssistantScreen({ navigation }: any) {
 
   useEffect(() => {
     const unsub = subscribeAgent((e) => {
+      if (e.type === 'phase') {
+        setAgentPhase(e.phase)
+        return
+      }
+      if (e.type === 'plan') {
+        setAgentPlan(e.plan)
+        return
+      }
+      if (e.type === 'plan_step') {
+        setAgentPlan((current) => current ? ({ ...current, steps: current.steps.map((step) => step.id === e.step.id ? e.step : step), currentStepId: e.step.status === 'active' ? e.step.id : current.currentStepId, updatedAt: Date.now() }) : current)
+        return
+      }
+      if (e.type === 'skill') {
+        setActiveSkill(e.skill)
+        return
+      }
+      if (e.type === 'decision') {
+        setAgentDecisions((prev) => [...prev.slice(-4), e.decision])
+        return
+      }
+      if (e.type === 'observation' || e.type === 'recovery') {
+        setAgentObservations((prev) => [...prev.slice(-3), e])
+        return
+      }
       if (e.type === 'stream') {
         if (e.done) setStreamText('')
         else setStreamText(e.content ?? '')
@@ -185,6 +227,7 @@ export default function AssistantScreen({ navigation }: any) {
         setStreamText('')
         setLiveProgress([])
         setLiveSteps([])
+        setAgentPhase('complete')
         reload(sessionId).catch(() => {})
         return
       }
@@ -266,6 +309,11 @@ export default function AssistantScreen({ navigation }: any) {
     setThinking(true)
     setStreamText('')
     setLiveProgress([])
+    setAgentPhase('understand')
+    setAgentPlan(null)
+    setActiveSkill(null)
+    setAgentDecisions([])
+    setAgentObservations([])
     try {
       await sendUserMessage(sid, trimmed, atts ? { attachments: atts } : undefined)
     } finally {
@@ -489,6 +537,95 @@ export default function AssistantScreen({ navigation }: any) {
     const params = paramsMap[kind]
     if (!params || !screenMap[kind]) return
     navigation.navigate(stack, { screen: screenMap[kind], params })
+  }
+
+  function phaseLabel(phase: AgentPhase): string {
+    const labels: Record<AgentPhase, string> = {
+      understand: 'أفهم طلبك', plan: 'أبني الخطة', ask: 'أحتاج قرارك', execute: 'أنفذ الآن', verify: 'أراجع النتيجة', recover: 'أعالج تعثراً', complete: 'اكتملت المهمة', paused: 'متوقف مؤقتاً', error: 'تحتاج المهمة إلى معالجة',
+    }
+    return labels[phase]
+  }
+
+  function phaseIcon(phase: AgentPhase): string {
+    if (phase === 'understand') return 'sparkles-outline'
+    if (phase === 'plan') return 'map-outline'
+    if (phase === 'ask') return 'help-circle-outline'
+    if (phase === 'execute') return 'play-circle-outline'
+    if (phase === 'verify') return 'shield-checkmark-outline'
+    if (phase === 'recover') return 'refresh-outline'
+    if (phase === 'complete') return 'checkmark-circle-outline'
+    if (phase === 'error') return 'alert-circle-outline'
+    return 'pause-circle-outline'
+  }
+
+  function planStepIcon(status: string): string {
+    if (status === 'done') return 'checkmark-circle'
+    if (status === 'active') return 'radio-button-on'
+    if (status === 'blocked') return 'alert-circle'
+    return 'ellipse-outline'
+  }
+
+  function renderAgentPanel() {
+    const visible = busy || thinking || !!agentPlan || !!activeSkill || agentDecisions.length > 0 || agentObservations.length > 0
+    if (!visible) return null
+    const currentStep = agentPlan?.steps.find((step) => step.id === agentPlan.currentStepId)
+    const lastDecision = agentDecisions[agentDecisions.length - 1]
+    const lastObservation = agentObservations[agentObservations.length - 1]
+    const lastObservationDetail = lastObservation && 'detail' in lastObservation ? lastObservation.detail : ''
+    return (
+      <View style={[styles.agentPanel, { backgroundColor: colors.bgSecondary, borderColor: colors.border }]}>
+        <View style={styles.agentPanelHeader}>
+          <View style={styles.agentIdentity}>
+            <View style={[styles.agentAvatar, { backgroundColor: colors.accent }]}><Ionicons name="sparkles" size={15} color="#fff" /></View>
+            <View style={styles.agentPanelTitleWrap}>
+              <Text style={[styles.agentPanelTitle, { color: colors.textPrimary }]}>كيمو يعمل معك</Text>
+              <Text style={[styles.agentPanelSub, { color: colors.textMuted }]}>{phaseLabel(agentPhase)}{currentStep ? ` · ${currentStep.title}` : ''}</Text>
+            </View>
+          </View>
+          <View style={[styles.phaseChip, { backgroundColor: agentPhase === 'error' ? colors.errorSurface : agentPhase === 'complete' ? colors.successSurface : colors.accentSurface }]}>
+            <Ionicons name={phaseIcon(agentPhase) as any} size={13} color={agentPhase === 'error' ? colors.error : agentPhase === 'complete' ? colors.success : colors.accent} />
+            <Text style={[styles.phaseChipText, { color: agentPhase === 'error' ? colors.error : agentPhase === 'complete' ? colors.success : colors.accent }]}>{phaseLabel(agentPhase)}</Text>
+          </View>
+        </View>
+        {activeSkill ? (
+          <View style={[styles.skillRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Ionicons name="construct-outline" size={15} color={colors.accent} />
+            <View style={styles.skillBody}>
+              <Text style={[styles.skillLabel, { color: colors.textPrimary }]}>{activeSkill.label}</Text>
+              <Text style={[styles.skillDescription, { color: colors.textMuted }]} numberOfLines={1}>{activeSkill.description}</Text>
+            </View>
+          </View>
+        ) : null}
+        {agentPlan ? (
+          <View style={styles.planWrap}>
+            <View style={styles.planTitleRow}>
+              <Text style={[styles.planTitle, { color: colors.textPrimary }]}>{agentPlan.goal}</Text>
+              <Text style={[styles.planCount, { color: colors.textMuted }]}>{agentPlan.steps.filter((s) => s.status === 'done').length}/{agentPlan.steps.length}</Text>
+            </View>
+            <View style={styles.planSteps}>
+              {agentPlan.steps.map((step) => (
+                <View key={step.id} style={styles.planStepRow}>
+                  <Ionicons name={planStepIcon(step.status) as any} size={15} color={step.status === 'done' ? colors.success : step.status === 'blocked' ? colors.error : step.status === 'active' ? colors.accent : colors.textMuted} />
+                  <Text style={[styles.planStepText, { color: step.status === 'active' ? colors.textPrimary : colors.textSecondary, fontFamily: step.status === 'active' ? 'Tajawal_700Bold' : 'Tajawal_400Regular' }]} numberOfLines={1}>{step.title}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : null}
+        {lastDecision ? (
+          <View style={[styles.decisionRow, { backgroundColor: lastDecision.kind === 'question' ? colors.warningSurface : colors.surface, borderColor: colors.border }]}>
+            <Ionicons name={lastDecision.kind === 'question' ? 'help-circle-outline' : 'git-branch-outline'} size={15} color={lastDecision.kind === 'question' ? colors.warning : colors.accent} />
+            <View style={styles.skillBody}><Text style={[styles.decisionTitle, { color: colors.textPrimary }]}>{lastDecision.title}</Text><Text style={[styles.skillDescription, { color: colors.textSecondary }]} numberOfLines={2}>{lastDecision.detail}</Text></View>
+          </View>
+        ) : null}
+        {lastObservation ? (
+          <View style={styles.observationRow}>
+            <Ionicons name={lastObservation.type === 'recovery' ? 'refresh-outline' : 'information-circle-outline'} size={14} color={lastObservation.type === 'recovery' ? colors.warning : colors.textMuted} />
+            <Text style={[styles.observationText, { color: colors.textMuted }]} numberOfLines={2}>{lastObservationDetail}</Text>
+          </View>
+        ) : null}
+      </View>
+    )
   }
 
   function renderLinkCard(link: { kind: string; id: string; label?: string }) {
@@ -737,6 +874,8 @@ export default function AssistantScreen({ navigation }: any) {
           )}
         </View>
       </View>
+
+      {renderAgentPanel()}
 
       <FlatList
         ref={listRef}
@@ -1033,4 +1172,28 @@ const styles = StyleSheet.create({
   stepTitle: { fontSize: fontSize.sm, fontWeight: '700', fontFamily: 'Tajawal_700Bold' },
   stepResult: { fontSize: fontSize.xs, fontFamily: 'Tajawal_400Regular', lineHeight: 18 },
   linkCard: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, paddingVertical: 8, paddingHorizontal: 12, marginVertical: 2 },
+  agentPanel: { marginHorizontal: spacing.lg, marginTop: spacing.sm, padding: spacing.md, borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth, gap: spacing.sm },
+  agentPanelHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  agentIdentity: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 },
+  agentAvatar: { width: 30, height: 30, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' },
+  agentPanelTitleWrap: { flex: 1, gap: 1 },
+  agentPanelTitle: { fontSize: fontSize.sm, fontFamily: 'Tajawal_700Bold' },
+  agentPanelSub: { fontSize: fontSize.xs, fontFamily: 'Tajawal_400Regular' },
+  phaseChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 5, borderRadius: radius.full, maxWidth: 145 },
+  phaseChipText: { fontSize: fontSize.xs, fontFamily: 'Tajawal_700Bold' },
+  skillRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: spacing.sm },
+  skillBody: { flex: 1, gap: 1 },
+  skillLabel: { fontSize: fontSize.sm, fontFamily: 'Tajawal_700Bold' },
+  skillDescription: { fontSize: fontSize.xs, fontFamily: 'Tajawal_400Regular' },
+  planWrap: { gap: spacing.xs },
+  planTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  planTitle: { flex: 1, fontSize: fontSize.sm, fontFamily: 'Tajawal_700Bold' },
+  planCount: { fontSize: fontSize.xs, fontFamily: 'Tajawal_700Bold' },
+  planSteps: { gap: 3 },
+  planStepRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 22 },
+  planStepText: { flex: 1, fontSize: fontSize.xs },
+  decisionRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: spacing.sm },
+  decisionTitle: { fontSize: fontSize.xs, fontFamily: 'Tajawal_700Bold' },
+  observationRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs },
+  observationText: { flex: 1, fontSize: fontSize.xs, lineHeight: 17, fontFamily: 'Tajawal_400Regular' },
 })

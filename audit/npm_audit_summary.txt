@@ -1,0 +1,666 @@
+--- VULNERABILITIES ---
+@expo/cli {
+  "severity": "high",
+  "isDirect": false,
+  "via": [
+    "@expo/config",
+    "@expo/config-plugins",
+    "@expo/metro",
+    "@expo/metro-config",
+    "@expo/prebuild-config"
+  ],
+  "range": "<=0.0.0-canary-20231123-1b19f96-4 || >=0.0.1-canary-20231125-d600e44",
+  "nodes": [
+    "node_modules/expo/node_modules/@expo/cli"
+  ]
+}
+@expo/config {
+  "severity": "moderate",
+  "isDirect": false,
+  "via": [
+    "@expo/config-plugins"
+  ],
+  "range": "<=0.0.1-canary-20240418-8d74597 || >=3.3.23-alpha.0",
+  "nodes": [
+    "node_modules/@expo/config"
+  ]
+}
+@expo/config-plugins {
+  "severity": "moderate",
+  "isDirect": false,
+  "via": [
+    "xcode"
+  ],
+  "range": "*",
+  "nodes": [
+    "node_modules/@expo/config-plugins"
+  ]
+}
+@expo/metro {
+  "severity": "high",
+  "isDirect": false,
+  "via": [
+    "metro",
+    "metro-config",
+    "metro-transform-worker"
+  ],
+  "range": "*",
+  "nodes": [
+    "node_modules/@expo/metro"
+  ]
+}
+@expo/metro-config {
+  "severity": "high",
+  "isDirect": false,
+  "via": [
+    "@expo/config",
+    "@expo/metro",
+    "postcss"
+  ],
+  "range": "<=0.0.1-canary-20240418-8d74597 || >=0.1.49-alpha.0",
+  "nodes": [
+    "node_modules/expo/node_modules/@expo/metro-config"
+  ]
+}
+@expo/prebuild-config {
+  "severity": "moderate",
+  "isDirect": false,
+  "via": [
+    "@expo/config",
+    "@expo/config-plugins"
+  ],
+  "range": "*",
+  "nodes": [
+    "node_modules/expo/node_modules/@expo/cli/node_modules/@expo/prebuild-config"
+  ]
+}
+@react-native/community-cli-plugin {
+  "severity": "high",
+  "isDirect": false,
+  "via": [
+    "metro",
+    "metro-config"
+  ],
+  "range": "*",
+  "nodes": [
+    "node_modules/@react-native/community-cli-plugin"
+  ]
+}
+brace-expansion {
+  "severity": "high",
+  "isDirect": false,
+  "via": [
+    {
+      "source": 1130588,
+      "name": "brace-expansion",
+      "dependency": "brace-expansion",
+      "title": "brace-expansion: DoS via unbounded expansion length causing an out-of-memory process crash",
+      "url": "https://github.com/advisories/GHSA-mh99-v99m-4gvg",
+      "severity": "high",
+      "cwe": [
+        "CWE-400",
+        "CWE-770"
+      ],
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+      },
+      "range": "<1.1.17"
+    },
+    {
+      "source": 1130589,
+      "name": "brace-expansion",
+      "dependency": "brace-expansion",
+      "title": "brace-expansion: DoS via unbounded expansion length causing an out-of-memory process crash",
+      "url": "https://github.com/advisories/GHSA-mh99-v99m-4gvg",
+      "severity": "high",
+      "cwe": [
+        "CWE-400",
+        "CWE-770"
+      ],
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+      },
+      "range": ">=2.0.0 <2.1.3"
+    },
+    {
+      "source": 1130734,
+      "name": "brace-expansion",
+      "dependency": "brace-expansion",
+      "title": "brace-expansion: DoS via unbounded intermediate arrays, bypassing the CVE-2026-14257 mitigation",
+      "url": "https://github.com/advisories/GHSA-rgw5-rvv9-x895",
+      "severity": "high",
+      "cwe": [
+        "CWE-400",
+        "CWE-770"
+      ],
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+      },
+      "range": ">=4.0.0 <5.0.9"
+    },
+    {
+      "source": 1130736,
+      "name": "brace-expansion",
+      "dependency": "brace-expansion",
+      "title": "brace-expansion: DoS via unbounded intermediate arrays, bypassing the CVE-2026-14257 mitigation",
+      "url": "https://github.com/advisories/GHSA-rgw5-rvv9-x895",
+      "severity": "high",
+      "cwe": [
+        "CWE-400",
+        "CWE-770"
+      ],
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+      },
+      "range": ">=2.0.0 <2.1.4"
+    },
+    {
+      "source": 1130737,
+      "name": "brace-expansion",
+      "dependency": "brace-expansion",
+      "title": "brace-expansion: DoS via unbounded intermediate arrays, bypassing the CVE-2026-14257 mitigation",
+      "url": "https://github.com/advisories/GHSA-rgw5-rvv9-x895",
+      "severity": "high",
+      "cwe": [
+        "CWE-400",
+        "CWE-770"
+      ],
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+      },
+      "range": "<1.1.18"
+    }
+  ],
+  "range": "<=1.1.17 || 2.0.0 - 2.1.3 || 4.0.0 - 5.0.8",
+  "nodes": [
+    "node_modules/@react-native/codegen/node_modules/brace-expansion",
+    "node_modules/brace-expansion",
+    "node_modules/expo/node_modules/brace-expansion",
+    "node_modules/react-native/node_modules/brace-expansion",
+    "node_modules/rimraf/node_modules/brace-expansion",
+    "node_modules/test-exclude/node_modules/brace-expansion"
+  ]
+}
+exceljs {
+  "severity": "moderate",
+  "isDirect": true,
+  "via": [
+    "uuid"
+  ],
+  "range": ">=3.5.0",
+  "nodes": [
+    "node_modules/exceljs"
+  ]
+}
+expo {
+  "severity": "high",
+  "isDirect": true,
+  "via": [
+    "@expo/cli",
+    "@expo/config",
+    "@expo/config-plugins",
+    "@expo/metro",
+    "@expo/metro-config",
+    "expo-asset",
+    "expo-constants"
+  ],
+  "range": ">=41.0.0-alpha.0",
+  "nodes": [
+    "node_modules/expo"
+  ]
+}
+expo-asset {
+  "severity": "moderate",
+  "isDirect": false,
+  "via": [
+    "expo-constants"
+  ],
+  "range": "<=0.0.1-canary-20240418-8d74597 || 8.6.1 - 55.0.0-canary-20260223-05214f1 || 55.0.3-canary-20260128-67ce8d5 || 55.0.8-canary-20260424-7bedc9d - 55.0.8-canary-20260429-a5e59cf || 55.0.11-canary-20260327-0789fbc - 55.0.11-canary-20260402-9da566b || 56.0.0-canary-20260212-4f61309 - 56.0.0-canary-20260506-964f25d",
+  "nodes": [
+    "node_modules/expo/node_modules/expo-asset"
+  ]
+}
+expo-constants {
+  "severity": "moderate",
+  "isDirect": false,
+  "via": [
+    "@expo/config"
+  ],
+  "range": "<=0.0.1-canary-20240418-8d74597 || 10.1.2 - 55.0.14 || 56.0.0-canary-20260212-4f61309 - 56.0.0-canary-20260506-964f25d",
+  "nodes": [
+    "node_modules/expo/node_modules/expo-constants"
+  ]
+}
+image-size {
+  "severity": "high",
+  "isDirect": false,
+  "via": [
+    {
+      "source": 1138808,
+      "name": "image-size",
+      "dependency": "image-size",
+      "title": "image-size: ICNS parser allows denial of service through an infinite loop",
+      "url": "https://github.com/advisories/GHSA-w3rx-r6r6-pgpr",
+      "severity": "high",
+      "cwe": [
+        "CWE-835"
+      ],
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+      },
+      "range": "<=2.0.2"
+    },
+    {
+      "source": 1138809,
+      "name": "image-size",
+      "dependency": "image-size",
+      "title": "image-size: JXL and HEIF parsers allow denial of service through infinite loops",
+      "url": "https://github.com/advisories/GHSA-5p2g-fcmc-qvqq",
+      "severity": "high",
+      "cwe": [
+        "CWE-835"
+      ],
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+      },
+      "range": "<=2.0.2"
+    }
+  ],
+  "range": "*",
+  "nodes": [
+    "node_modules/image-size"
+  ]
+}
+js-yaml {
+  "severity": "high",
+  "isDirect": false,
+  "via": [
+    {
+      "source": 1138114,
+      "name": "js-yaml",
+      "dependency": "js-yaml",
+      "title": "JS-YAML: Quadratic CPU consumption in !!omap resolution (3.x and 4.x) — CVE-2026-59870 fix not backported",
+      "url": "https://github.com/advisories/GHSA-5p4m-2wfm-xmqj",
+      "severity": "high",
+      "cwe": [
+        "CWE-407"
+      ],
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+      },
+      "range": ">=3.0.0 <3.15.1"
+    },
+    {
+      "source": 1138115,
+      "name": "js-yaml",
+      "dependency": "js-yaml",
+      "title": "JS-YAML: Quadratic CPU consumption in !!omap resolution (3.x and 4.x) — CVE-2026-59870 fix not backported",
+      "url": "https://github.com/advisories/GHSA-5p4m-2wfm-xmqj",
+      "severity": "high",
+      "cwe": [
+        "CWE-407"
+      ],
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+      },
+      "range": ">=4.0.0 <4.3.1"
+    }
+  ],
+  "range": "3.0.0 - 3.15.0 || 4.0.0 - 4.3.0",
+  "nodes": [
+    "node_modules/@expo/xcpretty/node_modules/js-yaml",
+    "node_modules/js-yaml"
+  ]
+}
+linkify-it {
+  "severity": "high",
+  "isDirect": false,
+  "via": [
+    {
+      "source": 1121797,
+      "name": "linkify-it",
+      "dependency": "linkify-it",
+      "title": "LinkifyIt#match scan loop has quadratic algorithmic complexity",
+      "url": "https://github.com/advisories/GHSA-22p9-wv53-3rq4",
+      "severity": "high",
+      "cwe": [
+        "CWE-1333"
+      ],
+      "cvss": {
+        "score": 0,
+        "vectorString": null
+      },
+      "range": "<=5.0.0"
+    },
+    {
+      "source": 1124012,
+      "name": "linkify-it",
+      "dependency": "linkify-it",
+      "title": "linkify-it: Quadratic-complexity DoS via the `mailto:` validator scan-loop on attacker text",
+      "url": "https://github.com/advisories/GHSA-v245-v573-v5vm",
+      "severity": "high",
+      "cwe": [
+        "CWE-407"
+      ],
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+      },
+      "range": "<=5.0.1"
+    }
+  ],
+  "range": "<=5.0.1",
+  "nodes": [
+    "node_modules/linkify-it"
+  ]
+}
+markdown-it {
+  "severity": "high",
+  "isDirect": false,
+  "via": [
+    {
+      "source": 1092663,
+      "name": "markdown-it",
+      "dependency": "markdown-it",
+      "title": "Uncontrolled Resource Consumption in markdown-it",
+      "url": "https://github.com/advisories/GHSA-6vfc-qv3f-vr6c",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-400",
+        "CWE-1333"
+      ],
+      "cvss": {
+        "score": 5.3,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L"
+      },
+      "range": "<12.3.2"
+    },
+    {
+      "source": 1120820,
+      "name": "markdown-it",
+      "dependency": "markdown-it",
+      "title": "markdown-it: Quadratic complexity DoS in smartquotes rule via replaceAt string operations",
+      "url": "https://github.com/advisories/GHSA-6v5v-wf23-fmfq",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-400",
+        "CWE-407"
+      ],
+      "cvss": {
+        "score": 5.3,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L"
+      },
+      "range": "<=14.1.1"
+    },
+    "linkify-it"
+  ],
+  "range": "<=14.1.1",
+  "nodes": [
+    "node_modules/markdown-it"
+  ]
+}
+metro {
+  "severity": "high",
+  "isDirect": false,
+  "via": [
+    "image-size",
+    "metro-config",
+    "metro-transform-worker"
+  ],
+  "range": ">=0.22.1",
+  "nodes": [
+    "node_modules/metro"
+  ]
+}
+metro-config {
+  "severity": "high",
+  "isDirect": false,
+  "via": [
+    "metro"
+  ],
+  "range": "*",
+  "nodes": [
+    "node_modules/metro-config"
+  ]
+}
+metro-transform-worker {
+  "severity": "high",
+  "isDirect": false,
+  "via": [
+    "metro"
+  ],
+  "range": ">=0.60.0",
+  "nodes": [
+    "node_modules/metro-transform-worker"
+  ]
+}
+nanoid {
+  "severity": "high",
+  "isDirect": false,
+  "via": [
+    {
+      "source": 1139427,
+      "name": "nanoid",
+      "dependency": "nanoid",
+      "title": "nanoid: custom generators can loop indefinitely when size is zero",
+      "url": "https://github.com/advisories/GHSA-2v37-7h3g-55p8",
+      "severity": "high",
+      "cwe": [
+        "CWE-835"
+      ],
+      "cvss": {
+        "score": 5.9,
+        "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
+      },
+      "range": "<3.3.18"
+    }
+  ],
+  "range": "<3.3.18",
+  "nodes": [
+    "node_modules/nanoid"
+  ]
+}
+postcss {
+  "severity": "high",
+  "isDirect": false,
+  "via": [
+    {
+      "source": 1117015,
+      "name": "postcss",
+      "dependency": "postcss",
+      "title": "PostCSS has XSS via Unescaped </style> in its CSS Stringify Output",
+      "url": "https://github.com/advisories/GHSA-qx2v-qp2m-jg93",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-79"
+      ],
+      "cvss": {
+        "score": 6.1,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N"
+      },
+      "range": "<8.5.10"
+    },
+    {
+      "source": 1124252,
+      "name": "postcss",
+      "dependency": "postcss",
+      "title": "PostCSS: Arbitrary file read and information disclosure via attacker-controlled sourceMappingURL in CSS comments",
+      "url": "https://github.com/advisories/GHSA-6g55-p6wh-862q",
+      "severity": "high",
+      "cwe": [
+        "CWE-22",
+        "CWE-200"
+      ],
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+      },
+      "range": "<=8.5.11"
+    },
+    {
+      "source": 1130709,
+      "name": "postcss",
+      "dependency": "postcss",
+      "title": "PostCSS: incomplete fix of GHSA-6g55-p6wh-862q — attacker-controlled sourceMappingURL reads arbitrary .map files when `from` is unset",
+      "url": "https://github.com/advisories/GHSA-fxqj-rqcc-2cmp",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-22",
+        "CWE-200"
+      ],
+      "cvss": {
+        "score": 0,
+        "vectorString": null
+      },
+      "range": "<=8.5.22"
+    },
+    {
+      "source": 1139510,
+      "name": "postcss",
+      "dependency": "postcss",
+      "title": "PostCSS: Path Traversal in Previous Source Map Auto-Loading (sourceMappingURL) leads to Arbitrary .map File Disclosure",
+      "url": "https://github.com/advisories/GHSA-r28c-9q8g-f849",
+      "severity": "high",
+      "cwe": [
+        "CWE-22"
+      ],
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+      },
+      "range": "<=8.5.17"
+    }
+  ],
+  "range": "<=8.5.22",
+  "nodes": [
+    "node_modules/postcss"
+  ]
+}
+react-native {
+  "severity": "high",
+  "isDirect": true,
+  "via": [
+    "@react-native/community-cli-plugin"
+  ],
+  "range": ">=0.73.0-nightly-20230506-1af868c52",
+  "nodes": [
+    "node_modules/react-native"
+  ]
+}
+react-native-markdown-display {
+  "severity": "moderate",
+  "isDirect": true,
+  "via": [
+    "markdown-it"
+  ],
+  "range": "*",
+  "nodes": [
+    "node_modules/react-native-markdown-display"
+  ]
+}
+undici {
+  "severity": "moderate",
+  "isDirect": false,
+  "via": [
+    {
+      "source": 1130716,
+      "name": "undici",
+      "dependency": "undici",
+      "title": "undici vulnerable to downstream response desynchronization via retry interceptor",
+      "url": "https://github.com/advisories/GHSA-8xcm-r25x-g524",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-444"
+      ],
+      "cvss": {
+        "score": 4.8,
+        "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:N"
+      },
+      "range": "<6.28.0"
+    },
+    {
+      "source": 1130727,
+      "name": "undici",
+      "dependency": "undici",
+      "title": "undici vulnerable to CRLF Injection via blob-like body 'type' property",
+      "url": "https://github.com/advisories/GHSA-m8rv-5g2x-5cg5",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-93"
+      ],
+      "cvss": {
+        "score": 4.2,
+        "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:L/A:N"
+      },
+      "range": "<6.28.0"
+    },
+    {
+      "source": 1130732,
+      "name": "undici",
+      "dependency": "undici",
+      "title": "undici vulnerable to cookie attribute injection via unsanitized domain and unparsed setCookie fields",
+      "url": "https://github.com/advisories/GHSA-v3r7-h72x-cjcm",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-74"
+      ],
+      "cvss": {
+        "score": 4.8,
+        "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:N"
+      },
+      "range": "<6.28.0"
+    }
+  ],
+  "range": "<=6.27.0",
+  "nodes": [
+    "node_modules/undici"
+  ]
+}
+uuid {
+  "severity": "moderate",
+  "isDirect": false,
+  "via": [
+    {
+      "source": 1119441,
+      "name": "uuid",
+      "dependency": "uuid",
+      "title": "uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided",
+      "url": "https://github.com/advisories/GHSA-w5hq-g745-h8pq",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-787",
+        "CWE-1285"
+      ],
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"
+      },
+      "range": "<11.1.1"
+    }
+  ],
+  "range": "<11.1.1",
+  "nodes": [
+    "node_modules/exceljs/node_modules/uuid",
+    "node_modules/uuid"
+  ]
+}
+xcode {
+  "severity": "moderate",
+  "isDirect": false,
+  "via": [
+    "uuid"
+  ],
+  "range": ">=0.9.2",
+  "nodes": [
+    "node_modules/xcode"
+  ]
+}

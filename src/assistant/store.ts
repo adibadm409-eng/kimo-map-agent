@@ -1,6 +1,8 @@
 import { getDB } from '../database/db'
 import { defaultProvider, type CustomProviderDef, type ProviderId } from './providers'
 import * as SQLite from 'expo-sqlite'
+import * as SecureStore from 'expo-secure-store'
+import { Platform } from 'react-native'
 
 export type AgentMode = 'read' | 'edit'
 export type MessageKind = 'text' | 'tool' | 'tool_call' | 'ask_user' | 'confirmation' | 'file' | 'link' | 'error' | 'system' | 'progress'
@@ -93,9 +95,13 @@ function db(): Promise<SQLite.SQLiteDatabase> {
         CREATE TABLE IF NOT EXISTS agent_brain (
           id TEXT PRIMARY KEY, session_id TEXT, kind TEXT, body TEXT, created_at INTEGER
         );
+        CREATE TABLE IF NOT EXISTS agent_runtime_events (
+          id TEXT PRIMARY KEY, session_id TEXT NOT NULL, event_type TEXT NOT NULL, payload TEXT NOT NULL, created_at INTEGER NOT NULL
+        );
         CREATE INDEX IF NOT EXISTS idx_agent_msgs ON agent_messages (session_id, created_at);
         CREATE INDEX IF NOT EXISTS idx_agent_undo ON agent_undo (session_id, created_at);
         CREATE INDEX IF NOT EXISTS idx_agent_brain ON agent_brain (session_id, created_at);
+        CREATE INDEX IF NOT EXISTS idx_agent_runtime_events ON agent_runtime_events (session_id, created_at);
       `)
       return d
     })()
@@ -107,7 +113,94 @@ export function genId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
 }
 
+export interface AgentRuntimeEvent {
+  id: string
+  sessionId: string
+  eventType: string
+  payload: any
+  createdAt: number
+}
+
+export async function saveRuntimeEvent(sessionId: string, eventType: string, payload: any): Promise<void> {
+  const d = await db()
+  await d.runAsync(
+    'INSERT INTO agent_runtime_events (id, session_id, event_type, payload, created_at) VALUES (?, ?, ?, ?, ?)',
+    genId(), sessionId, eventType, JSON.stringify(payload ?? {}), Date.now(),
+  )
+}
+
+export async function listRuntimeEvents(sessionId: string, limit = 120): Promise<AgentRuntimeEvent[]> {
+  const d = await db()
+  const rows = await d.getAllAsync<{ id: string; session_id: string; event_type: string; payload: string; created_at: number }>(
+    'SELECT * FROM agent_runtime_events WHERE session_id = ? ORDER BY created_at ASC LIMIT ?', sessionId, limit,
+  )
+  return rows.map((row) => ({
+    id: row.id,
+    sessionId: row.session_id,
+    eventType: row.event_type,
+    payload: (() => { try { return JSON.parse(row.payload) } catch { return { raw: row.payload } } })(),
+    createdAt: row.created_at,
+  }))
+}
+
+export async function clearRuntimeEvents(sessionId: string): Promise<void> {
+  const d = await db()
+  await d.runAsync('DELETE FROM agent_runtime_events WHERE session_id = ?', sessionId)
+}
+
 // ---------- الإعدادات ----------
+
+const SECRET_PREFIX = 'property-manager.secret.'
+
+function secretKey(id: string): string {
+  return `${SECRET_PREFIX}${encodeURIComponent(id)}`
+}
+
+async function readSecret(id: string, legacy?: string): Promise<string> {
+  if (Platform.OS === 'web') return legacy ?? ''
+  try {
+    const stored = await SecureStore.getItemAsync(secretKey(id))
+    if (stored) return stored
+    if (legacy) {
+      await SecureStore.setItemAsync(secretKey(id), legacy, { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK })
+      return legacy
+    }
+  } catch {}
+  return legacy ?? ''
+}
+
+async function writeSecret(id: string, value: string): Promise<void> {
+  if (Platform.OS === 'web') return
+  try {
+    if (value) await SecureStore.setItemAsync(secretKey(id), value, { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK })
+    else await SecureStore.deleteItemAsync(secretKey(id))
+  } catch {}
+}
+
+async function hydrateSecrets(keys: Record<string, string>, customProviders: CustomProviderDef[]): Promise<{ keys: Record<string, string>; customProviders: CustomProviderDef[] }> {
+  const hydratedKeys: Record<string, string> = {}
+  for (const [provider, legacy] of Object.entries(keys ?? {})) hydratedKeys[provider] = await readSecret(`provider:${provider}`, legacy)
+  const hydratedCustom = await Promise.all((customProviders ?? []).map(async (provider) => ({
+    ...provider,
+    apiKey: await readSecret(`custom:${provider.id}`, provider.apiKey ?? ''),
+  })))
+  return { keys: hydratedKeys, customProviders: hydratedCustom }
+}
+
+async function persistSecrets(keys: Record<string, string>, customProviders: CustomProviderDef[]): Promise<{ keys: Record<string, string>; customProviders: CustomProviderDef[] }> {
+  for (const [provider, value] of Object.entries(keys ?? {})) await writeSecret(`provider:${provider}`, value)
+  const sanitizedCustom = await Promise.all((customProviders ?? []).map(async (provider) => {
+    await writeSecret(`custom:${provider.id}`, provider.apiKey ?? '')
+    return { ...provider, apiKey: '' }
+  }))
+  return { keys: {}, customProviders: sanitizedCustom }
+}
+
+export async function clearStoredAgentSecrets(): Promise<void> {
+  const current = await getSettings()
+  for (const provider of Object.keys(current.keys)) await writeSecret(`provider:${provider}`, '')
+  for (const provider of current.customProviders) await writeSecret(`custom:${provider.id}`, '')
+}
 
 const DEFAULT_SETTINGS: AgentSettings = {
   activeProvider: 'deepseek',
@@ -129,12 +222,23 @@ export async function getSettings(): Promise<AgentSettings> {
   if (map.has('customProviders')) { try { s.customProviders = JSON.parse(map.get('customProviders')!) } catch {} }
   if (map.has('modelLists')) { try { s.modelLists = JSON.parse(map.get('modelLists')!) } catch {} }
   if (map.has('mode')) s.mode = map.get('mode') === 'edit' ? 'edit' : 'read'
+  const hydrated = await hydrateSecrets(s.keys, s.customProviders)
+  s.keys = hydrated.keys
+  s.customProviders = hydrated.customProviders
   return s
 }
 
 export async function setSetting<K extends keyof AgentSettings>(key: K, value: AgentSettings[K]): Promise<void> {
   const d = await db()
-  const serialized = typeof value === 'string' ? value : JSON.stringify(value)
+  let valueToPersist: any = value
+  if (key === 'keys') {
+    const stored = await persistSecrets(value as AgentSettings['keys'], (await getSettings()).customProviders)
+    valueToPersist = stored.keys
+  } else if (key === 'customProviders') {
+    const stored = await persistSecrets((await getSettings()).keys, value as AgentSettings['customProviders'])
+    valueToPersist = stored.customProviders
+  }
+  const serialized = typeof valueToPersist === 'string' ? valueToPersist : JSON.stringify(valueToPersist)
   await d.runAsync(
     'INSERT OR REPLACE INTO agent_settings (key, value) VALUES (?, ?)',
     key as string,
@@ -150,8 +254,8 @@ export async function setSettings(patch: Partial<AgentSettings>): Promise<AgentS
     const entries: [string, string][] = [
       ['activeProvider', next.activeProvider],
       ['models', JSON.stringify(next.models)],
-      ['keys', JSON.stringify(next.keys)],
-      ['customProviders', JSON.stringify(next.customProviders)],
+      ['keys', JSON.stringify((await persistSecrets(next.keys, next.customProviders)).keys)],
+      ['customProviders', JSON.stringify((await persistSecrets(next.keys, next.customProviders)).customProviders)],
       ['modelLists', JSON.stringify(next.modelLists)],
       ['mode', next.mode],
     ]

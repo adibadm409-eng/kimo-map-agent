@@ -1,6 +1,7 @@
 import * as SQLite from 'expo-sqlite'
 import { getDB } from './db'
 import { logChange, withAuditCtx } from './audit'
+import { ensureProjectDomainSchema, ensureProjectProfile, recordLedgerPayment, reverseLedgerPayment, type ProjectKind } from '../domain/projectDomain'
 
 export type EntityType = 'project' | 'block' | 'plot'
 export type PlotStatus = 'available' | 'sold' | 'installment'
@@ -340,15 +341,21 @@ export async function getProject(id: string): Promise<Project | null> {
   return await db.getFirstAsync<Project>('SELECT * FROM projects WHERE id = ?', [id])
 }
 
-export async function createProject(name: string, description?: string): Promise<string> {
+export async function createProject(name: string, description?: string, kind: ProjectKind = 'land'): Promise<string> {
   await ensureSchema()
+  await ensureProjectDomainSchema()
+  const cleanName = String(name ?? '').trim()
+  if (!cleanName) throw new Error('اسم المشروع مطلوب.')
   const db = await getDB()
+  const duplicate = await db.getFirstAsync<{ id: string }>('SELECT id FROM projects WHERE lower(trim(name)) = lower(trim(?)) LIMIT 1', [cleanName])
+  if (duplicate) throw new Error(`يوجد مشروع بالاسم نفسه مسبقاً (${duplicate.id}). افتحه أو استخدم اسماً مختلفاً.`)
   const id = genId()
   await db.runAsync(
     'INSERT INTO projects (id, name, description) VALUES (?, ?, ?)',
-    [id, name, description ?? '']
+    [id, cleanName, description ?? '']
   )
-  await logChange({ action: 'create', scope: 'projects', scopeId: id, after: { name, description: description ?? '' }, summary: `إنشاء مشروع "${name}"` })
+  await ensureProjectProfile(id, kind)
+  await logChange({ action: 'create', scope: 'projects', scopeId: id, after: { name: cleanName, description: description ?? '' }, summary: `إنشاء مشروع "${cleanName}"` })
   return id
 }
 
@@ -419,19 +426,28 @@ export async function syncBlockPlotCount(blockId: string): Promise<void> {
 export async function createBlock(data: { project_id: string; name: string; plot_count: number; notes?: string; skipSlots?: boolean }): Promise<string> {
   await ensureSchema()
   const db = await getDB()
+  const cleanName = String(data.name ?? '').trim()
+  const plotCount = Math.floor(Number(data.plot_count))
+  if (!cleanName) throw new Error('اسم البلوك مطلوب.')
+  if (!Number.isFinite(plotCount) || plotCount < 0 || plotCount > 100000) throw new Error('عدد القطع يجب أن يكون رقماً صحيحاً بين 0 و100000.')
   const project = await db.getFirstAsync<{ id: string }>('SELECT id FROM projects WHERE id = ?', [data.project_id])
   if (!project) throw new Error(`المشروع (${data.project_id}) غير موجود — لا يمكن إنشاء بلوك يتيم. أنشئ المشروع أولاً ثم اجلب معرفه الحقيقي.`)
+  const duplicate = await db.getFirstAsync<{ id: string }>('SELECT id FROM blocks WHERE project_id = ? AND lower(trim(name)) = lower(trim(?)) LIMIT 1', [data.project_id, cleanName])
+  if (duplicate) throw new Error(`يوجد بلوك بالاسم نفسه داخل المشروع (${duplicate.id}).`)
   const id = genId()
-  await db.runAsync(
-    'INSERT INTO blocks (id, project_id, name, plot_count, notes) VALUES (?, ?, ?, ?, ?)',
-    [id, data.project_id, data.name, data.skipSlots ? 0 : data.plot_count, data.notes ?? '']
-  )
-  await logChange({ action: 'create', scope: 'blocks', scopeId: id, after: data, summary: `إنشاء بلوك "${data.name}"` })
-  if (!data.skipSlots) {
-    for (let i = 0; i < data.plot_count; i++) {
-      await createPlotSlot(id)
+  await db.withTransactionAsync(async () => {
+    await db.runAsync(
+      'INSERT INTO blocks (id, project_id, name, plot_count, notes) VALUES (?, ?, ?, ?, ?)',
+      [id, data.project_id, cleanName, data.skipSlots ? 0 : plotCount, data.notes ?? '']
+    )
+    if (!data.skipSlots) {
+      for (let i = 0; i < plotCount; i++) {
+        const plotId = genId()
+        await db.runAsync('INSERT INTO plots (id, block_id, plot_no, status) VALUES (?, ?, ?, ?)', [plotId, id, `قطعة ${i + 1}`, 'available'])
+      }
     }
-  }
+  })
+  await logChange({ action: 'create', scope: 'blocks', scopeId: id, after: { ...data, name: cleanName, plot_count: plotCount }, summary: `إنشاء بلوك "${cleanName}" مع ${data.skipSlots ? 0 : plotCount} قطعة` })
   return id
 }
 
@@ -575,42 +591,34 @@ export async function recordPayment(
   p: { amount: number; pay_date: string; method: PaymentMethod; cash_recipient?: string; cash_receipt_no?: string; bank_name?: string; bank_ref_no?: string }
 ): Promise<string> {
   await ensureSchema()
+  await ensureProjectDomainSchema()
   const db = await getDB()
-  const id = genId()
-  const plotBefore = await db.getFirstAsync<Plot>('SELECT * FROM plots WHERE id = ?', [plotId])
-  if (!plotBefore) throw new Error(`القطعة (${plotId}) غير موجودة — لا يمكن تسجيل قسط يتيم. أنشئ القطعة أولاً ثم اجلب معرفها الحقيقي.`)
-  await db.withTransactionAsync(async () => {
-    await db.runAsync(
-      'INSERT INTO plot_payments (id, plot_id, amount, pay_date, method, cash_recipient, cash_receipt_no, bank_name, bank_ref_no) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [id, plotId, p.amount, p.pay_date, p.method, p.cash_recipient ?? '', p.cash_receipt_no ?? '', p.bank_name ?? '', p.bank_ref_no ?? '']
-    )
-    await db.runAsync(
-      "UPDATE plots SET paid_amount = paid_amount + ?, remaining_amount = remaining_amount - ?, updated_at = datetime('now') WHERE id = ?",
-      [p.amount, p.amount, plotId]
-    )
-    const row = await db.getFirstAsync<{ status: string }>('SELECT status FROM plots WHERE id = ?', [plotId])
-    if (row && row.status === 'available') {
-      await db.runAsync("UPDATE plots SET status = 'installment', updated_at = datetime('now') WHERE id = ?", [plotId])
-    }
+  const plotBefore = await db.getFirstAsync<Plot & { project_id: string }>(
+    'SELECT pl.*, b.project_id FROM plots pl JOIN blocks b ON b.id = pl.block_id WHERE pl.id = ?',
+    [plotId]
+  )
+  if (!plotBefore) throw new Error(`القطعة (${plotId}) غير موجودة — لا يمكن تسجيل قسط يتيم. أنشئ القطعة أولاً ثم اجلب معرفه الحقيقي.`)
+  const result = await recordLedgerPayment({
+    projectId: plotBefore.project_id,
+    plotId,
+    amount: p.amount,
+    payDate: p.pay_date,
+    method: p.method,
+    cashRecipient: p.cash_recipient,
+    cashReceiptNo: p.cash_receipt_no,
+    bankName: p.bank_name,
+    bankRefNo: p.bank_ref_no,
+    source: 'user',
   })
-  await logChange({ action: 'create', scope: 'plot_payments', scopeId: id, after: { plot_id: plotId, ...p }, summary: `تسجيل قسط ${p.amount} ر.ي على القطعة "${plotBefore?.plot_no || plotId}"` })
-  return id
+  await logChange({ action: 'create', scope: 'plot_payments', scopeId: result.ledgerId, after: { plot_id: plotId, ...p, ledger_id: result.ledgerId }, summary: `تسجيل قسط ${p.amount} ر.ي على القطعة "${plotBefore.plot_no || plotId}"` })
+  return result.ledgerId
 }
 
 export async function deletePayment(paymentId: string, plotId: string): Promise<void> {
   await ensureSchema()
-  const db = await getDB()
-  const before = await db.getFirstAsync<PlotPayment>('SELECT * FROM plot_payments WHERE id = ?', [paymentId])
-  await db.withTransactionAsync(async () => {
-    const row = await db.getFirstAsync<{ amount: number }>('SELECT amount FROM plot_payments WHERE id = ?', [paymentId])
-    if (!row) return
-    await db.runAsync('DELETE FROM plot_payments WHERE id = ?', [paymentId])
-    await db.runAsync(
-      "UPDATE plots SET paid_amount = paid_amount - ?, remaining_amount = remaining_amount + ?, updated_at = datetime('now') WHERE id = ?",
-      [row.amount, row.amount, plotId]
-    )
-  })
-  await logChange({ action: 'delete', scope: 'plot_payments', scopeId: paymentId, before, summary: `حذف قسط (${paymentId}) عن القطعة (${plotId})` })
+  const before = await getDB().then((db) => db.getFirstAsync<PlotPayment>('SELECT * FROM plot_payments WHERE id = ?', [paymentId]))
+  const result = await reverseLedgerPayment(paymentId, plotId, 'عكس الدفعة من مسار إدارة الأقساط')
+  await logChange({ action: 'delete', scope: 'plot_payments', scopeId: paymentId, before, after: { reversal_id: result.reversalId, amount: result.amount }, summary: `عكس قسط (${paymentId}) عن القطعة (${plotId})` })
 }
 
 export async function getCustomFields(entityType: EntityType): Promise<CustomField[]> {

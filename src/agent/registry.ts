@@ -39,6 +39,8 @@ import {
 } from '../database/workspace'
 import { queryChangeLog, changeLogStats, dailyActorStats } from '../database/audit'
 import { searchEntities, setCustomValue } from '../database/projects'
+import { DOMAIN_TOOLS } from './domainTools'
+import { getScreenCatalog } from './screenCatalog'
 
 export interface ToolArg {
   name: string
@@ -55,6 +57,13 @@ export interface ToolDef {
 }
 
 export const TOOLS: ToolDef[] = [
+  ...DOMAIN_TOOLS,
+  {
+    name: 'app_screen_catalog',
+    description: 'خريطة تشغيلية لكل شاشات التطبيق: الهدف، الكيانات، أدوات القراءة والكتابة، مستوى الخطر، سياسة التعديل الآمن، وأدوات التحقق. اقرأها قبل تنظيم أو تعديل بيانات شاشة غير معروفة.',
+    args: [{ name: 'screen', type: 'string', description: 'معرف أو اسم الشاشة، أو اتركه فارغاً للدليل الكامل' }],
+    handler: async (args) => ({ screens: getScreenCatalog(args.screen ? String(args.screen) : undefined) }),
+  },
   {
     name: 'list_entities',
     description: 'قائمة بجميع الكيانات (الجداول) المدعومة في التطبيق مع وصفها بالعربية',

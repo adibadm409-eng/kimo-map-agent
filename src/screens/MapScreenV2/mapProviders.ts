@@ -1,5 +1,7 @@
 import * as FileSystem from "expo-file-system/legacy"
 import type { MapTypeKey } from "./types"
+import * as SecureStore from "expo-secure-store"
+import { Platform } from "react-native"
 
 const FILE_DIR = (FileSystem.documentDirectory || "") + "map/"
 const FILE = FILE_DIR + "mapa_provider_v1.json"
@@ -181,6 +183,38 @@ export interface ProviderSettings {
 const DEFAULTS: ProviderSettings = { keys: {}, hidden: [] }
 
 let cache: ProviderSettings | null = null
+const MAP_SECRET_PREFIX = 'property-manager.map-secret.'
+
+async function readMapKeys(legacy: Record<string, string>): Promise<Record<string, string>> {
+  if (Platform.OS === 'web') return legacy ?? {}
+  const out: Record<string, string> = {}
+  for (const [key, value] of Object.entries(legacy ?? {})) {
+    try {
+      const secureKey = `${MAP_SECRET_PREFIX}${encodeURIComponent(key)}`
+      const stored = await SecureStore.getItemAsync(secureKey)
+      if (stored) out[key] = stored
+      else if (value) {
+        await SecureStore.setItemAsync(secureKey, value, { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK })
+        out[key] = value
+      }
+    } catch {
+      if (value) out[key] = value
+    }
+  }
+  return out
+}
+
+async function persistMapKeys(keys: Record<string, string>): Promise<Record<string, string>> {
+  if (Platform.OS === 'web') return keys ?? {}
+  for (const [key, value] of Object.entries(keys ?? {})) {
+    try {
+      const secureKey = `${MAP_SECRET_PREFIX}${encodeURIComponent(key)}`
+      if (value) await SecureStore.setItemAsync(secureKey, value, { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK })
+      else await SecureStore.deleteItemAsync(secureKey)
+    } catch {}
+  }
+  return {}
+}
 
 export function resetProviderSettingsCache(): void {
   cache = null
@@ -193,7 +227,12 @@ export async function loadProviderSettings(): Promise<ProviderSettings> {
     const info = await FileSystem.getInfoAsync(FILE)
     if (info.exists) {
       const raw = await FileSystem.readAsStringAsync(FILE, { encoding: "utf8" })
-      cache = { ...DEFAULTS, ...(JSON.parse(raw) as Partial<ProviderSettings>) }
+      const parsed = { ...DEFAULTS, ...(JSON.parse(raw) as Partial<ProviderSettings>) }
+      const keys = await readMapKeys(parsed.keys ?? {})
+      cache = { ...parsed, keys }
+      if (Platform.OS !== 'web' && Object.keys(parsed.keys ?? {}).length > 0) {
+        await FileSystem.writeAsStringAsync(FILE, JSON.stringify({ ...cache, keys: {} }), { encoding: "utf8" }).catch(() => {})
+      }
       return cache
     }
   } catch {}
@@ -204,9 +243,11 @@ export async function loadProviderSettings(): Promise<ProviderSettings> {
 export async function saveProviderSettings(patch: Partial<ProviderSettings>): Promise<ProviderSettings> {
   const cur = cache ?? (await loadProviderSettings())
   cache = { ...cur, ...patch }
+  const storedKeys = await persistMapKeys(cache.keys ?? {})
+  const fileState = { ...cache, keys: storedKeys }
   try {
     await FileSystem.makeDirectoryAsync(FILE_DIR, { intermediates: true }).catch(() => {})
-    await FileSystem.writeAsStringAsync(FILE, JSON.stringify(cache), { encoding: "utf8" })
+    await FileSystem.writeAsStringAsync(FILE, JSON.stringify(fileState), { encoding: "utf8" })
   } catch {}
   return cache
 }

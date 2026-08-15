@@ -432,16 +432,19 @@ ${['projects', 'blocks', 'plots', 'plot_payments', 'custom_fields', 'custom_fiel
   .join('\n')}`
   )
   sections.push(
-    `(7) المالية والتحليلات — لا تُقرأ بالجداول بل بأدوات تحليلية جاهزة: buyer_summary (ملخص أي مشترٍ)، payment_ledger (دفتر أقساط)، dashboard_kpis (مؤشرات عامة)، project_financials (فروقات قطع المشروع)، installment_schedule (جدولة قسط قطعة). اسأل عبر execute بأداة التحليل المناسبة وحدد project_id/plot_id/buyer_query.`
+    `(7) المشاريع متعددة الأنماط ومحرك الإدخال — project_profile_get يقرأ نوع المشروع وعملته؛ project_nodes_list يقرأ شجرة الأصول للمباني والأبراج والوحدات والمواقف والمحلات؛ project_import_preview يعاين جدول المصدر ويكشف التكرار والأخطاء دون كتابة؛ project_import_commit يعتمد الدفعة داخل transaction ويرجع batch_id ونتيجة تحقق؛ project_integrity_check يفحص العقد اليتيمة وفروقات المال والعدادات. استخدم هذه الأدوات لأي مشروع جماعي ولا تستخدم CRUD العام لتفريغ الصفوف.`
   )
   sections.push(
-    `(8) مساحات العمل المرنة — مشاريع حرة بجداول وأعمدة مخصصة: workspace_create للإنشاء، list_workspaces لعرضها، workspace_get (structures/rows) لقراءة أي منها، workspace_add_* / update / delete للتعديل، workspace_import_rows للإدخال الجماعي.`
+    `(8) المالية والتحليلات — لا تُقرأ بالجداول بل بأدوات تحليلية جاهزة: buyer_summary (ملخص أي مشترٍ)، payment_ledger (دفتر أقساط قديم للتوافق)، project_cashflow (دفتر النقد الموحد حسب المشروع والفترة)، ledger_record_payment (تسجيل دفعة موثقة)، dashboard_kpis (مؤشرات عامة)، project_financials (فروقات قطع المشروع)، installment_schedule (جدولة قسط قطعة). لا تعدل paid_amount أو remaining_amount مباشرة؛ استخدم ledger_record_payment ثم project_integrity_check.`
   )
   sections.push(
-    `(9) الملفات المرفوعة — list_attachments لعرضها، read_uploaded_file لمعاينة أي ملف، import_project_file لتحويل ملف جدولي منظم إلى مساحة عمل، remove_attachment للحذف.`
+    `(9) مساحات العمل المرنة — بيانات حرة لا تمثل أصولاً عقارية: workspace_create للإنشاء، list_workspaces لعرضها، workspace_get (structures/rows) لقراءة أي منها، workspace_add_* / update / delete للتعديل، workspace_import_rows للإدخال الجماعي. لا تستخدمها لمشروع رسمي إلا إذا طلب المستخدم جدولاً حراً صراحةً.`
   )
   sections.push(
-    `(10) سجل التدقيق — كل عملية كتابة (إنشاء/تعديل/حذف/استيراد/تراجع) تُسجَّل تلقائياً مع من نفّذها (وكيل agent أو مستخدم user أو تراجع undo أو نظام system) وجلسة الوكيل والأداة والملخص. استعلم عبر audit_log_query (فلاتر: action/scope/scope_id/actor/session_id/tool/فترة/search) أو audit_log_summary للإحصائيات — عند أي سؤال عن "من غيّر ماذا ومتى" أو "ماذا فعل الوكيل في هذه الجلسة" استخدم هاتين الأداتين.`
+    `(10) الملفات المرفوعة — list_attachments لعرضها، read_uploaded_file لمعاينة أي ملف، ثم حوّل البيانات العقارية إلى project_import_preview/commit؛ استخدم import_project_file فقط للبيانات الحرة، وremove_attachment للحذف.`
+  )
+  sections.push(
+    `(11) سجل التدقيق — كل عملية كتابة (إنشاء/تعديل/حذف/استيراد/تراجع) تُسجَّل تلقائياً مع من نفّذها (وكيل agent أو مستخدم user أو تراجع undo أو نظام system) وجلسة الوكيل والأداة والملخص. استعلم عبر audit_log_query (فلاتر: action/scope/scope_id/actor/session_id/tool/فترة/search) أو audit_log_summary للإحصائيات — عند أي سؤال عن "من غيّر ماذا ومتى" أو "ماذا فعل الوكيل في هذه الجلسة" استخدم هاتين الأداتين.`
   )
   return sections.join('\n\n')
 }
