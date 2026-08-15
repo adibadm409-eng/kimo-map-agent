@@ -5,10 +5,10 @@ import * as Haptics from "expo-haptics"
 import { Image } from "expo-image"
 import * as Sharing from "expo-sharing"
 import * as Clipboard from "expo-clipboard"
+import { TYPE_LABELS } from "../../../types"
 import { useVideoPlayer, VideoView } from "expo-video"
 
 const PROP_STATUS: Record<string, string> = { for_sale: "للبيع", sold: "مُباع", rented: "مؤجر", pending: "تحت المعالجة" }
-const PROP_TYPE: Record<string, string> = { apartment: "شقة", villa: "فيلا", land: "أرض", office: "مكتب", commercial: "محل تجاري" }
 const WP_CATS: Record<string, string> = {
   general: "عام", property: "عقار", office: "مكتب",
   landmark: "معلم", client: "عميل", site_visit: "زيارة موقع",
@@ -41,7 +41,7 @@ export function fmtPrice(v: number): string {
 
 export function pinKindText(kind: "property" | "waypoint", data: any): string {
   return kind === "property"
-    ? PROP_TYPE[data.type] || data.type
+    ? TYPE_LABELS[data.type] || data.type
     : WP_CATS[data.category] || data.category || "علامة"
 }
 

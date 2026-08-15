@@ -33,10 +33,6 @@ const PROP_STATUS: Record<string, string> = {
   for_sale: "للبيع", sold: "مُباع", rented: "مؤجر", pending: "تحت المعالجة",
 }
 
-const PROP_TYPE: Record<string, string> = {
-  apartment: "شقة", villa: "فيلا", land: "أرض", office: "مكتب", commercial: "محل تجاري",
-}
-
 export default function MapScreen() {
   const insets = useSafeAreaInsets()
   const nav = useNavigation<any>()

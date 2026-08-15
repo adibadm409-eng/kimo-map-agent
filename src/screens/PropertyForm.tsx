@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, ScrollView, StyleSheet, Pressable, Alert, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, Pressable, Alert, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Image } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRoute, useNavigation } from '@react-navigation/native'
@@ -8,11 +8,20 @@ import { spacing, radius, fontSize } from '../theme/tokens'
 import { Card } from '../components/ui'
 import { getProperty, createProperty, updateProperty } from '../database/db'
 import * as Location from 'expo-location'
+import * as ImagePicker from 'expo-image-picker'
+import * as FileSystem from 'expo-file-system/legacy'
 
 const TYPES = [
   { key: 'apartment', label: 'شقة', icon: 'business-outline' },
   { key: 'villa', label: 'فيلا', icon: 'home-outline' },
-  { key: 'land', label: 'أرض', icon: 'map-outline' },
+  { key: 'house', label: 'بيت', icon: 'home-outline' },
+  { key: 'hotel', label: 'فندق', icon: 'bed-outline' },
+  { key: 'building', label: 'عمارة', icon: 'business-outline' },
+  { key: 'residential_tower', label: 'برج سكني', icon: 'podium-outline' },
+  { key: 'farm', label: 'مزرعة', icon: 'leaf-outline' },
+  { key: 'land', label: 'قطعة أرض', icon: 'map-outline' },
+  { key: 'warehouse', label: 'هناجر', icon: 'cube-outline' },
+  { key: 'shop', label: 'محلات', icon: 'storefront-outline' },
   { key: 'office', label: 'مكتب', icon: 'briefcase-outline' },
   { key: 'commercial', label: 'تجاري', icon: 'storefront-outline' },
 ]
@@ -115,6 +124,9 @@ export default function PropertyForm() {
     owner_name: '',
     owner_phone: '',
     owner_email: '',
+    broker_name: '',
+    broker_phone: '',
+    icon_uri: '',
   })
   const [locating, setLocating] = useState(false)
 
@@ -137,6 +149,9 @@ export default function PropertyForm() {
             owner_name: p.owner_name || '',
             owner_phone: p.owner_phone || '',
             owner_email: p.owner_email || '',
+            broker_name: p.broker_name || '',
+            broker_phone: p.broker_phone || '',
+            icon_uri: p.icon_uri || '',
           })
         }
       } catch (e) {
@@ -146,6 +161,37 @@ export default function PropertyForm() {
     if (editingId) load()
     return () => { cancelled = true }
   }, [editingId])
+
+  async function handlePickIcon() {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
+      if (!permission.granted) {
+        Alert.alert('الإذن', 'اسمح بالوصول إلى الصور لاختيار أيقونة العقار.')
+        return
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.75,
+      })
+      if (!result.canceled && result.assets[0]?.uri) {
+        const sourceUri = result.assets[0].uri
+        let iconUri = sourceUri
+        if (FileSystem.documentDirectory && sourceUri !== FileSystem.documentDirectory) {
+          const dir = `${FileSystem.documentDirectory}property_icons/`
+          const dirInfo = await FileSystem.getInfoAsync(dir)
+          if (!dirInfo.exists) await FileSystem.makeDirectoryAsync(dir, { intermediates: true })
+          const ext = (sourceUri.split('.').pop()?.split('?')[0] || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+          iconUri = `${dir}${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`
+          await FileSystem.copyAsync({ from: sourceUri, to: iconUri })
+        }
+        setForm((current) => ({ ...current, icon_uri: iconUri }))
+      }
+    } catch (error) {
+      console.warn('Failed to choose property icon:', error)
+    }
+  }
 
   async function handleSave() {
     if (!form.name.trim()) {
@@ -160,11 +206,14 @@ export default function PropertyForm() {
       address: form.address.trim(),
       latitude: Number(form.latitude) || 0,
       longitude: Number(form.longitude) || 0,
-      type: form.type as 'apartment' | 'villa' | 'land' | 'office' | 'commercial',
+      type: form.type as any,
       status: form.status as 'for_sale' | 'pending' | 'sold' | 'rented',
       owner_name: form.owner_name.trim(),
       owner_phone: form.owner_phone.trim(),
       owner_email: form.owner_email.trim(),
+      broker_name: form.broker_name.trim(),
+      broker_phone: form.broker_phone.trim(),
+      icon_uri: form.icon_uri.trim(),
     }
     if (editingId) {
       await updateProperty(editingId, data)
@@ -227,6 +276,18 @@ export default function PropertyForm() {
           <FormInput label="اسم العقار" value={form.name} onChange={(v) => setForm({ ...form, name: v })} placeholder="مثال: فيلا النرجس" />
           <FormInput label="الوصف" value={form.description} onChange={(v) => setForm({ ...form, description: v })} placeholder="وصف العقار" multiline />
           <FormInput label="العنوان" value={form.address} onChange={(v) => setForm({ ...form, address: v })} placeholder="الحي، المدينة" />
+          <View style={styles.iconField}>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>صورة أيقونة العقار (اختيارية)</Text>
+            <View style={styles.iconRow}>
+              {form.icon_uri ? <Image source={{ uri: form.icon_uri }} style={styles.iconPreview} /> : <View style={[styles.iconPreview, { backgroundColor: colors.accentSurface }]}><Ionicons name="image-outline" size={25} color={colors.accent} /></View>}
+              <Pressable accessibilityRole="button" accessibilityLabel="اختيار صورة أيقونة للعقار" onPress={handlePickIcon} style={[styles.iconAction, { backgroundColor: colors.accentSurface, borderColor: colors.border }]}>
+                <Ionicons name="images-outline" size={17} color={colors.accent} />
+                <Text style={[styles.iconActionText, { color: colors.accent }]}>{form.icon_uri ? 'تغيير الصورة' : 'اختيار صورة'}</Text>
+              </Pressable>
+              {form.icon_uri ? <Pressable accessibilityRole="button" accessibilityLabel="إزالة صورة أيقونة العقار" onPress={() => setForm((current) => ({ ...current, icon_uri: '' }))} hitSlop={8}><Ionicons name="close-circle" size={22} color={colors.error} /></Pressable> : null}
+            </View>
+            <Text style={[styles.hint, { color: colors.textMuted }]}>تظهر في بطاقة التصفح السريع فقط، ويمكن تركها فارغة.</Text>
+          </View>
         </Card>
 
         <Card style={styles.section}>
@@ -301,6 +362,13 @@ export default function PropertyForm() {
           <FormInput label="البريد الإلكتروني" value={form.owner_email} onChange={(v) => setForm({ ...form, owner_email: v })} placeholder="email@example.com" keyboardType="email-address" />
         </Card>
 
+        <Card style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>الدلال / صاحب العرض الأصلي</Text>
+          <FormInput label="اسم الدلال" value={form.broker_name} onChange={(v) => setForm({ ...form, broker_name: v })} placeholder="اسم الدلال" />
+          <FormInput label="رقم الدلال" value={form.broker_phone} onChange={(v) => setForm({ ...form, broker_phone: v })} placeholder="رقم الهاتف" keyboardType="phone-pad" />
+          <Text style={[styles.hint, { color: colors.textMuted }]}>هذه البيانات اختيارية وتحفظ مع العقار لتسهيل الرجوع إلى مصدر العرض.</Text>
+        </Card>
+
         <View style={styles.actions}>
           <Pressable
             onPress={() => navigation.goBack()}
@@ -341,6 +409,11 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.md,
   },
+  iconField: { gap: spacing.xs },
+  iconRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  iconPreview: { width: 58, height: 58, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  iconAction: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  iconActionText: { fontSize: fontSize.sm, fontFamily: 'Tajawal_700Bold' },
   sectionTitle: {
     fontSize: fontSize.lg,
     fontWeight: '700',

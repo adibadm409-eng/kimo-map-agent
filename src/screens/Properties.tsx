@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { View, Text, StyleSheet, TextInput, Pressable, FlatList, RefreshControl, ScrollView, useWindowDimensions, Alert } from 'react-native'
+import { View, Text, StyleSheet, TextInput, Pressable, FlatList, RefreshControl, ScrollView, useWindowDimensions, Alert, Image } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
@@ -19,12 +19,19 @@ const STATUS_FILTERS = [
 ]
 
 const TYPE_ICONS: Record<string, string> = {
-  villa: 'home-outline',
-  apartment: 'business-outline',
-  land: 'map-outline',
-  office: 'briefcase-outline',
-  commercial: 'storefront-outline',
+  villa: 'home-outline', apartment: 'business-outline', house: 'home-outline', hotel: 'bed-outline', building: 'business-outline',
+  residential_tower: 'podium-outline', farm: 'leaf-outline', land: 'map-outline', warehouse: 'cube-outline', shop: 'storefront-outline',
+  office: 'briefcase-outline', commercial: 'storefront-outline',
 }
+
+const TYPE_FILTERS = [{ key: 'all', label: 'كل الأنواع' }, ...Object.entries(TYPE_LABELS).map(([key, label]) => ({ key, label }))]
+const PRICE_PRESETS = [
+  { key: '', label: 'أي سعر' },
+  { key: '500000', label: 'حتى 500 ألف' },
+  { key: '1000000', label: 'حتى مليون' },
+  { key: '5000000', label: 'حتى 5 مليون' },
+  { key: '10000000', label: 'حتى 10 مليون' },
+]
 
 export default function Properties() {
   const { colors } = useTheme()
@@ -35,6 +42,9 @@ export default function Properties() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
+  const [typeFilter, setTypeFilter] = useState('all')
+  const [priceMin, setPriceMin] = useState('')
+  const [priceMax, setPriceMax] = useState('')
 
   useFocusEffect(useCallback(() => {
     load()
@@ -60,8 +70,12 @@ export default function Properties() {
 
   const filtered = properties.filter((p) => {
     const match = p.name.includes(search) || p.address.includes(search) || p.owner_name.includes(search)
-    const pass = filter === 'all' || p.status === filter
-    return match && pass
+    const passStatus = filter === 'all' || p.status === filter
+    const passType = typeFilter === 'all' || p.type === typeFilter
+    const min = Number(priceMin) || 0
+    const max = Number(priceMax) || 0
+    const passPrice = (!min || Number(p.price) >= min) && (!max || Number(p.price) <= max)
+    return match && passStatus && passType && passPrice
   })
 
   const cardWidth = (width - spacing.xl * 2 - spacing.md) / 2
@@ -74,10 +88,11 @@ export default function Properties() {
         style={({ pressed }) => [styles.propCard, { width: cardWidth, opacity: pressed ? 0.8 : 1 }]}
       >
         <Card>
-          <View style={[styles.propImage, { backgroundColor: colors.accentSurface }]}>
-            <View style={[styles.propTypeIcon, { backgroundColor: colors.accent + '20' }]}>
+                    <View style={[styles.propImage, { backgroundColor: colors.accentSurface }]}>
+            {p.icon_uri ? <Image source={{ uri: p.icon_uri }} style={styles.propertyIconImage} /> : <View style={[styles.propTypeIcon, { backgroundColor: colors.accent + '20' }]}>
               <Ionicons name={iconName as any} size={36} color={colors.accent} />
-            </View>
+            </View>}
+
             <View style={styles.propBadges}>
               <StatusBadge label={STATUS_LABELS[p.status] || p.status} value={p.status} />
             </View>
@@ -85,6 +100,7 @@ export default function Properties() {
 
           <View style={styles.propBody}>
             <Text style={[styles.propName, { color: colors.textPrimary }]} numberOfLines={1}>{p.name}</Text>
+            <Text style={[styles.typeText, { color: colors.accent }]} numberOfLines={1}>{TYPE_LABELS[p.type] || p.type}</Text>
             <View style={styles.propMeta}>
               <View style={styles.metaItem}>
                 <Ionicons name="resize-outline" size={12} color={colors.textMuted} />
@@ -182,6 +198,23 @@ export default function Properties() {
         ))}
       </ScrollView>
 
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll} style={styles.filterBar}>
+        {TYPE_FILTERS.map((f) => (
+          <Pressable key={f.key} accessibilityRole="button" accessibilityState={{ selected: typeFilter === f.key }} onPress={() => setTypeFilter(f.key)} style={[styles.filterTab, { borderColor: colors.border }, typeFilter === f.key ? { backgroundColor: colors.accent, borderColor: colors.accent } : {}]}>
+            <Text style={[styles.filterTabText, { color: typeFilter === f.key ? '#FFF' : colors.textSecondary }]}>{f.label}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+
+      <View style={styles.priceFilterRow}>
+        <Text style={[styles.priceFilterLabel, { color: colors.textSecondary }]}>السعر</Text>
+        <TextInput accessibilityLabel="الحد الأدنى للسعر" value={priceMin} onChangeText={setPriceMin} keyboardType="numeric" placeholder="من" placeholderTextColor={colors.textMuted} style={[styles.priceInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.textPrimary }]} />
+        <TextInput accessibilityLabel="الحد الأعلى للسعر" value={priceMax} onChangeText={setPriceMax} keyboardType="numeric" placeholder="إلى" placeholderTextColor={colors.textMuted} style={[styles.priceInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.textPrimary }]} />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pricePresetScroll}>
+          {PRICE_PRESETS.map((preset) => <Pressable key={preset.key || 'any'} onPress={() => setPriceMax(preset.key)} style={[styles.pricePreset, { borderColor: colors.border }, priceMax === preset.key ? { backgroundColor: colors.accent, borderColor: colors.accent } : {}]}><Text style={[styles.pricePresetText, { color: priceMax === preset.key ? '#FFF' : colors.textSecondary }]}>{preset.label}</Text></Pressable>)}
+        </ScrollView>
+      </View>
+
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
@@ -195,7 +228,7 @@ export default function Properties() {
           <View style={styles.emptyWrap}>
             <Ionicons name="business-outline" size={56} color={colors.textMuted} />
             <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-              {search || filter !== 'all' ? 'لا توجد نتائج' : 'لا توجد عقارات بعد'}
+              {search || filter !== 'all' || typeFilter !== 'all' || priceMin || priceMax ? 'لا توجد نتائج بهذه الفلاتر' : 'لا توجد عقارات بعد'}
             </Text>
           </View>
         }
@@ -306,6 +339,14 @@ const styles = StyleSheet.create({
     top: 8,
     right: 8,
   },
+  propertyIconImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+  typeText: { fontSize: fontSize.xs, fontFamily: 'Tajawal_500Medium', marginTop: 2 },
+  priceFilterRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.xl, paddingVertical: spacing.xs },
+  priceFilterLabel: { fontSize: fontSize.sm, fontFamily: 'Tajawal_700Bold' },
+  priceInput: { width: 78, height: 34, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.sm, fontFamily: 'Tajawal_400Regular', textAlign: 'right' },
+  pricePresetScroll: { flex: 1, flexDirection: 'row', gap: spacing.xs },
+  pricePreset: { paddingHorizontal: spacing.sm, paddingVertical: 7, borderWidth: 1, borderRadius: radius.full },
+  pricePresetText: { fontSize: fontSize.xs, fontFamily: 'Tajawal_500Medium' },
   propBody: {
     padding: spacing.lg,
     gap: spacing.xs,

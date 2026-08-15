@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { View, Text, ScrollView, StyleSheet, Pressable, Linking, Alert } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, Pressable, Linking, Alert, Image } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRoute, useNavigation } from '@react-navigation/native'
@@ -12,11 +12,9 @@ import { STATUS_LABELS, TYPE_LABELS } from '../types'
 import { useReloadOnData } from '../database/dataSync'
 
 const TYPE_ICONS: Record<string, string> = {
-  villa: 'home-outline',
-  apartment: 'business-outline',
-  land: 'map-outline',
-  office: 'briefcase-outline',
-  commercial: 'storefront-outline',
+  villa: 'home-outline', apartment: 'business-outline', house: 'home-outline', hotel: 'bed-outline', building: 'business-outline',
+  residential_tower: 'podium-outline', farm: 'leaf-outline', land: 'map-outline', warehouse: 'cube-outline', shop: 'storefront-outline',
+  office: 'briefcase-outline', commercial: 'storefront-outline',
 }
 
 export default function PropertyDetail() {
@@ -69,9 +67,10 @@ export default function PropertyDetail() {
       </Pressable>
 
       <View style={[styles.propHero, { backgroundColor: colors.accentSurface }]}>
-        <View style={[styles.propTypeIcon, { backgroundColor: colors.accent + '15' }]}>
+        {property.icon_uri ? <Image source={{ uri: property.icon_uri }} style={styles.heroImage} /> : <View style={[styles.propTypeIcon, { backgroundColor: colors.accent + '15' }]}>
           <Ionicons name={iconName as any} size={64} color={colors.accent} />
-        </View>
+        </View>}
+
         <View style={styles.propHeroBadge}>
           <StatusBadge label={STATUS_LABELS[property.status] || property.status} value={property.status} />
         </View>
@@ -138,6 +137,19 @@ export default function PropertyDetail() {
           </View>
         </View>
       </Card>
+
+      {(property.broker_name || property.broker_phone) ? (
+        <Card style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>الدلال / صاحب العرض الأصلي</Text>
+          <View style={styles.brokerRow}>
+            <View style={[styles.ownerAvatar, { backgroundColor: colors.warningSurface }]}><Ionicons name="megaphone-outline" size={22} color={colors.warning} /></View>
+            <View style={styles.ownerDetails}>
+              <Text style={[styles.ownerName, { color: colors.textPrimary }]}>{property.broker_name || '—'}</Text>
+              {property.broker_phone ? <Pressable accessibilityRole="button" accessibilityLabel={`الاتصال بالدلال ${property.broker_name || ''}`} style={styles.contactRow} onPress={() => Linking.openURL(`tel:${property.broker_phone}`)}><Ionicons name="call-outline" size={14} color={colors.success} /><Text style={[styles.contactText, { color: colors.textSecondary }]}>{property.broker_phone}</Text></Pressable> : null}
+            </View>
+          </View>
+        </Card>
+      ) : null}
 
       <Card style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>معلومات المالك</Text>
@@ -230,6 +242,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'relative',
   },
+  heroImage: { width: '100%', height: '100%', borderRadius: radius.lg, resizeMode: 'cover' },
+  brokerRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.md },
   propTypeIcon: {
     width: 96,
     height: 96,

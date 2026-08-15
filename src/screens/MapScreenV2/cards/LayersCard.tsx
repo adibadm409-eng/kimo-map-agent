@@ -5,6 +5,7 @@ import * as Haptics from "expo-haptics"
 import { spacing, fontSize, radius } from "../../../theme/tokens"
 import type { LayerVis, PropFilter } from "../types"
 import { PROVIDER_GROUPS, loadProviderSettings } from "../mapProviders"
+import { TYPE_LABELS } from "../../../types"
 
 const STATUS_OPTS = [
   { key: "", label: "الكل" },
@@ -15,11 +16,7 @@ const STATUS_OPTS = [
 ]
 const TYPE_OPTS = [
   { key: "", label: "الكل" },
-  { key: "apartment", label: "شقة" },
-  { key: "villa", label: "فيلا" },
-  { key: "land", label: "أرض" },
-  { key: "office", label: "مكتب" },
-  { key: "commercial", label: "محل تجاري" },
+  ...Object.entries(TYPE_LABELS).map(([key, label]) => ({ key, label })),
 ]
 const PRICE_OPTS = [
   { key: 0, label: "أي سعر" },

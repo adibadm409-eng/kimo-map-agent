@@ -1,3 +1,5 @@
+export type PropertyType = 'apartment' | 'villa' | 'house' | 'hotel' | 'building' | 'residential_tower' | 'farm' | 'land' | 'warehouse' | 'shop' | 'office' | 'commercial'
+
 export interface Property {
   id: string
   name: string
@@ -8,10 +10,13 @@ export interface Property {
   longitude: number
   address: string
   status: 'for_sale' | 'sold' | 'rented' | 'pending'
-  type: 'apartment' | 'villa' | 'land' | 'commercial' | 'office'
+  type: PropertyType
+  icon_uri: string
   owner_name: string
   owner_phone: string
   owner_email: string
+  broker_name: string
+  broker_phone: string
   created_at: string
 }
 
@@ -113,7 +118,14 @@ export const STATUS_LABELS: Record<string, string> = {
 export const TYPE_LABELS: Record<string, string> = {
   apartment: 'شقة',
   villa: 'فيلا',
-  land: 'أرض',
-  commercial: 'تجاري',
+  house: 'بيت',
+  hotel: 'فندق',
+  building: 'عمارة',
+  residential_tower: 'برج سكني',
+  farm: 'مزرعة',
+  land: 'قطعة أرض',
+  warehouse: 'هناجر',
+  shop: 'محلات',
   office: 'مكتب',
+  commercial: 'تجاري',
 }

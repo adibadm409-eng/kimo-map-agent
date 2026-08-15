@@ -39,6 +39,9 @@ async function safeMigrate(database: SQLite.SQLiteDatabase) {
   await addColumnIfMissing("properties", "geojson", "TEXT DEFAULT ''")
   await addColumnIfMissing("properties", "category", "TEXT DEFAULT 'general'")
   await addColumnIfMissing("properties", "area_sqm", "REAL DEFAULT 0")
+  await addColumnIfMissing("properties", "icon_uri", "TEXT DEFAULT ''")
+  await addColumnIfMissing("properties", "broker_name", "TEXT DEFAULT ''")
+  await addColumnIfMissing("properties", "broker_phone", "TEXT DEFAULT ''")
 }
 
 async function initSchema(database: SQLite.SQLiteDatabase) {
@@ -60,6 +63,9 @@ async function initSchema(database: SQLite.SQLiteDatabase) {
       owner_name TEXT DEFAULT '',
       owner_phone TEXT DEFAULT '',
       owner_email TEXT DEFAULT '',
+      broker_name TEXT DEFAULT '',
+      broker_phone TEXT DEFAULT '',
+      icon_uri TEXT DEFAULT '',
       created_at TEXT DEFAULT (datetime('now'))
     );
 
@@ -121,6 +127,7 @@ async function initSchema(database: SQLite.SQLiteDatabase) {
     CREATE INDEX IF NOT EXISTS idx_properties_status ON properties (status);
     CREATE INDEX IF NOT EXISTS idx_properties_type ON properties (type);
     CREATE INDEX IF NOT EXISTS idx_properties_owner ON properties (owner_name);
+    CREATE INDEX IF NOT EXISTS idx_properties_broker ON properties (broker_name);
     CREATE INDEX IF NOT EXISTS idx_clients_type ON clients (type);
     CREATE INDEX IF NOT EXISTS idx_campaigns_status ON campaigns (status);
     CREATE INDEX IF NOT EXISTS idx_viewings_date ON viewings (date_time);
@@ -196,11 +203,11 @@ async function seedData(database: SQLite.SQLiteDatabase) {
   const now = new Date().toISOString()
 
   const properties: Omit<Property, 'created_at'>[] = [
-    { id: genId(), name: 'فيلا النرجس الفاخرة', description: 'فيلا حديثة بحديقة خاصة وحمام سباحة', price: 1250000, area: 350, latitude: 24.7136, longitude: 46.6753, address: 'حي النرجس، الرياض', status: 'for_sale', type: 'villa', owner_name: 'أحمد محمد', owner_phone: '0551234567', owner_email: 'ahmed@email.com' },
-    { id: genId(), name: 'شقة الملقا العصرية', description: 'شقة بتصميم عصري على دور 12', price: 850000, area: 180, latitude: 24.8253, longitude: 46.6285, address: 'حي الملقا، الرياض', status: 'pending', type: 'apartment', owner_name: 'سعد العلي', owner_phone: '0559876543', owner_email: 'saad@email.com' },
-    { id: genId(), name: 'أرض الياسمين الاستثمارية', description: 'أرض سكنية قابلة للبناء', price: 2100000, area: 500, latitude: 24.7711, longitude: 46.7381, address: 'حي الياسمين، الرياض', status: 'for_sale', type: 'land', owner_name: 'فهد السالم', owner_phone: '0534567890', owner_email: 'fahad@email.com' },
-    { id: genId(), name: 'مكتب العليا المتميز', description: 'مكتب تجاري بمساحة كبيرة', price: 980000, area: 220, latitude: 24.6920, longitude: 46.6850, address: 'حي العليا، الرياض', status: 'rented', type: 'office', owner_name: 'خالد عبدالله', owner_phone: '0512345678', owner_email: 'khalid@email.com' },
-    { id: genId(), name: 'محل تجاري في الواحة', description: 'محل تجاري في مول حيوي', price: 1500000, area: 120, latitude: 24.7555, longitude: 46.6500, address: 'حي الواحة، الرياض', status: 'sold', type: 'commercial', owner_name: 'ناصر الحربي', owner_phone: '0567890123', owner_email: 'nasser@email.com' },
+    { id: genId(), name: 'فيلا النرجس الفاخرة', description: 'فيلا حديثة بحديقة خاصة وحمام سباحة', price: 1250000, area: 350, latitude: 24.7136, longitude: 46.6753, address: 'حي النرجس، الرياض', status: 'for_sale', type: 'villa', owner_name: 'أحمد محمد', owner_phone: '0551234567', owner_email: 'ahmed@email.com', icon_uri: '', broker_name: '', broker_phone: '' },
+    { id: genId(), name: 'شقة الملقا العصرية', description: 'شقة بتصميم عصري على دور 12', price: 850000, area: 180, latitude: 24.8253, longitude: 46.6285, address: 'حي الملقا، الرياض', status: 'pending', type: 'apartment', owner_name: 'سعد العلي', owner_phone: '0559876543', owner_email: 'saad@email.com', icon_uri: '', broker_name: '', broker_phone: '' },
+    { id: genId(), name: 'أرض الياسمين الاستثمارية', description: 'أرض سكنية قابلة للبناء', price: 2100000, area: 500, latitude: 24.7711, longitude: 46.7381, address: 'حي الياسمين، الرياض', status: 'for_sale', type: 'land', owner_name: 'فهد السالم', owner_phone: '0534567890', owner_email: 'fahad@email.com', icon_uri: '', broker_name: '', broker_phone: '' },
+    { id: genId(), name: 'مكتب العليا المتميز', description: 'مكتب تجاري بمساحة كبيرة', price: 980000, area: 220, latitude: 24.6920, longitude: 46.6850, address: 'حي العليا، الرياض', status: 'rented', type: 'office', owner_name: 'خالد عبدالله', owner_phone: '0512345678', owner_email: 'khalid@email.com', icon_uri: '', broker_name: '', broker_phone: '' },
+    { id: genId(), name: 'محل تجاري في الواحة', description: 'محل تجاري في مول حيوي', price: 1500000, area: 120, latitude: 24.7555, longitude: 46.6500, address: 'حي الواحة، الرياض', status: 'sold', type: 'commercial', owner_name: 'ناصر الحربي', owner_phone: '0567890123', owner_email: 'nasser@email.com', icon_uri: '', broker_name: '', broker_phone: '' },
   ]
 
   for (const p of properties) {
@@ -283,8 +290,9 @@ export async function createProperty(p: Partial<Property>): Promise<string> {
   const db = await getDB()
   const id = genId()
   await db.runAsync(
-    'INSERT INTO properties (id,name,description,price,area,latitude,longitude,address,status,type,owner_name,owner_phone,owner_email,geojson,category,area_sqm) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-    [id, p.name || '', p.description || '', p.price || 0, p.area || 0, p.latitude || 0, p.longitude || 0, p.address || '', p.status || 'for_sale', p.type || 'apartment', p.owner_name || '', p.owner_phone || '', p.owner_email || '', (p as any).geojson || '', (p as any).category || 'general', (p as any).area_sqm || 0]
+          'INSERT INTO properties (id,name,description,price,area,latitude,longitude,address,status,type,owner_name,owner_phone,owner_email,broker_name,broker_phone,icon_uri,geojson,category,area_sqm) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+      [id, p.name || '', p.description || '', p.price || 0, p.area || 0, p.latitude || 0, p.longitude || 0, p.address || '', p.status || 'for_sale', p.type || 'apartment', p.owner_name || '', p.owner_phone || '', p.owner_email || '', (p as any).broker_name || '', (p as any).broker_phone || '', (p as any).icon_uri || '', (p as any).geojson || '', (p as any).category || 'general', (p as any).area_sqm || 0]
+
   )
   await logChange({ action: 'create', scope: 'properties', scopeId: id, after: p, summary: `إنشاء عقار "${p.name || ''}"` })
   return id
@@ -294,7 +302,7 @@ export async function updateProperty(id: string, p: Partial<Property>): Promise<
   const db = await getDB()
   const before = await db.getFirstAsync('SELECT * FROM properties WHERE id = ?', [id])
   if (!before) throw new Error(`العقار (${id}) غير موجود.`)
-  const allowed = new Set(['name', 'description', 'price', 'area', 'latitude', 'longitude', 'address', 'status', 'type', 'owner_name', 'owner_phone', 'owner_email', 'geojson', 'category', 'area_sqm'])
+  const allowed = new Set(['name', 'description', 'price', 'area', 'latitude', 'longitude', 'address', 'status', 'type', 'owner_name', 'owner_phone', 'owner_email', 'broker_name', 'broker_phone', 'icon_uri', 'geojson', 'category', 'area_sqm'])
   const entries = Object.entries(p).filter(([key]) => allowed.has(key))
   if (!entries.length) return
   await db.runAsync(`UPDATE properties SET ${entries.map(([key]) => `${key} = ?`).join(', ')} WHERE id = ?`, [...entries.map(([, value]) => value), id])

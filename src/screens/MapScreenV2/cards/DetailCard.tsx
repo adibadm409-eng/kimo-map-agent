@@ -6,10 +6,10 @@ import { spacing, fontSize, radius, SCREEN_HEIGHT as SH } from "../../../theme/t
 import { toDMS, fmtDistCalc } from "../../map/utils"
 import { markerColor } from "../../map/constants"
 import type { DetailItem } from "../types"
+import { TYPE_LABELS } from "../../../types"
 import { parseMediaList, MediaStrip, MediaPreview, InlineVideoPlayer, ShareSheet, type PinItem, type MediaItem } from "./shareMedia"
 
 const PROP_STATUS: Record<string, string> = { for_sale: "للبيع", sold: "مُباع", rented: "مؤجر", pending: "تحت المعالجة" }
-const PROP_TYPE: Record<string, string> = { apartment: "شقة", villa: "فيلا", land: "أرض", office: "مكتب", commercial: "محل تجاري" }
 
 const WP_CATS: Record<string, string> = {
   general: "عام", property: "عقار", office: "مكتب",
@@ -65,7 +65,7 @@ function PropertyDetail({ detail, onClose, onDelete, onOpenProperty }: any) {
         <Pressable onPress={onClose} hitSlop={10}><Ionicons name="close" size={22} color="#FFF" /></Pressable>
       </Pressable>
       <ScrollView style={{ maxHeight: SH * 0.4 }} bounces nestedScrollEnabled>
-        <Row icon="business-outline" label="النوع" value={PROP_TYPE[data.type] || data.type} />
+        <Row icon="business-outline" label="النوع" value={TYPE_LABELS[data.type] || data.type} />
         <Row icon="pricetag-outline" label="السعر" value={`${Number(data.price).toLocaleString()} ر.ي`} />
         <Row icon="checkmark-circle-outline" label="الحالة" value={PROP_STATUS[data.status] || data.status} />
         <Row icon="resize-outline" label="المساحة" value={`${data.area} م²`} />

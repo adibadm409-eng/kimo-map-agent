@@ -5,6 +5,7 @@ import * as Haptics from "expo-haptics"
 import { spacing, fontSize, radius } from "../../../theme/tokens"
 import { fmtDistCalc } from "../../map/utils"
 import type { AreaForm, SaveTarget } from "../types"
+import { TYPE_LABELS } from "../../../types"
 
 const AREA_CATS = [
   { key: "general", label: "عام" },
@@ -13,10 +14,6 @@ const AREA_CATS = [
   { key: "agricultural", label: "زراعي" },
   { key: "industrial", label: "صناعي" },
 ]
-
-const PROP_TYPE: Record<string, string> = {
-  apartment: "شقة", villa: "فيلا", land: "أرض", office: "مكتب", commercial: "محل تجاري",
-}
 
 type Props = {
   visible: boolean
@@ -103,7 +100,7 @@ export function SaveAreaCard({
                     />
                     <View style={{ flex: 1 }}>
                       <Text style={s.labelBold}>{p.name}</Text>
-                      <Text style={s.labelSub}>{PROP_TYPE[p.type] || p.type} · {p.area || 0} م²</Text>
+                      <Text style={s.labelSub}>{TYPE_LABELS[p.type] || p.type} · {p.area || 0} م²</Text>
                     </View>
                   </Pressable>
                 ))}
