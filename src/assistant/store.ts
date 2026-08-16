@@ -170,10 +170,25 @@ export async function createTaskRun(input: Pick<AgentTaskRun, 'sessionId' | 'use
   return task
 }
 
+const TASK_TRANSITIONS: Record<AgentTaskStatus, AgentTaskStatus[]> = {
+  proposed: ['running', 'awaiting_user', 'cancelled', 'failed'],
+  awaiting_user: ['running', 'cancelled', 'failed'],
+  running: ['awaiting_user', 'verifying', 'cancelled', 'failed'],
+  verifying: ['completed', 'running', 'failed', 'cancelled'],
+  completed: [],
+  failed: [],
+  cancelled: [],
+}
+
+export function canTransitionTask(from: AgentTaskStatus, to: AgentTaskStatus): boolean {
+  return from === to || TASK_TRANSITIONS[from]?.includes(to) === true
+}
+
 export async function transitionTaskRun(taskId: string, status: AgentTaskStatus, patch: Partial<Pick<AgentTaskRun, 'currentStepId' | 'evidence' | 'lastError' | 'plan'>> = {}): Promise<void> {
   const d = await db()
   const row = await d.getFirstAsync<{ status: AgentTaskStatus }>('SELECT status FROM agent_task_runs WHERE id = ?', taskId)
-  if (!row) return
+  if (!row || !canTransitionTask(row.status, status)) return
+  if (status === 'completed' && (!patch.evidence || patch.evidence.length === 0)) return
   const now = Date.now()
   const completedAt = ['completed', 'failed', 'cancelled'].includes(status) ? now : null
   await d.runAsync('UPDATE agent_task_runs SET status = ?, current_step_id = COALESCE(?, current_step_id), evidence = COALESCE(?, evidence), last_error = COALESCE(?, last_error), plan = COALESCE(?, plan), updated_at = ?, completed_at = ? WHERE id = ?', status, patch.currentStepId ?? null, patch.evidence ? JSON.stringify(patch.evidence) : null, patch.lastError ?? null, patch.plan ? JSON.stringify(patch.plan) : null, now, completedAt, taskId)
