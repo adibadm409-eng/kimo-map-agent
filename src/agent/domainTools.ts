@@ -2,6 +2,7 @@ import { agentCreate } from './crud'
 import { cancelReminder, createReminder, getAllOffers, getAllReminders, getReminder, setOfferReminder } from '../database/db'
 import { linkAttachmentToEntity, type MediaTargetType } from '../database/workspace'
 import { cancelOfferReminder, scheduleOfferReminder } from '../notifications/offerReminders'
+import { previewPropertyChange } from './propertyIntake'
 import {
   commitProjectImport,
   ensureProjectDomainSchema,
@@ -46,6 +47,15 @@ function planFromArgs(args: Record<string, any>): ProjectImportPlan {
 }
 
 export const DOMAIN_TOOLS: DomainToolDef[] = [
+  {
+    name: 'property_change_preview',
+    description: 'معاينة ذكية لبيانات عقار واردة من رسالة أو مرفقات: تبحث في العقارات المحلية وتحدد هل المسار create أو update أو ambiguous، وتعرض التغييرات المرشحة دون كتابة. استخدمها قبل create/update عندما يرسل المستخدم تفاصيل عقار أو وسائط مرتبطة به.',
+    args: [
+      { name: 'data', type: 'object', required: true, description: 'حقول العقار المستخرجة من الرسالة أو الملف' },
+      { name: 'attachment_ids', type: 'array', description: 'معرفات المرفقات المرتبطة بالطلب إن وجدت' },
+    ],
+    handler: async (args) => previewPropertyChange({ data: (args.data && typeof args.data === 'object' ? args.data : {}) as Record<string, any>, attachmentIds: Array.isArray(args.attachment_ids) ? args.attachment_ids : [] }),
+  },
   {
     name: 'project_profile_get',
     description: 'قراءة نوع المشروع وعملته وإعداداته المحلية قبل تنفيذ مهمة حتى لا يعامل كيمو برجاً أو مبنى كمشروع قطع أراضٍ.',
