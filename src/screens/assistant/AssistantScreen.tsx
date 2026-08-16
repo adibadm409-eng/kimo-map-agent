@@ -577,9 +577,13 @@ export default function AssistantScreen({ navigation }: any) {
   }
 
   function renderAgentPanel() {
-    const visible = busy || thinking || !!agentPlan || !!activeSkill || agentDecisions.length > 0 || agentObservations.length > 0
+    // لا نعرض حالة قديمة محفوظة بعد انتهاء الرد، ولا نسمح لقرار/ملاحظة
+    // تاريخية وحدها باحتلال مساحة المحادثة. البطاقة ملك لدورة تنفيذ حية
+    // أو لخطة أنشأها الوكيل وما زالت غير مكتملة.
+    const activePlan = agentPlan && !['complete', 'cancelled'].includes(agentPlan.status) ? agentPlan : null
+    const visible = busy || thinking || !!pending || !!activePlan || liveProgress.length > 0 || liveSteps.length > 0
     if (!visible) return null
-    const currentStep = agentPlan?.steps.find((step) => step.id === agentPlan.currentStepId)
+    const currentStep = activePlan?.steps.find((step) => step.id === activePlan.currentStepId)
     const lastDecision = agentDecisions[agentDecisions.length - 1]
     const lastObservation = agentObservations[agentObservations.length - 1]
     const lastObservationDetail = lastObservation && 'detail' in lastObservation ? lastObservation.detail : ''
@@ -607,14 +611,14 @@ export default function AssistantScreen({ navigation }: any) {
             </View>
           </View>
         ) : null}
-        {agentPlan ? (
+        {activePlan ? (
           <View style={styles.planWrap}>
             <View style={styles.planTitleRow}>
-              <Text style={[styles.planTitle, { color: colors.textPrimary }]}>{agentPlan.goal}</Text>
-              <Text style={[styles.planCount, { color: colors.textMuted }]}>{agentPlan.steps.filter((s) => s.status === 'done').length}/{agentPlan.steps.length}</Text>
+              <Text style={[styles.planTitle, { color: colors.textPrimary }]}>{activePlan.goal}</Text>
+              <Text style={[styles.planCount, { color: colors.textMuted }]}>{activePlan.steps.filter((s) => s.status === 'done').length}/{activePlan.steps.length}</Text>
             </View>
             <View style={styles.planSteps}>
-              {agentPlan.steps.map((step) => (
+              {activePlan.steps.map((step) => (
                 <View key={step.id} style={styles.planStepRow}>
                   <Ionicons name={planStepIcon(step.status) as any} size={15} color={step.status === 'done' ? colors.success : step.status === 'blocked' ? colors.error : step.status === 'active' ? colors.accent : colors.textMuted} />
                   <Text style={[styles.planStepText, { color: step.status === 'active' ? colors.textPrimary : colors.textSecondary, fontFamily: step.status === 'active' ? 'Tajawal_700Bold' : 'Tajawal_400Regular' }]} numberOfLines={1}>{step.title}</Text>
@@ -987,7 +991,7 @@ export default function AssistantScreen({ navigation }: any) {
         }
       />
 
-      <View style={[styles.inputArea, { paddingBottom: kbHeight > 0 ? kbHeight + 6 : Math.max(insets.bottom, 6), backgroundColor: colors.bgSecondary, borderTopColor: colors.border }]}>
+      <View style={[styles.inputArea, { paddingBottom: Platform.OS === 'ios' && kbHeight > 0 ? kbHeight + 4 : Math.max(insets.bottom, 2), backgroundColor: colors.bgSecondary, borderTopColor: colors.border }]}>
           {/* زر النزول لآخر رسالة — يطفو فوق زر الإرسال ولا يظهر إلا خارج نهاية المحادثة */}
           {!atBottom && (
             <Pressable
@@ -1134,7 +1138,7 @@ const styles = StyleSheet.create({
   modeChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.full },
   modeChipText: { fontSize: fontSize.xs, fontWeight: '600', fontFamily: 'Tajawal_700Bold' },
   setupChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.full },
-  listContent: { padding: spacing.lg, paddingBottom: 24, gap: spacing.sm },
+  listContent: { padding: spacing.lg, paddingBottom: spacing.sm, gap: spacing.sm },
   emptyWrap: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 24, gap: spacing.sm },
   emptyTitle: { fontSize: fontSize.lg, fontWeight: '700', fontFamily: 'Tajawal_700Bold' },
   emptyText: { fontSize: fontSize.md, textAlign: 'center', lineHeight: 24, fontFamily: 'Tajawal_400Regular' },
@@ -1187,7 +1191,7 @@ const styles = StyleSheet.create({
   progressDot: { width: 7, height: 7, borderRadius: 4, marginTop: 7, flexShrink: 0 },
   progressText: { flex: 1, fontSize: fontSize.sm, lineHeight: 20, fontFamily: 'Tajawal_400Regular', fontStyle: 'italic' },
   liveProgressWrap: { gap: 2, paddingHorizontal: spacing.lg },
-  inputArea: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  inputArea: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: spacing.lg, paddingTop: 4 },
   downBtn: {
     position: 'absolute', top: -56, left: spacing.lg,
     width: 42, height: 42, borderRadius: radius.full,

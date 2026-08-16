@@ -53,15 +53,19 @@ async function runLoop(
       const goal = String(lastUserMsg.content ?? '').trim()
       const match = matchSkill(goal)
       runtimeSkill = match.skill
-      runtimePlan = planForSkill(runtimeSkill, goal)
-      if (emitEvents) {
+      // لا تُعدّ كل رسالة مهمة تنفيذية: التحيات والأسئلة العامة لا تنشئ بطاقة
+      // خطة ولا تدّعي مراحل لم ينفذها الوكيل. لا نعلن الخطة إلا عند وجود
+      // مطابقة تشغيلية واضحة (أي كلمة تشغيلية فعلية، لا general_assistant الافتراضي).
+      const shouldPlan = match.score > 0.1 && runtimeSkill.id !== 'general_assistant'
+      runtimePlan = shouldPlan ? planForSkill(runtimeSkill, goal) : null
+      if (emitEvents && shouldPlan && runtimePlan) {
         publishRuntimeEvent(sessionId, { type: 'phase', phase: 'understand', label: 'أفهم طلبك', detail: match.reasons.join(' ') || 'أحدد نوع المهمة قبل اختيار المسار.' })
         publishRuntimeEvent(sessionId, { type: 'skill', skill: { id: runtimeSkill.id, label: runtimeSkill.label, description: runtimeSkill.description } })
         publishRuntimeEvent(sessionId, { type: 'plan', plan: runtimePlan })
         publishRuntimeEvent(sessionId, { type: 'phase', phase: 'plan', label: 'أبني الخطة', detail: runtimeSkill.systemGuidance })
       }
       await addBrainOp(sessionId, 'skill', `المهارة المختارة: ${runtimeSkill.id} — ${runtimeSkill.label}`).catch(() => {})
-      await addBrainOp(sessionId, 'plan', runtimePlan.steps.map((step) => step.title).join(' ← ')).catch(() => {})
+      if (runtimePlan) await addBrainOp(sessionId, 'plan', runtimePlan.steps.map((step) => step.title).join(' ← ')).catch(() => {})
     }
     if (lastUserMsg) await addBrainOp(sessionId, 'task', `مهمة المستخدم: ${String(lastUserMsg.content ?? '').slice(0, 300)}`).catch(() => {})
     // تحليل النية وسياق المحادثة: يُحقنان في سطر النظام ليتكيف الوكيل ويستمر من حيث توقف المستخدم
