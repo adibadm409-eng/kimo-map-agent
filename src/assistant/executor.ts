@@ -52,6 +52,8 @@ async function runLoop(
     let runtimePlan: AgentPlan | null = null
     let runtimeSkill: AgentSkill | null = null
     let runtimeTaskId: string | undefined
+    let runtimeEvidenceCount = 0
+    let runtimeSuccessfulEvidenceCount = 0
     if (lastUserMsg) {
       const goal = String(lastUserMsg.content ?? '').trim()
       const assessment = assessSkill(goal)
@@ -187,13 +189,20 @@ async function runLoop(
               emit({ type: 'text', content: finalText })
             }
           }
-          if (runtimeTaskId) await transitionTaskRun(runtimeTaskId, 'verifying', { plan: runtimePlan ?? undefined })
-          if (runtimePlan) runtimePlan = runtimePlan.steps.reduce((current, step) => completePlanStep(current, step.id), runtimePlan)
-          if (emitEvents) {
-            publishRuntimeEvent(sessionId, { type: 'phase', phase: 'complete', label: 'اكتملت المهمة', detail: 'وصلت إلى رد نهائي بعد تنفيذ الخطوات المتاحة.' })
-            if (runtimePlan) publishRuntimeEvent(sessionId, { type: 'plan', plan: runtimePlan })
+          const taskHasEvidence = !runtimeTaskId || (runtimeEvidenceCount > 0 && runtimeSuccessfulEvidenceCount > 0)
+          if (runtimeTaskId && !taskHasEvidence) {
+            const noEvidence = 'وصل رد نصي، لكن لم تُثبت خطوة تنفيذ ناجحة؛ لذلك لن أعلِن اكتمال المهمة. راجع الطلب أو أعد المحاولة.'
+            await transitionTaskRun(runtimeTaskId, 'failed', { lastError: noEvidence })
+            if (emitEvents) publishRuntimeEvent(sessionId, { type: 'phase', phase: 'error', label: 'تحتاج المهمة إلى معالجة', detail: noEvidence })
+          } else {
+            if (runtimeTaskId) await transitionTaskRun(runtimeTaskId, 'verifying', { plan: runtimePlan ?? undefined })
+            if (runtimePlan) runtimePlan = runtimePlan.steps.reduce((current, step) => completePlanStep(current, step.id), runtimePlan)
+            if (emitEvents) {
+              publishRuntimeEvent(sessionId, { type: 'phase', phase: 'complete', label: 'اكتملت المهمة', detail: 'وصلت إلى رد نهائي بعد تنفيذ الخطوات المتاحة.' })
+              if (runtimePlan) publishRuntimeEvent(sessionId, { type: 'plan', plan: runtimePlan })
+            }
+            if (runtimeTaskId) await transitionTaskRun(runtimeTaskId, 'completed', { plan: runtimePlan ?? undefined, evidence: [{ type: 'assistant_response', summary: finalText.slice(0, 500) }] })
           }
-          if (runtimeTaskId) await transitionTaskRun(runtimeTaskId, 'completed', { plan: runtimePlan ?? undefined, evidence: [{ type: 'assistant_response', summary: finalText.slice(0, 500) }] })
           finished = true
           break
         }
@@ -284,7 +293,10 @@ async function runLoop(
               ? String(lastObs.meta.observation ?? lastObs.meta.result ?? '')
               : ''
             if (lastObs && lastObs.meta) {
-              if (runtimeTaskId) await appendTaskEvidence(runtimeTaskId, { tool: innerTool, ok: lastObs.meta.ok !== false, summary: String(lastObs.meta.observation ?? lastObs.meta.result ?? '').slice(0, 600) })
+              const evidenceOk = lastObs.meta.ok !== false
+              runtimeEvidenceCount++
+              if (evidenceOk) runtimeSuccessfulEvidenceCount++
+              if (runtimeTaskId) await appendTaskEvidence(runtimeTaskId, { tool: innerTool, ok: evidenceOk, summary: String(lastObs.meta.observation ?? lastObs.meta.result ?? '').slice(0, 600) })
               if (emitEvents) {
                 const ok = lastObs.meta.ok !== false
                 const observationDetail = String(lastObs.meta.observation ?? lastObs.meta.result ?? '').slice(0, 600)
