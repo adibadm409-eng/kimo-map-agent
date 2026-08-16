@@ -170,11 +170,39 @@ CREATE INDEX IF NOT EXISTS idx_payments_plot ON plot_payments (plot_id);
 CREATE INDEX IF NOT EXISTS idx_cfvals_entity ON custom_field_values (entity_type, entity_id);
 `)
 
-  await seedProjectsData()
+    await removeLegacyDemoProject()
   await purgeOrphanedData()
 }
 
+async function removeLegacyDemoProject(): Promise<void> {
+  const db = await getDB()
+  const legacy = await db.getFirstAsync<{ id: string }>(
+    "SELECT id FROM projects WHERE name = 'مشروع الواحة السكني' AND description LIKE 'مشروع تجريبي —%' LIMIT 1",
+  )
+  if (!legacy) return
+  await db.withTransactionAsync(async () => {
+    await db.runAsync("DELETE FROM custom_field_values WHERE entity_type = 'project' AND entity_id = ?", [legacy.id])
+    const blocks = await db.getAllAsync<{ id: string }>('SELECT id FROM blocks WHERE project_id = ?', [legacy.id])
+    const blockIds = blocks.map((row) => row.id)
+    if (blockIds.length > 0) {
+      const blockPlaceholders = blockIds.map(() => '?').join(', ')
+      const plots = await db.getAllAsync<{ id: string }>(`SELECT id FROM plots WHERE block_id IN (${blockPlaceholders})`, blockIds)
+      const plotIds = plots.map((row) => row.id)
+      if (plotIds.length > 0) {
+        const plotPlaceholders = plotIds.map(() => '?').join(', ')
+        await db.runAsync(`DELETE FROM plot_payments WHERE plot_id IN (${plotPlaceholders})`, plotIds)
+        await db.runAsync(`DELETE FROM custom_field_values WHERE entity_type = 'plot' AND entity_id IN (${plotPlaceholders})`, plotIds)
+        await db.runAsync(`DELETE FROM plots WHERE id IN (${plotPlaceholders})`, plotIds)
+      }
+      await db.runAsync(`DELETE FROM custom_field_values WHERE entity_type = 'block' AND entity_id IN (${blockPlaceholders})`, blockIds)
+      await db.runAsync(`DELETE FROM blocks WHERE id IN (${blockPlaceholders})`, blockIds)
+    }
+    await db.runAsync('DELETE FROM projects WHERE id = ?', [legacy.id])
+    await db.runAsync("DELETE FROM custom_fields WHERE entity_type = 'plot' AND label = 'ملاحظات إدارية'")
+  })
+}
 /**
+
  * التخلص من البيانات اليتيمة نهائياً: أي صف يشير لوالد غير موجود يُحذف
  * (قطع بدون بلوك، بلوك بدون مشروع، أقساط بدون قطعة، قيم مخصصة بلا مالك)
  * — حتى لا تظهر سجلات يتيمة في الشاشات أو العدّادات. يُستدعى عند الإقلاع
@@ -204,121 +232,7 @@ export async function purgeOrphanedData(): Promise<void> {
   })
 }
 
-// (then: area_sqm, status, boundary_north, boundary_south, boundary_east, boundary_west, value, buyer_name, buyer_contact, sale_date, installment_type, paid_amount, remaining_amount)
-const demoPlots: (string | number)[][] = [
-  [450, 'available', 'شارع الأمانة', 'حد الأرض رقم ٢', 'حد الجبل', 'منزل مجاور', 420000, '', '', '', '', 0, 0],
-  [500, 'available', 'طريق الملك', 'حد أرض المهندس', 'حد أرض علي', 'حد أرض سالم', 480000, '', '', '', '', 0, 0],
-  [550, 'available', 'شارع النخيل', 'حد أرض فهد', 'حد أرض خالد', 'حد أرض ناصر', 520000, '', '', '', '', 0, 0],
-  [460, 'sold', 'حد شارع الزهراء', 'حد أرض أحمد', 'حد أرض محمد', 'حد أرض عبدالله', 500000, 'محمد الراشد', '0551112233', '2025-01-15', '', 500000, 0],
-  [480, 'sold', 'حد شارع الياسمين', 'حد أرض سعد', 'حد أرض وليد', 'حد أرض طلال', 490000, 'عبدالعزيز الحربي', '0552223344', '2025-03-02', '', 490000, 0],
-  [520, 'installment', 'حد طريق الملك', 'حد أرض سمير', 'حد أرض برج', 'حد أرض بستاني', 540000, 'خالد العتيبي', '0553334455', '', 'monthly', 120000, 420000],
-  [580, 'installment', 'حد شارع العروبة', 'حد أرض سامي', 'حد أرض راشد', 'حد أرض حمد', 560000, 'فهد المطيري', '0554445566', '', 'quarterly', 180000, 380000],
-  [600, 'installment', 'حد شارع السلام', 'حد أرض بدر', 'حد أرض عمر', 'حد أرض نواف', 580000, 'سعود الشمري', '0555556677', '', 'semi_annual', 200000, 380000],
-  [640, 'installment', 'حد شارع الروضة', 'حد أرض ماجد', 'حد أرض فوزان', 'حد أرض ركاد', 620000, 'مشعل القحطاني', '0556667788', '', 'annual', 100000, 520000],
-  [700, 'available', 'حد طريق المدينة', 'حد أرض حمد', 'حد أرض سعد', 'حد أرض جارنا', 650000, '', '', '', '', 0, 0],
-]
-
-// (then: amount, pay_date, method, cash_recipient, cash_receipt_no, bank_name, bank_ref_no)
-const demoPayments: Record<string, [number, string, string, string, string, string, string][]> = {
-  'قطعة 6': [
-    [60000, '2025-04-01', 'cash', 'خالد العتيبي', 'SND-0001', '', ''],
-    [60000, '2025-05-01', 'cash', 'خالد العتيبي', 'SND-0002', '', ''],
-  ],
-  'قطعة 7': [
-    [45000, '2025-02-10', 'bank', '', '', 'الراجحي', 'REF-8801'],
-    [45000, '2025-05-10', 'bank', '', '', 'الراجحي', 'REF-8802'],
-    [45000, '2025-08-10', 'bank', '', '', 'الراجحي', 'REF-8803'],
-    [45000, '2025-11-10', 'bank', '', '', 'الراجحي', 'REF-8804'],
-  ],
-  'قطعة 8': [
-    [100000, '2025-01-20', 'cash', 'سعود الشمري', 'SND-0091', '', ''],
-    [100000, '2025-07-20', 'bank', '', '', 'البنك الأهلي', 'REF-7721'],
-  ],
-  'قطعة 9': [
-    [100000, '2025-03-15', 'bank', '', '', 'الرياض', 'REF-9911'],
-  ],
-}
-
-const demoPlotNotes: Record<string, string> = {
-  'قطعة 1': 'مطلوبة خصم سعر للمشتري الجاد',
-  'قطعة 2': 'يوجد وديعة ماء على الجهة الجنوبية',
-  'قطعة 3': 'تسوية الحدود تحتاج توقيع الجيران',
-  'قطعة 4': 'باقي إجراءات نقل ملكية',
-  'قطعة 6': 'دفع بداية الشهر دائماً',
-  'قطعة 7': 'تحويلات عبر تطبيق البنك',
-  'قطعة 8': 'القسط القادم يجب تسجيله قبل ٢٠/١',
-  'قطعة 10': 'أولوية للعرض بالتقسيط',
-}
-
-export async function seedProjectsData(): Promise<void> {
-  const db = await getDB()
-  const existing = await db.getFirstAsync<{ id: string; description: string }>(
-    "SELECT id, description FROM projects WHERE name = 'مشروع الواحة السكني'"
-  )
-  if (existing) {
-    if (existing.description.startsWith('مشروع تجريبي —')) {
-      await deleteProject(existing.id)
-    } else {
-      return
-    }
-  }
-
-  await withAuditCtx({ actor: 'system' }, async () => {
-    await db.withTransactionAsync(async () => {
-    const projectId = genId()
-    await db.runAsync(
-      'INSERT INTO projects (id, name, description) VALUES (?, ?, ?)',
-      [projectId, 'مشروع الواحة السكني', 'مشروع تجريبي لأراضٍ سكنية — ١٠ قطع في بلوك واحد بحالات وأقساط مختلفة']
-    )
-
-    const blockId = genId()
-    await db.runAsync(
-      'INSERT INTO blocks (id, project_id, name, plot_count, notes) VALUES (?, ?, ?, ?, ?)',
-      [blockId, projectId, 'البلوك A', 10, 'قطع هذا البلوك متساوية المساحات تقريباً']
-    )
-
-    for (let i = 1; i <= 10; i++) {
-      const plotId = genId()
-      const plotNo = `قطعة ${i}`
-      const d = demoPlots[i - 1]
-      await db.runAsync(
-        `INSERT INTO plots (id, block_id, plot_no, area_sqm, status, boundary_north, boundary_south, boundary_east, boundary_west, value, buyer_name, buyer_contact, sale_date, installment_type, paid_amount, remaining_amount)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [plotId, blockId, plotNo, ...d]
-      )
-
-      if (d[1] === 'installment') {
-        for (const pmt of demoPayments[plotNo]) {
-          await db.runAsync(
-            `INSERT INTO plot_payments (id, plot_id, amount, pay_date, method, cash_recipient, cash_receipt_no, bank_name, bank_ref_no)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [genId(), plotId, ...pmt]
-          )
-        }
-      }
-    }
-
-    const noteFieldId = genId()
-    await db.runAsync(
-      'INSERT INTO custom_fields (id, entity_type, label, value_type, options, sort_order) VALUES (?, ?, ?, ?, ?, ?)',
-      [noteFieldId, 'plot', 'ملاحظات إدارية', 'text', '', 1]
-    )
-
-    const plots = await db.getAllAsync<{ id: string; plot_no: string }>(
-      'SELECT id, plot_no FROM plots'
-    )
-    for (const p of plots) {
-      const note = demoPlotNotes[p.plot_no]
-      if (note) {
-        await db.runAsync(
-          'INSERT INTO custom_field_values (id, entity_type, entity_id, field_id, value) VALUES (?, ?, ?, ?, ?)',
-          [genId(), 'plot', p.id, noteFieldId, note]
-        )
-      }
-    }
-  })
-  })
-}
+// Project demo seeding is intentionally disabled; production starts with an empty database.
 
 function ensureSchema(): Promise<void> {
   if (!schemaPromise) schemaPromise = initProjectsSchema()

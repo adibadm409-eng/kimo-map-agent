@@ -27,7 +27,6 @@
     "expo-secure-store": "~15.0.8",
     "expo-sharing": "~14.0.8",
     "expo-sqlite": "~16.0.10",
-    "expo-status-bar": "~3.0.9",
     "expo-video": "~3.0.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
@@ -57,7 +56,7 @@
     "web": "expo start --web",
     "check": "tsc --noEmit",
     "lint": "eslint src audit --max-warnings 0",
-    "test:invariants": "node audit/safe_edit_invariants.mjs && node audit/domain_workflow_invariants.mjs && npx tsx audit/kimo_agent_invariants.mjs && npx tsx audit/screen_catalog_invariants.mjs && node audit/secret_storage_invariants.mjs && node audit/spatial_import_invariants.mjs && npx tsx audit/property_invariant_tests.mjs && node audit/partial_update_invariants.mjs && node audit/property_metadata_invariants.mjs"
+    "test:invariants": "node audit/safe_edit_invariants.mjs && node audit/domain_workflow_invariants.mjs && npx tsx audit/kimo_agent_invariants.mjs && npx tsx audit/screen_catalog_invariants.mjs && node audit/secret_storage_invariants.mjs && node audit/spatial_import_invariants.mjs && npx tsx audit/property_invariant_tests.mjs && node audit/partial_update_invariants.mjs && node audit/property_metadata_invariants.mjs && node audit/empty_database_invariants.mjs && node audit/cleanup_invariants.mjs"
   },
   "private": true
 }

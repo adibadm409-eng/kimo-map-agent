@@ -188,91 +188,41 @@ async function initSchema(database: SQLite.SQLiteDatabase) {
   `)
 
   await safeMigrate(database)
+  await removeLegacyDemoData(database)
+}
 
-  const count = await database.getFirstAsync<{ c: number }>('SELECT COUNT(*) as c FROM properties')
-  if (count && count.c === 0) {
-    await seedData(database)
-  }
+async function removeLegacyDemoData(database: SQLite.SQLiteDatabase): Promise<void> {
+  const demoPropertyNames = ['فيلا النرجس الفاخرة', 'شقة الملقا العصرية', 'أرض الياسمين الاستثمارية', 'مكتب العليا المتميز', 'محل تجاري في الواحة']
+  const demoClientPhones = ['0551112233', '0552223344', '0553334455', '0554445566']
+  const demoCampaignNames = ['حملة إنستغرام العقارية', 'رسائل بريد عملاء']
+  await database.withTransactionAsync(async () => {
+    const propertyRows = await database.getAllAsync<{ id: string }>(
+      `SELECT id FROM properties WHERE name IN (${demoPropertyNames.map(() => '?').join(', ')})`,
+      demoPropertyNames,
+    )
+    const propertyIds = propertyRows.map((row) => row.id)
+    if (propertyIds.length > 0) {
+      const placeholders = propertyIds.map(() => '?').join(', ')
+      await database.runAsync(`DELETE FROM offers WHERE property_id IN (${placeholders})`, propertyIds)
+      await database.runAsync(`DELETE FROM viewings WHERE property_id IN (${placeholders})`, propertyIds)
+      await database.runAsync(`DELETE FROM properties WHERE id IN (${placeholders})`, propertyIds)
+    }
+    await database.runAsync(
+      `DELETE FROM clients WHERE phone IN (${demoClientPhones.map(() => '?').join(', ')})`,
+      demoClientPhones,
+    )
+    await database.runAsync(
+      `DELETE FROM campaigns WHERE name IN (${demoCampaignNames.map(() => '?').join(', ')})`,
+      demoCampaignNames,
+    )
+  })
 }
 
 function genId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
 }
 
-async function seedData(database: SQLite.SQLiteDatabase) {
-  const now = new Date().toISOString()
-
-  const properties: Omit<Property, 'created_at'>[] = [
-    { id: genId(), name: 'فيلا النرجس الفاخرة', description: 'فيلا حديثة بحديقة خاصة وحمام سباحة', price: 1250000, area: 350, latitude: 24.7136, longitude: 46.6753, address: 'حي النرجس، الرياض', status: 'for_sale', type: 'villa', owner_name: 'أحمد محمد', owner_phone: '0551234567', owner_email: 'ahmed@email.com', icon_uri: '', broker_name: '', broker_phone: '' },
-    { id: genId(), name: 'شقة الملقا العصرية', description: 'شقة بتصميم عصري على دور 12', price: 850000, area: 180, latitude: 24.8253, longitude: 46.6285, address: 'حي الملقا، الرياض', status: 'pending', type: 'apartment', owner_name: 'سعد العلي', owner_phone: '0559876543', owner_email: 'saad@email.com', icon_uri: '', broker_name: '', broker_phone: '' },
-    { id: genId(), name: 'أرض الياسمين الاستثمارية', description: 'أرض سكنية قابلة للبناء', price: 2100000, area: 500, latitude: 24.7711, longitude: 46.7381, address: 'حي الياسمين، الرياض', status: 'for_sale', type: 'land', owner_name: 'فهد السالم', owner_phone: '0534567890', owner_email: 'fahad@email.com', icon_uri: '', broker_name: '', broker_phone: '' },
-    { id: genId(), name: 'مكتب العليا المتميز', description: 'مكتب تجاري بمساحة كبيرة', price: 980000, area: 220, latitude: 24.6920, longitude: 46.6850, address: 'حي العليا، الرياض', status: 'rented', type: 'office', owner_name: 'خالد عبدالله', owner_phone: '0512345678', owner_email: 'khalid@email.com', icon_uri: '', broker_name: '', broker_phone: '' },
-    { id: genId(), name: 'محل تجاري في الواحة', description: 'محل تجاري في مول حيوي', price: 1500000, area: 120, latitude: 24.7555, longitude: 46.6500, address: 'حي الواحة، الرياض', status: 'sold', type: 'commercial', owner_name: 'ناصر الحربي', owner_phone: '0567890123', owner_email: 'nasser@email.com', icon_uri: '', broker_name: '', broker_phone: '' },
-  ]
-
-  for (const p of properties) {
-    await database.runAsync(
-      'INSERT INTO properties (id,name,description,price,area,latitude,longitude,address,status,type,owner_name,owner_phone,owner_email,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-      [p.id, p.name, p.description, p.price, p.area, p.latitude, p.longitude, p.address, p.status, p.type, p.owner_name, p.owner_phone, p.owner_email, now]
-    )
-  }
-
-  const clients: Omit<Client, 'created_at'>[] = [
-    { id: genId(), name: 'محمد أحمد', phone: '0551112233', email: 'mohamed@email.com', type: 'buyer', notes: 'يبحث عن فيلا بحديقة', budget_min: 800000, budget_max: 1500000 },
-    { id: genId(), name: 'سارة خالد', phone: '0552223344', email: 'sara@email.com', type: 'buyer', notes: 'مهتمة بالشقق الحديثة', budget_min: 500000, budget_max: 1000000 },
-    { id: genId(), name: 'عبدالله سالم', phone: '0553334455', email: 'abdullah@email.com', type: 'seller', notes: 'يرغب ببيع أرضه', budget_min: 0, budget_max: 0 },
-    { id: genId(), name: 'نورة العتيبي', phone: '0554445566', email: 'noura@email.com', type: 'both', notes: 'تبيع و تشتري', budget_min: 300000, budget_max: 2000000 },
-  ]
-
-  for (const c of clients) {
-    await database.runAsync(
-      'INSERT INTO clients (id,name,phone,email,type,notes,budget_min,budget_max,created_at) VALUES (?,?,?,?,?,?,?,?,?)',
-      [c.id, c.name, c.phone, c.email, c.type, c.notes, c.budget_min, c.budget_max, now]
-    )
-  }
-
-  const propertyIds = properties.map(p => p.id)
-  const clientIds = clients.map(c => c.id)
-
-  const offers: Omit<Offer, 'created_at'>[] = [
-    { id: genId(), property_id: propertyIds[0], client_id: clientIds[0], type: 'buy_offer', amount: 1200000, status: 'pending', date: '2024-01-15', notes: 'العمير يريد غرفة إضافية' },
-    { id: genId(), property_id: propertyIds[1], client_id: clientIds[1], type: 'buy_offer', amount: 820000, status: 'accepted', date: '2024-01-14', notes: 'مقبول مبدئياً' },
-    { id: genId(), property_id: propertyIds[2], client_id: clientIds[2], type: 'sell_offer', amount: 2000000, status: 'rejected', date: '2024-01-13', notes: 'السعر منخفض عن المطلوب' },
-    { id: genId(), property_id: propertyIds[3], client_id: clientIds[3], type: 'buy_offer', amount: 950000, status: 'countered', date: '2024-01-12', notes: 'تم تقديم عرض مضاد' },
-  ]
-
-  for (const o of offers) {
-    await database.runAsync(
-      'INSERT INTO offers (id,property_id,client_id,type,amount,status,date,notes,created_at) VALUES (?,?,?,?,?,?,?,?,?)',
-      [o.id, o.property_id, o.client_id, o.type, o.amount, o.status, o.date, o.notes, now]
-    )
-  }
-
-  const campaigns: Omit<Campaign, 'created_at'>[] = [
-    { id: genId(), name: 'حملة إنستغرام العقارية', description: 'حملة تسويقية على إنستغرام', type: 'social_media', status: 'active', budget: 5000, start_date: '2024-01-01', end_date: '2024-02-01', notes: 'إعلانات مصورة للملكيات' },
-    { id: genId(), name: 'رسائل بريد عملاء', description: 'رسائل إلكترونية للعملاء المسجلين', type: 'email', status: 'draft', budget: 500, start_date: '2024-02-01', end_date: '2024-03-01', notes: 'إعلان خصومات' },
-  ]
-
-  for (const c of campaigns) {
-    await database.runAsync(
-      'INSERT INTO campaigns (id,name,description,type,status,budget,start_date,end_date,notes,created_at) VALUES (?,?,?,?,?,?,?,?,?,?)',
-      [c.id, c.name, c.description, c.type, c.status, c.budget, c.start_date, c.end_date, c.notes, now]
-    )
-  }
-
-  const viewings: Omit<Viewing, 'created_at'>[] = [
-    { id: genId(), property_id: propertyIds[0], client_id: clientIds[0], date_time: '2024-01-20T10:00:00', status: 'scheduled', notes: 'موعد مشاهدة فيلا النرجس' },
-    { id: genId(), property_id: propertyIds[1], client_id: clientIds[1], date_time: '2024-01-21T14:00:00', status: 'completed', notes: 'تمت مشاهدة شقة الملقا' },
-    { id: genId(), property_id: propertyIds[2], client_id: clientIds[2], date_time: '2024-01-22T11:00:00', status: 'cancelled', notes: 'ألغاه العميل' },
-  ]
-
-  for (const v of viewings) {
-    await database.runAsync(
-      'INSERT INTO viewings (id,property_id,client_id,date_time,status,notes,created_at) VALUES (?,?,?,?,?,?,?)',
-      [v.id, v.property_id, v.client_id, v.date_time, v.status, v.notes, now]
-    )
-  }
-}
+/* No demo records are inserted on first launch. */
 
 // CRUD helpers - PROPERTY
 export async function getAllProperties(): Promise<any[]> {
