@@ -7,7 +7,7 @@ export interface PropertyChangePreview {
   confidence: number
   risk: 'low' | 'medium' | 'high'
   requiresApproval: boolean
-  candidates: Array<{ id: string; name: string; score: number; reasons: string[] }>
+  candidates: { id: string; name: string; score: number; reasons: string[] }[]
   changes: Record<string, { before: unknown; after: unknown }>
   attachmentIds: string[]
   explanation: string
