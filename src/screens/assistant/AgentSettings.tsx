@@ -9,6 +9,7 @@ import { useTheme } from '../../theme/ThemeContext'
 import { spacing, radius, fontSize } from '../../theme/tokens'
 import {
   PROVIDERS,
+  VOICE_SUPPORT_GUIDE,
   defaultProvider,
   fetchProviderModels,
   filterChatModels,
@@ -21,6 +22,7 @@ import {
   type ProviderId,
   type CustomProviderDef,
 } from '../../assistant'
+import { voiceSupportFor } from '../../assistant/providers'
 
 function providerDefFor(activeKey: string, customProviders: CustomProviderDef[]): ProviderDef {
   if (activeKey.startsWith('custom:')) {
@@ -208,6 +210,7 @@ export default function AgentSettings({ navigation }: any) {
   const shown = settings.models[activeKey] ?? ''
   const modelOptions = [shown, ...(settings.modelLists[activeKey] ?? []), ...builtInModels].filter(Boolean)
   const uniqueModels = Array.from(new Set(modelOptions)).filter(Boolean)
+  const activeVoiceSupport = voiceSupportFor(activeDef, model)
 
   return (
     <View style={[styles.root, { backgroundColor: colors.bg }]}>
@@ -378,6 +381,29 @@ export default function AgentSettings({ navigation }: any) {
             </Text>
           )}
 
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>الإدخال الصوتي</Text>
+          <View style={[styles.voiceActiveCard, { backgroundColor: activeVoiceSupport === 'supported' ? colors.successSurface : colors.warningSurface, borderColor: colors.border }]}>
+            <Ionicons name={activeVoiceSupport === 'supported' ? 'mic-circle-outline' : 'information-circle-outline'} size={20} color={activeVoiceSupport === 'supported' ? colors.success : colors.warning} />
+            <View style={styles.voiceActiveBody}>
+              <Text style={[styles.modeTitle, { color: colors.textPrimary }]}>الموديل الحالي: {model || 'غير محدد'}</Text>
+              <Text style={[styles.modeDesc, { color: colors.textSecondary }]}>
+                {activeVoiceSupport === 'supported' ? 'يدعم إرسال التسجيل الصوتي عبر العقد المعتمد.' : 'لن يرسل كيمو صوتاً إلى هذا الموديل حتى لا ينتج طلباً غير متوافق.'}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.voiceGuideList}>
+            {VOICE_SUPPORT_GUIDE.map((item) => (
+              <View key={item.provider} style={[styles.voiceGuideRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                <View style={[styles.voiceStatusDot, { backgroundColor: item.support === 'supported' ? colors.success : item.support === 'unsupported' ? colors.error : colors.warning }]} />
+                <View style={styles.voiceGuideBody}>
+                  <Text style={[styles.voiceGuideTitle, { color: colors.textPrimary }]}>{item.label}</Text>
+                  <Text style={[styles.voiceGuideModels, { color: colors.textSecondary }]}>{item.models}</Text>
+                  <Text style={[styles.voiceGuideNote, { color: colors.textMuted }]}>{item.note}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>الوضع الافتراضي</Text>
           <Pressable onPress={toggleMode} style={[styles.modeCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
             <View style={[styles.modeIcon, { backgroundColor: mode === 'edit' ? colors.successSurface : colors.infoSurface }]}>
@@ -510,6 +536,15 @@ const styles = StyleSheet.create({
   testBtnText: { color: '#fff', fontSize: fontSize.md, fontWeight: '700', fontFamily: 'Tajawal_700Bold' },
   testResult: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, borderWidth: 1, borderRadius: radius.md, padding: spacing.md, marginTop: spacing.sm },
   testResultText: { flex: 1, fontSize: fontSize.xs, fontFamily: 'Tajawal_400Regular', lineHeight: 18 },
+  voiceActiveCard: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, borderWidth: 1, borderRadius: radius.md, padding: spacing.md },
+  voiceActiveBody: { flex: 1, gap: 2 },
+  voiceGuideList: { gap: spacing.xs },
+  voiceGuideRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, borderWidth: 1, borderRadius: radius.md, padding: spacing.sm },
+  voiceStatusDot: { width: 8, height: 8, borderRadius: radius.full, marginTop: 6 },
+  voiceGuideBody: { flex: 1, gap: 2 },
+  voiceGuideTitle: { fontSize: fontSize.sm, fontFamily: 'Tajawal_700Bold' },
+  voiceGuideModels: { fontSize: fontSize.xs, fontFamily: 'Tajawal_400Regular' },
+  voiceGuideNote: { fontSize: fontSize.xs, lineHeight: 17, fontFamily: 'Tajawal_400Regular' },
   modalOverlay: { flex: 1, justifyContent: 'center', padding: spacing.xl },
   modalCard: { borderRadius: radius.xl, overflow: 'hidden' },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.lg, borderBottomWidth: StyleSheet.hairlineWidth },

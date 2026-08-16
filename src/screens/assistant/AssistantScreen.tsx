@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import * as DocumentPicker from 'expo-document-picker'
 import * as Clipboard from 'expo-clipboard'
+import { AudioModule, RecordingPresets, setAudioModeAsync, useAudioRecorder, useAudioRecorderState } from 'expo-audio'
 import { useTheme } from '../../theme/ThemeContext'
 import { spacing, radius, fontSize } from '../../theme/tokens'
 import {
@@ -40,6 +41,12 @@ import { restoreRuntimeEvents } from '../../assistant/runtimeEvents'
 interface AttachItem {
   uri: string
   name: string
+}
+
+interface AudioDraft {
+  uri: string
+  name: string
+  format: 'm4a' | 'webm'
 }
 
 export default function AssistantScreen({ navigation }: any) {
@@ -81,6 +88,31 @@ export default function AssistantScreen({ navigation }: any) {
   const wantedBottom = useRef(false)
   /** هل المستخدم في نهاية المحادثة فعلاً؟ يتحكم بإظهار زر النزول فوق زر الإرسال */
   const [atBottom, setAtBottom] = useState(true)
+  const [voiceReady, setVoiceReady] = useState(false)
+  const [voiceError, setVoiceError] = useState<string | null>(null)
+  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY)
+  const recorderState = useAudioRecorderState(audioRecorder)
+
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        const permission = await AudioModule.requestRecordingPermissionsAsync()
+        if (!permission.granted) {
+          if (mounted) setVoiceError('لم يُسمح لكيمو باستخدام الميكروفون. يمكنك تفعيل الإذن من إعدادات Android.')
+          return
+        }
+        await setAudioModeAsync({ playsInSilentMode: true, allowsRecording: true })
+        if (mounted) setVoiceReady(true)
+      } catch (error: any) {
+        if (mounted) setVoiceError(error?.message ?? 'تعذر تهيئة الميكروفون.')
+      }
+    })()
+    return () => {
+      mounted = false
+      setAudioModeAsync({ allowsRecording: false }).catch(() => {})
+    }
+  }, [])
 
   useEffect(() => {
     const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
@@ -301,9 +333,9 @@ export default function AssistantScreen({ navigation }: any) {
     return id
   }
 
-  async function handleSend(text: string) {
+  async function handleSend(text: string, audio?: AudioDraft) {
     const trimmed = text.trim()
-    if (!trimmed || busy) return
+    if ((!trimmed && !audio) || busy) return
     const sid = await ensureSession()
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
     setInput('')
@@ -311,7 +343,7 @@ export default function AssistantScreen({ navigation }: any) {
     // أظهر رسالة المستخدم محلياً فوراً حتى لا تختفي لحظة كتحضير الإرسال
     setMessages((prev) => [
       ...prev,
-      { id: `local-user-${Date.now()}`, sessionId: sid, role: 'user', kind: 'text', content: trimmed, createdAt: Date.now() },
+      { id: `local-user-${Date.now()}`, sessionId: sid, role: 'user', kind: 'text', content: audio ? `رسالة صوتية: ${audio.name}` : trimmed, createdAt: Date.now() },
     ])
     const atts = attachments.length ? [...attachments] : undefined
     setAttachments([])
@@ -327,7 +359,7 @@ export default function AssistantScreen({ navigation }: any) {
     setAgentObservations([])
     try {
       setActionError(null)
-      await sendUserMessage(sid, trimmed, atts ? { attachments: atts } : undefined)
+      await sendUserMessage(sid, trimmed, atts || audio ? { attachments: atts, audio } : undefined)
     } catch (error: any) {
       setActionError(error?.message ?? 'تعذر تنفيذ الطلب. راجع اتصال مزود الذكاء الاصطناعي أو إعداداته.')
     } finally {
@@ -396,6 +428,32 @@ export default function AssistantScreen({ navigation }: any) {
       const items = res.assets.map((a) => ({ uri: a.uri, name: a.name ?? 'ملف' }))
       setAttachments((prev) => [...prev, ...items])
     } catch {}
+  }
+
+  async function handleVoice() {
+    if (busy) return
+    if (!voiceReady) {
+      Alert.alert('الميكروفون غير جاهز', voiceError ?? 'اسمح بالوصول إلى الميكروفون ثم أعد المحاولة.')
+      return
+    }
+    try {
+      if (recorderState.isRecording) {
+        await audioRecorder.stop()
+        const uri = audioRecorder.uri
+        if (!uri) {
+          Alert.alert('تعذر حفظ التسجيل', 'لم يُنتج الجهاز ملفاً صوتياً صالحاً.')
+          return
+        }
+        const format = Platform.OS === 'web' ? 'webm' : 'm4a'
+        await handleSend('', { uri, name: `voice-${Date.now()}.${format}`, format })
+      } else {
+        await audioRecorder.prepareToRecordAsync()
+        audioRecorder.record()
+      }
+    } catch (error: any) {
+      setVoiceError(error?.message ?? 'تعذر بدء التسجيل الصوتي.')
+      Alert.alert('تعذر التسجيل', error?.message ?? 'تحقق من إذن الميكروفون ثم أعد المحاولة.')
+    }
   }
 
   async function handleNewSession() {
@@ -1033,9 +1091,24 @@ export default function AssistantScreen({ navigation }: any) {
               ))}
             </View>
           )}
+          {recorderState.isRecording && (
+            <View style={[styles.recordingBanner, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}>
+              <View style={[styles.recordingDot, { backgroundColor: colors.error }]} />
+              <Text style={[styles.recordingText, { color: colors.error }]}>جاري التسجيل… اضغط الميكروفون للإيقاف والإرسال</Text>
+            </View>
+          )}
           <View style={styles.inputRow}>
-            <Pressable accessibilityRole="button" accessibilityLabel="إرفاق ملفات" onPress={pickFiles} disabled={busy} style={[styles.attachBtn, { backgroundColor: colors.surface, opacity: busy ? 0.4 : 1 }]}>
+            <Pressable accessibilityRole="button" accessibilityLabel="إرفاق ملفات" onPress={pickFiles} disabled={busy || recorderState.isRecording} style={[styles.attachBtn, { backgroundColor: colors.surface, opacity: busy || recorderState.isRecording ? 0.4 : 1 }]}>
               <Ionicons name="attach-outline" size={20} color={colors.textSecondary} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={recorderState.isRecording ? 'إيقاف التسجيل وإرساله' : 'بدء الإدخال الصوتي'}
+              onPress={handleVoice}
+              disabled={busy}
+              style={[styles.voiceBtn, { backgroundColor: recorderState.isRecording ? colors.errorSurface : colors.surface, borderColor: recorderState.isRecording ? colors.error : colors.border, borderWidth: 1, opacity: busy ? 0.4 : 1 }]}
+            >
+              <Ionicons name={recorderState.isRecording ? 'stop' : 'mic-outline'} size={19} color={recorderState.isRecording ? colors.error : colors.textSecondary} />
             </Pressable>
             <TextInput
               accessibilityLabel={pending?.kind === 'ask_user' ? 'إجابة سؤال كيمو' : 'رسالة إلى كيمو'}
@@ -1217,6 +1290,10 @@ const styles = StyleSheet.create({
   attName: { fontSize: fontSize.xs, fontFamily: 'Tajawal_400Regular', flexShrink: 1 },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
   attachBtn: { width: 42, height: 42, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  voiceBtn: { width: 42, height: 42, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  recordingBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 10, paddingVertical: 7, marginBottom: spacing.sm },
+  recordingDot: { width: 8, height: 8, borderRadius: radius.full },
+  recordingText: { flex: 1, fontSize: fontSize.xs, fontFamily: 'Tajawal_700Bold' },
   input: { flex: 1, borderWidth: 1, borderRadius: radius.lg, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 10, fontSize: fontSize.md, fontFamily: 'Tajawal_400Regular', maxHeight: 110 },
   sendBtn: { width: 42, height: 42, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   stepCard: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, paddingVertical: 6, paddingHorizontal: 10, marginVertical: 1 },

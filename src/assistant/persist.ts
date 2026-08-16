@@ -13,12 +13,21 @@ export function mimeOf(name: string): string {
 }
 
 export async function persistAssistantToolCall(sessionId: string, call: ToolCall): Promise<void> {
+  await persistAssistantToolCalls(sessionId, [call])
+}
+
+/**
+ * يحفظ رسالة assistant واحدة تحتوي كل نداءات الجولة. لا يجوز تحويل نداءين
+ * متوازيين إلى رسالتين assistant منفصلتين؛ المزودات تتوقع assistant.tool_calls
+ * واحداً ثم رسائل tool المرتبطة بالمعرفات نفسها.
+ */
+export async function persistAssistantToolCalls(sessionId: string, calls: ToolCall[]): Promise<void> {
   await addMessage({
     sessionId,
     role: 'assistant',
     kind: 'tool_call',
     content: '',
-    meta: { tool_calls: [toWireToolCall(call)] },
+    meta: { tool_calls: calls.map((call) => toWireToolCall(call)) },
   })
 }
 
@@ -45,7 +54,9 @@ export async function persistToolResult(sessionId: string, call: ToolCall, resul
 
 /** تسجيل نداء أداة + نتيجتها معاً في سجل الجلسة، وإعادة نص الملاحظة للنقل إلى مسار تفكير ReAct. */
 export async function persistPair(sessionId: string, call: ToolCall, result: any, onObservation?: (obs: string) => void, metaExtra?: Record<string, any>): Promise<string> {
-  await persistAssistantToolCall(sessionId, call)
+  // executor يحفظ مجموعة assistant.tool_calls مرة واحدة قبل تنفيذ النتائج.
+  // المسارات الاصطناعية القديمة لا تحمل العلامة، فتستمر في حفظ زوجها المعتاد.
+  if (!call.extra?.__assistantPersisted) await persistAssistantToolCall(sessionId, call)
   const obs = await persistToolResult(sessionId, call, result, metaExtra)
   if (onObservation) onObservation(obs)
   return obs

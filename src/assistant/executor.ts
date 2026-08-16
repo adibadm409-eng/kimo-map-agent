@@ -1,9 +1,10 @@
 import { getMessages, getSettings, createSession, listUndo, activeConfig, updateSessionMeta, getPending, clearPending, addBrainOp, listBrain, clearBrain, type Message, type BrainOp, type AgentSettings } from './store'
 import { saveAttachment } from '../database/workspace'
-import { chatWithRetry, parseToolArgs, toWireToolCall, type ChatMessage, type ToolCall } from './llm'
-import { defaultProvider, type ProviderDef, type ProviderId } from './providers'
+import { readAudioInput } from './files'
+import { chatWithRetry, parseToolArgs, toWireToolCall, type ChatContentPart, type ChatMessage, type ToolCall } from './llm'
+import { defaultProvider, providerCapabilities, type ProviderDef, type ProviderId } from './providers'
 import { analyzeIntent, buildContextSummary } from './intent'
-import { persistUser, persistAssistantText, mimeOf } from './persist'
+import { persistUser, persistAssistantText, persistAssistantToolCalls, mimeOf } from './persist'
 import { buildSystemPrompt, getAgentFunctions } from './prompts'
 import { assessSkill, getSkillById, planForSkill } from './skills'
 import { completePlanStep, type AgentPlan, type AgentSkill } from './agentContract'
@@ -41,7 +42,8 @@ async function runLoop(
   sessionId: string,
   s: AgentSettings,
   conn: { providerId: string; baseUrl: string; apiKey: string; providerName: string; model: string },
-  emitEvents: boolean
+  emitEvents: boolean,
+  initialContent?: ChatMessage['content']
 ): Promise<void> {
   const aborter = new AbortController()
   setAborter(sessionId, aborter)
@@ -103,6 +105,16 @@ async function runLoop(
     // مسار تفكير ReAct داخل الذاكرة: محادثة المستخدم فقط كبذرة، ثم نلحق بها
     // كل أداة+ملاحظتها في الخيط الخاص (لا تدخل محادثة المستخدم الظاهرة).
     const thread: ChatMessage[] = messagesToLlm(await readModelHistory(sessionId))
+    if (initialContent !== undefined) {
+      // استبدال آخر رسالة مستخدم بالحمولة متعددة الوسائط نفسها؛ لا نحفظ Base64
+      // في SQLite ولا نضيف رسالة وصفية ثانية إلى سياق الموديل.
+      for (let i = thread.length - 1; i >= 0; i--) {
+        if (thread[i].role === 'user') {
+          thread[i] = { role: 'user', content: initialContent }
+          break
+        }
+      }
+    }
     try {
       let finished = false
       for (let round = 0; round < MAX_TOOL_ROUNDS && Date.now() - startedAt < MAX_AGENT_RUNTIME_MS; round++) {
@@ -173,6 +185,17 @@ async function runLoop(
 
         if (isCancelled(sessionId)) return
 
+        if (result.toolCalls.length) {
+          // احفظ كل نداءات الجولة في assistant واحدة قبل تنفيذ أي أداة.
+          // هذا يحافظ على عقد parallel tool calls عند إعادة فتح الجلسة أو استئنافها.
+          const persistedCalls = result.toolCalls.map((call) => ({
+            ...call,
+            extra: { ...(call.extra ?? {}), __assistantPersisted: true },
+          }))
+          await persistAssistantToolCalls(sessionId, persistedCalls)
+          result.toolCalls = persistedCalls
+        }
+
         if (result.content && result.toolCalls.length) {
           // نص مصاحب لنداء أداة = نشاط الوكيل أثناء التنفيذ (تفكير/تخطيط/شرح ما يفعله) —
           // يُخزَّن كنوع progress منفصل عن الرد النهائي، ويُبث live للشاشة
@@ -181,9 +204,9 @@ async function runLoop(
             await persistAssistantText(sessionId, tail, 'progress')
             if (emitEvents) emit({ type: 'progress', text: tail })
           }
-          thread.push({ role: 'assistant', content: result.content, tool_calls: result.toolCalls.map(toWireToolCall) })
+          thread.push({ role: 'assistant', content: result.content, tool_calls: result.toolCalls.map((call) => toWireToolCall(call, { includeProviderMetadata: providerCapabilities(providerProxy(conn), conn.model).preservesThoughtSignatures })) })
         } else if (result.toolCalls.length) {
-          thread.push({ role: 'assistant', content: null, tool_calls: result.toolCalls.map(toWireToolCall) })
+          thread.push({ role: 'assistant', content: null, tool_calls: result.toolCalls.map((call) => toWireToolCall(call, { includeProviderMetadata: providerCapabilities(providerProxy(conn), conn.model).preservesThoughtSignatures })) })
         }
 
         if (!result.toolCalls.length) {
@@ -380,6 +403,7 @@ async function resolveConfig(): Promise<ConnConfig> {
 
 export interface SendOptions {
   attachments?: { uri: string; name?: string }[]
+  audio?: { uri: string; format?: 'm4a' | 'wav' | 'mp3' | 'webm'; name?: string }
 }
 
 async function withConfig<T>(fn: (conn: ConnConfig) => Promise<T>): Promise<T> {
@@ -390,10 +414,10 @@ async function withConfig<T>(fn: (conn: ConnConfig) => Promise<T>): Promise<T> {
   return fn(config)
 }
 
-async function runGuarded(sessionId: string, conn: ConnConfig, emitEvents = true): Promise<void> {
+async function runGuarded(sessionId: string, conn: ConnConfig, emitEvents = true, initialContent?: ChatMessage['content']): Promise<void> {
   markRunning(sessionId)
   try {
-    await runLoop(sessionId, conn.settings, conn, emitEvents)
+    await runLoop(sessionId, conn.settings, conn, emitEvents, initialContent)
   } finally {
     clearRunning(sessionId)
   }
@@ -412,6 +436,41 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
   }
 
   let content = text
+  let initialContent: ChatMessage['content'] | undefined
+  if (opts?.audio) {
+    const capabilities = providerCapabilities(providerProxy(conn), conn.model)
+    const voiceLabel = opts.audio.name ?? 'تسجيل صوتي'
+    if (!capabilities.supportsInputAudio) {
+      const message = `الموديل ${conn.model} لا يثبت دعماً للإدخال الصوتي عبر ${conn.providerName}. اختر موديل صوتياً معلناً من إعدادات كيمو؛ لم أرسل طلباً غير متوافق.`
+      await persistUser(sessionId, `رسالة صوتية: ${voiceLabel}`)
+      await persistAssistantText(sessionId, message, 'error')
+      emit({ type: 'error', message })
+      return
+    }
+    try {
+      const audio = await readAudioInput(opts.audio.uri, opts.audio.format ?? 'm4a')
+      const name = opts.audio.name ?? audio.name
+      await saveAttachment({
+        sessionId,
+        name,
+        uri: audio.uri,
+        size: audio.size,
+        mime: audio.format === 'm4a' ? 'audio/mp4' : `audio/${audio.format}`,
+      }).catch(() => {})
+      const voiceText = text.trim() || 'أرسل المستخدم تسجيلاً صوتياً. استمع إليه وافهم المطلوب ثم تعامل معه وفق مهاراتك وأدواتك.'
+      initialContent = [
+        { type: 'text', text: voiceText },
+        { type: 'input_audio', input_audio: { data: audio.base64, format: audio.format } },
+      ] satisfies ChatContentPart[]
+      content = `رسالة صوتية: ${name}`
+    } catch (error: any) {
+      const message = error?.message ?? 'تعذر تجهيز التسجيل الصوتي محلياً.'
+      await persistUser(sessionId, `رسالة صوتية: ${voiceLabel}`)
+      await persistAssistantText(sessionId, message, 'error')
+      emit({ type: 'error', message })
+      return
+    }
+  }
   if (opts?.attachments?.length) {
     for (const att of opts.attachments) {
       try {
@@ -438,7 +497,7 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
 
   await persistUser(sessionId, content)
   // لا رسائل تقدم ثابتة — المساعد نفسه يخاطب المستخدم بما يقرره هو.
-  await runGuarded(sessionId, conn)
+  await runGuarded(sessionId, conn, true, initialContent)
   emit({ type: 'done' })
 }
 

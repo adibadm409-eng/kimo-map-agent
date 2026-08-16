@@ -395,4 +395,28 @@ export async function readAttachmentBase64(uri: string, maxBytes = 1_200_000): P
   return { uri, name: info.exists && 'uri' in info ? (info.uri ?? 'ملف').split('/').pop() ?? 'ملف' : 'ملف', size, base64 }
 }
 
+export interface AudioInputData {
+  uri: string
+  name: string
+  size: number
+  base64: string
+  format: 'm4a' | 'wav' | 'mp3' | 'webm'
+}
+
+/** يقرأ التسجيل كاملاً؛ لا يسمح بالقص الصامت الذي قد يجعل التفريغ أو الفهم خاطئاً. */
+export async function readAudioInput(uri: string, format: AudioInputData['format'] = 'm4a', maxBytes = 6_000_000): Promise<AudioInputData> {
+  const info = await FileSystem.getInfoAsync(uri)
+  const size = info.exists && 'size' in info ? (info.size ?? 0) : 0
+  if (!info.exists || !size) throw new Error('التسجيل الصوتي فارغ أو لم يعد موجوداً في الجهاز.')
+  if (size > maxBytes) throw new Error(`حجم التسجيل ${(size / 1024 / 1024).toFixed(1)} ميغابايت أكبر من الحد المحلي 6 ميغابايت؛ قصّر التسجيل ثم أعد المحاولة.`)
+  let base64 = ''
+  try {
+    base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 })
+  } catch {
+    throw new Error('تعذر قراءة التسجيل الصوتي من التخزين المحلي.')
+  }
+  if (!base64) throw new Error('تعذر استخراج بيانات التسجيل الصوتي.')
+  return { uri, name: uri.split('/').pop() ?? `voice.${format}`, size, base64, format }
+}
+
 export { newId }

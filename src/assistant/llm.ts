@@ -1,5 +1,6 @@
 import type { ProviderDef } from './providers'
 import { normalizeBaseUrl, providerCapabilities } from './providers'
+import { providerRequestIssues, providerWireRequestExtras, serializeProviderMessages } from './providerWire'
 
 export interface ToolCall {
   id: string
@@ -10,8 +11,7 @@ export interface ToolCall {
   extra?: Record<string, any>
 }
 
-/** توليد معرف نداء أداة بصيغة تفرضها البوابة الموحّدة للمزوّدات:
-    بالضبط 9 محارف من a-z/A-Z/0-9 — تُرفض أي صيغة أخرى (مثل call_xxx) بخطأ 400. */
+/** توليد معرف محلي عند غياب معرف المزود فقط؛ لا يُستخدم لإعادة ترميز معرف وارد. */
 export function makeToolCallId(): string {
   const pool = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
   let out = ''
@@ -19,26 +19,22 @@ export function makeToolCallId(): string {
   return out
 }
 
-/** معرف ثابت من تسعة محارف، يحافظ على نفس القيمة بين assistant وtool. */
+/** معرف ثابت يحافظ على نفس قيمة المزود بين assistant وtool. */
 export function normalizeToolCallId(raw: unknown): string {
+  // معرف النداء جزء من عقد المزود: يجب أن يعود في رسالة tool كما ورد من
+  // assistant. لا نعيد ترميزه إلى طول أو أبجدية خاصة بنا، لأن OpenAI وGemini
+  // قد يستخدمان call_* أو UUID أو معرفات أخرى صالحة.
   const value = String(raw ?? '').trim()
-  if (/^[A-Za-z0-9]{9}$/.test(value)) return value
-  const source = value || makeToolCallId()
-  const pool = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-  let hash = 2166136261
-  for (let i = 0; i < source.length; i++) hash = Math.imul(hash ^ source.charCodeAt(i), 16777619)
-  let out = ''
-  let n = hash >>> 0
-  for (let i = 0; i < 9; i++) {
-    n = Math.imul(n ^ (n >>> 13), 2246822519) >>> 0
-    out += pool[n % pool.length]
-  }
-  return out
+  return value || makeToolCallId()
 }
+
+export type ChatContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'input_audio'; input_audio: { data: string; format: string } }
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant' | 'tool'
-  content: string | null
+  content: string | ChatContentPart[] | null
   tool_call_id?: string
   name?: string
   tool_calls?: Record<string, any>[]
@@ -63,9 +59,8 @@ export interface ChatResult {
  * أرسلها المزوّد حرفياً (thought_signature أو غيرها). البوابة الموحّدة التي تمرّ
  * عبراها كل المزوّدات ترفض بأخطاء 400 أي نداء أُعيد بناؤه مجرداً من هذه الحقول.
  */
-export function toWireToolCall(call: ToolCall): Record<string, any> {
+export function toWireToolCall(call: ToolCall, options: { includeProviderMetadata?: boolean } = {}): Record<string, any> {
   const extra = call.extra ?? {}
-  const { raw: _raw, ...otherExtra } = extra
   const raw = (extra.raw ?? {}) as Record<string, any>
   const name = call.name || raw.function?.name || ''
   const args =
@@ -76,17 +71,29 @@ export function toWireToolCall(call: ToolCall): Record<string, any> {
       : typeof raw.function?.arguments === 'string'
       ? raw.function.arguments
       : '{}'
-  // تُبنى الحقول المطلوبة (name/arguments) حتماً، ثم تُدمج الإضافات بعد تنقيتها
-  // من الحقول البنيوية المتسربة — لا تُحذف المطلوبة أبداً مهما تسربت.
-  const fn: Record<string, any> = {
-    ...sanitizeWireFunction(otherExtra),
-    name,
-    arguments: args,
+
+  // الاسم والوسائط فقط داخل function. لا نضع thought_signature هنا: Gemini
+  // OpenAI-compatible يطلبه داخل extra_content.google على مستوى tool_call.
+  const wire: Record<string, any> = {
+    id: normalizeToolCallId(call.id ?? raw.id),
+    type: 'function',
+    function: { name, arguments: args },
   }
-  // تثبيت thought_signature عند مجيئه من المزوّد في موضعه الصريح (داخل function)
-  const sig = otherExtra.thought_signature ?? raw.function?.thought_signature ?? raw.thought_signature
-  if (sig !== undefined) fn.thought_signature = sig
-  return { id: normalizeToolCallId(call.id ?? raw.id), type: 'function', function: fn }
+
+  const includeProviderMetadata = options.includeProviderMetadata !== false
+  const rawExtraContent = extra.extra_content ?? raw.extra_content
+  if (includeProviderMetadata && rawExtraContent !== undefined) wire.extra_content = rawExtraContent
+
+  // دعم السجلات القديمة التي خزّنت التوقيع مباشرة؛ نعيده إلى موضعه السلكي
+  // الصحيح فقط عندما يثبت محول الوجهة أن هذا metadata مسموح به.
+  const sig = extra.thought_signature ?? raw.function?.thought_signature ?? raw.thought_signature
+  if (includeProviderMetadata && sig !== undefined && wire.extra_content?.google?.thought_signature === undefined) {
+    wire.extra_content = {
+      ...(wire.extra_content ?? {}),
+      google: { ...(wire.extra_content?.google ?? {}), thought_signature: sig },
+    }
+  }
+  return wire
 }
 
 /**
@@ -97,7 +104,7 @@ export function toWireToolCall(call: ToolCall): Record<string, any> {
  * قد تحمل بيانات قديمة متسخة.
  */
 export function sanitizeWireFunction(fn: Record<string, any>): Record<string, any> {
-  const LEAK_FIELDS = ['index', 'id', 'type', 'function', 'raw']
+  const LEAK_FIELDS = ['index', 'id', 'type', 'function', 'raw', 'extra_content', 'thought_signature']
   const out: Record<string, any> = {}
   for (const [k, v] of Object.entries(fn)) {
     if (LEAK_FIELDS.includes(k)) continue
@@ -108,6 +115,20 @@ export function sanitizeWireFunction(fn: Record<string, any>): Record<string, an
 }
 
 export type LlmErrorKind = 'network' | 'timeout' | 'http' | 'invalid_request' | 'auth' | 'rate_limit' | 'server' | 'parse' | 'unknown'
+
+/**
+ * واجهة توافق واحدة داخل التطبيق، مفصولة عن المحولات السلكية الخارجية.
+ * المحول الفعلي يختار معياراً وفق المزود والموديل قبل بناء الطلب.
+ */
+export function serializeChatMessages(provider: ProviderDef, model: string, messages: ChatMessage[]): Record<string, any>[] {
+  return serializeProviderMessages(provider, model, messages)
+}
+
+export function assertChatRequest(opts: ChatOpts): void {
+  const issues = providerRequestIssues(opts.provider, opts.model, opts.messages, !!opts.functions?.length)
+  const issue = issues[0]
+  if (issue) throw new LlmError(issue.kind, `${issue.message} أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة.`)
+}
 
 export class LlmError extends Error {
   kind: LlmErrorKind
@@ -143,6 +164,30 @@ export interface ChatOpts {
   onDelta?: (delta: { content: string; toolCalls: ToolCall[]; done?: boolean }) => void
 }
 
+/** يبني payload النهائي مرة واحدة لجميع مسارات النقل، ويطبّق محول المزود قبل الشبكة. */
+export function buildChatRequestBody(opts: ChatOpts, stream = false): Record<string, any> {
+  assertChatRequest(opts)
+  const capabilities = providerCapabilities(opts.provider, opts.model)
+  const body: Record<string, any> = {
+    model: opts.model,
+    messages: serializeChatMessages(opts.provider, opts.model, opts.messages),
+  }
+  if (stream) {
+    body.stream = capabilities.supportsStreaming
+    if (capabilities.supportsStreamOptions) body.stream_options = { include_usage: true }
+  }
+  Object.assign(body, providerWireRequestExtras(opts.provider, opts.model, !!opts.functions?.length))
+  if (opts.functions?.length && capabilities.supportsTools) {
+    body.tools = opts.functions.map((f) => ({
+      type: 'function',
+      function: { name: f.name, description: f.description, parameters: f.parameters },
+    }))
+  }
+  if (opts.temperature !== undefined) body.temperature = opts.temperature
+  if (opts.maxTokens) body[capabilities.maxTokensField] = opts.maxTokens
+  return body
+}
+
 /**
  * تحليل SSE مع الاحتفاظ بالجزء غير المكتمل بين قراءات الشبكة. بعض المزودين
  * يقسمون JSON داخل data بين chunks؛ لذلك لا يجوز محاولة JSON.parse قبل وصول
@@ -175,32 +220,13 @@ export function splitSse(buf: string): { data: string }[] {
  * التصاعدية. يُرجع النتيجة الكاملة (جسم ChatResult) بعد اكتمال البث.
  */
 async function postChatStream(opts: ChatOpts, signal: AbortSignal): Promise<ChatResult> {
+  assertChatRequest(opts)
   const base = normalizeBaseUrl(opts.baseUrl && opts.baseUrl.trim() ? opts.baseUrl : opts.provider.baseUrl)
   if (!base) throw new LlmError('unknown', 'رابط المزود غير مكتمل — أضف الرابط من إعدادات المساعد')
   if (!opts.apiKey.trim()) throw new LlmError('unknown', 'لا يوجد مفتاح API — أضفه من إعدادات المساعد')
   if (!opts.model.trim()) throw new LlmError('unknown', 'لم يتم اختيار الموديل — اختر موديلاً من الإعدادات')
 
-  const capabilities = providerCapabilities(opts.provider, opts.model)
-  const body: Record<string, any> = {
-    model: opts.model,
-    messages: opts.messages.map((m) => {
-      const out: Record<string, any> = { role: m.role, content: m.content ?? null }
-      if (m.tool_call_id) out.tool_call_id = m.tool_call_id
-      if (m.name) out.name = m.name
-      if (m.tool_calls) out.tool_calls = m.tool_calls
-      return out
-    }),
-    stream: capabilities.supportsStreaming,
-  }
-  if (capabilities.supportsStreamOptions) body.stream_options = { include_usage: true }
-  if (opts.functions && opts.functions.length && capabilities.supportsTools) {
-    body.tools = opts.functions.map((f) => ({
-      type: 'function',
-      function: { name: f.name, description: f.description, parameters: f.parameters },
-    }))
-  }
-  if (opts.temperature !== undefined) body.temperature = opts.temperature
-  if (opts.maxTokens) body[capabilities.maxTokensField] = opts.maxTokens
+  const body = buildChatRequestBody(opts, true)
 
   let res: Response
   try {
@@ -240,6 +266,7 @@ async function postChatStream(opts: ChatOpts, signal: AbortSignal): Promise<Chat
       id: tcAcc[k].id,
       name: tcAcc[k].name,
       arguments: tcAcc[k].args,
+      extra: tcAcc[k].extra,
     }))
     opts.onDelta?.({ content: fullContent, toolCalls, done })
   }
@@ -340,30 +367,13 @@ function sleep(ms: number): Promise<void> {
 }
 
 async function postChat(opts: ChatOpts, signal: AbortSignal): Promise<ChatResult> {
-  const capabilities = providerCapabilities(opts.provider, opts.model)
+  assertChatRequest(opts)
   const base = normalizeBaseUrl(opts.baseUrl && opts.baseUrl.trim() ? opts.baseUrl : opts.provider.baseUrl)
   if (!base) throw new LlmError('unknown', 'رابط المزود غير مكتمل — أضف الرابط من إعدادات المساعد')
   if (!opts.apiKey.trim()) throw new LlmError('unknown', 'لا يوجد مفتاح API — أضفه من إعدادات المساعد')
   if (!opts.model.trim()) throw new LlmError('unknown', 'لم يتم اختيار الموديل — اختر موديلاً من الإعدادات')
 
-  const body: Record<string, any> = {
-    model: opts.model,
-    messages: opts.messages.map((m) => {
-      const out: Record<string, any> = { role: m.role, content: m.content ?? null }
-      if (m.tool_call_id) out.tool_call_id = m.tool_call_id
-      if (m.name) out.name = m.name
-      if (m.tool_calls) out.tool_calls = m.tool_calls
-      return out
-    }),
-  }
-  if (opts.functions && opts.functions.length && capabilities.supportsTools) {
-    body.tools = opts.functions.map((f) => ({
-      type: 'function',
-      function: { name: f.name, description: f.description, parameters: f.parameters },
-    }))
-  }
-  if (opts.temperature !== undefined) body.temperature = opts.temperature
-  if (opts.maxTokens) body[capabilities.maxTokensField] = opts.maxTokens
+  const body = buildChatRequestBody(opts, false)
 
   let res: Response
   try {
@@ -462,18 +472,18 @@ export async function chatWithRetry(
     const timer = setTimeout(() => controller.abort(), opts.timeoutMs ?? DEFAULT_TIMEOUT_MS)
     try {
       let result: ChatResult
-      if (opts.onDelta) {
+      if (opts.onDelta && providerCapabilities(opts.provider, opts.model).supportsStreaming) {
         try {
           result = await postChatStream(opts, controller.signal)
         } catch (streamErr: any) {
-          // بعض المزودات لا تدعم البث (لا تيار استجابة): تراجع تلقائي لطلب عادي
-          // ونُسلّم النتيجة كاملة دفعة واحدة — المستخدم لا يرى فرقاً ولا يفقد الرد.
+          // بعض البوابات قد تعلن البث ثم تعيد استجابة غير متدفقة؛ نعود لطلب عادي مرة واحدة.
           if (controller.signal.aborted) throw streamErr
           result = await postChat(opts, controller.signal)
           opts.onDelta({ content: result.content ?? '', toolCalls: result.toolCalls, done: true })
         }
       } else {
         result = await postChat(opts, controller.signal)
+        if (opts.onDelta) opts.onDelta({ content: result.content ?? '', toolCalls: result.toolCalls, done: true })
       }
       clearTimeout(timer)
       return result

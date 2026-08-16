@@ -1,5 +1,8 @@
 export {
   PROVIDERS,
+  VOICE_SUPPORT_GUIDE,
+  voiceSupportFor,
+  providerCapabilities,
   defaultProvider,
   fetchProviderModels,
   normalizeBaseUrl,

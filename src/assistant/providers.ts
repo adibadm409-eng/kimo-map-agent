@@ -8,11 +8,21 @@ export type ProviderId =
   | 'nvidia'
   | 'custom'
 
+export type VoiceSupport = 'supported' | 'unsupported' | 'unknown'
+
 export interface ProviderCapabilities {
+  supportsChat: boolean
+  supportsVision: boolean
   supportsTools: boolean
+  supportsParallelTools: boolean
   supportsStreaming: boolean
   supportsStreamOptions: boolean
   maxTokensField: 'max_tokens' | 'max_completion_tokens'
+  /** هل يجب حفظ وإعادة بث حقول Gemini الخاصة إن ظهرت في الاستجابة؟ */
+  preservesThoughtSignatures: boolean
+  /** لا نرسل input_audio إلا إذا كان هذا صحيحاً بشكل محافظ. */
+  supportsInputAudio: boolean
+  audioFormats: string[]
 }
 
 export interface ProviderDef {
@@ -144,17 +154,77 @@ export function providerLabel(p: ProviderDef | undefined): string {
 }
 
 /** ملف قدرات محافظ: لا نرسل خياراً لا يثبت أن المزود يدعمه. */
+function isGeminiModel(model: string): boolean {
+  return /(?:^|[/:_-])gemini-(?:2\.5|3)(?:[./:_-]|$)/i.test(model)
+}
+
+function isKnownVisionModel(def: ProviderDef, model: string): boolean {
+  const normalized = model.toLowerCase()
+  if (def.id === 'gemini') return isGeminiModel(normalized) && !/image|embedding|tts|live/i.test(normalized)
+  if (def.id === 'openai') return /(?:gpt-4o|gpt-5|^o[1-9])/i.test(normalized)
+  if (def.id === 'mistral') return /(?:pixtral|mistral-small-3\.1|ministral-3)/i.test(normalized)
+  if (def.id === 'alibaba') return /qwen.*(?:vl|omni)/i.test(normalized)
+  if (def.id === 'openrouter') return /(?:gemini|gpt-4o|qwen.*(?:vl|omni)|pixtral|vision|vl)/i.test(normalized)
+  if (def.id === 'nvidia') return /(?:vision|vl|mistral-small-3\.1)/i.test(normalized)
+  if (def.id === 'custom') return /(?:vision|vl|omni|gpt-4o|gemini)/i.test(normalized)
+  return false
+}
+
+function isKnownAudioModel(def: ProviderDef, model: string): boolean {
+  const normalized = model.toLowerCase()
+  if (def.id === 'gemini') return isGeminiModel(normalized) && !/image|embedding|tts|live/i.test(normalized)
+  if (def.id === 'openai') return /gpt-4o-(?:mini-)?audio(?:-preview)?$/i.test(normalized)
+  if (def.id === 'alibaba') return /(?:qwen.*(?:omni|audio)|qwen3-asr)/i.test(normalized)
+  if (def.id === 'mistral') return /voxtral-small/i.test(normalized)
+  if (def.id === 'openrouter') return /(?:gemini-(?:2\.5|3)|gpt-4o-(?:mini-)?audio|voxtral|qwen.*(?:omni|audio))/i.test(normalized)
+  return false
+}
+
 export function providerCapabilities(def: ProviderDef, model = ''): ProviderCapabilities {
   const normalizedModel = model.toLowerCase()
-  const newerOpenAiStyle = def.id === 'openai' && /^(gpt-5|o[1-9])/.test(normalizedModel)
+  const newerOpenAiStyle = (
+    /^(?:gpt-5|o[1-9])/.test(normalizedModel) && ['openai', 'openrouter', 'custom'].includes(def.id)
+  ) || (
+    def.id === 'alibaba' && /^(?:qwen3\.[5-9]|glm-5|kimi-k2\.[5-9]|deepseek-v4)/i.test(normalizedModel)
+  )
+  const geminiFamily = def.id === 'gemini' || isGeminiModel(normalizedModel)
+  const supportsInputAudio = isKnownAudioModel(def, normalizedModel)
+  const supportsChat = !/(?:embedding|text-embedding|image-generation|image-preview|tts|rerank)/i.test(normalizedModel)
+  const supportsVision = supportsChat && isKnownVisionModel(def, normalizedModel)
+  const supportsTools = supportsChat && !/(?:transcrib(?:e|er)|asr)/i.test(normalizedModel)
+  const supportsParallelTools = supportsTools && def.id !== 'custom'
+  const supportsStreaming = def.id !== 'custom'
+  const supportsStreamOptions = ['openai', 'deepseek', 'openrouter'].includes(def.id)
   return {
-    supportsTools: true,
-    supportsStreaming: true,
-    // stream_options ليس جزءاً مضموناً من كل بوابات OpenAI-compatible، خصوصاً custom وGemini.
-    supportsStreamOptions: def.id !== 'custom' && def.id !== 'gemini' && def.id !== 'alibaba',
+    supportsChat,
+    supportsVision,
+    supportsTools,
+    supportsParallelTools,
+    supportsStreaming,
+    // stream_options ليس جزءاً مضموناً من كل بوابات OpenAI-compatible.
+    supportsStreamOptions,
     maxTokensField: newerOpenAiStyle ? 'max_completion_tokens' : 'max_tokens',
+    preservesThoughtSignatures: geminiFamily,
+    supportsInputAudio,
+    audioFormats: supportsInputAudio ? ['wav', 'mp3', 'm4a', 'webm'] : [],
   }
 }
+
+export function voiceSupportFor(def: ProviderDef, model: string): VoiceSupport {
+  if (!model.trim()) return 'unknown'
+  return providerCapabilities(def, model).supportsInputAudio ? 'supported' : 'unsupported'
+}
+
+export const VOICE_SUPPORT_GUIDE: { provider: ProviderId; label: string; models: string; support: VoiceSupport; note: string }[] = [
+  { provider: 'gemini', label: 'جوجل جيميني', models: 'Gemini 2.5 / Gemini 3 (نماذج الفهم)', support: 'supported', note: 'يُرسل التسجيل كـ input_audio عبر واجهة OpenAI-compatible.' },
+  { provider: 'openai', label: 'OpenAI', models: 'gpt-4o-audio-preview و gpt-4o-mini-audio-preview', support: 'supported', note: 'يجب اختيار موديل صوتي صريح؛ لا نرسل الصوت إلى موديلات النص العامة تلقائياً.' },
+  { provider: 'alibaba', label: 'داش سكوب', models: 'نماذج Qwen Audio/Omni فقط عند ظهورها في الاسم', support: 'supported', note: 'الدعم مشروط باسم موديل صوتي صريح في القائمة الحية.' },
+  { provider: 'openrouter', label: 'OpenRouter', models: 'مسارات Gemini/GPT Audio/Omni فقط', support: 'supported', note: 'الدعم مشروط بأن يثبت اسم المسار الصوتي ذلك.' },
+  { provider: 'mistral', label: 'مسترال', models: 'voxtral-small-latest للمحادثة الصوتية؛ voxtral-mini-latest للتفريغ المتخصص', support: 'supported', note: 'Voxtral Small يستخدم Chat Completions بصيغة input_audio الخاصة بـMistral؛ التفريغ المتخصص يحتاج endpoint audio/transcriptions.' },
+  { provider: 'deepseek', label: 'DeepSeek', models: 'نماذج النص الحالية', support: 'unsupported', note: 'التسجيل لا يُرسل إلى هذا المسار.' },
+  { provider: 'nvidia', label: 'NVIDIA NIM', models: 'بحسب endpoint خاص يثبت دعم الصوت', support: 'unknown', note: 'يحتاج موديل صوتي معلناً بعقد متوافق.' },
+  { provider: 'custom', label: 'مزود مخصص', models: 'اسم يحتوي audio أو omni أو Gemini/GPT Audio', support: 'unknown', note: 'لا يرسل الصوت إلا عند مطابقة صريحة لاسم موديل صوتي.' },
+]
 
 /** جلب قائمة الموديلات الحية من المزود عند توفّره (ليست كل المزودين يوفّرون واجهة). */
 export async function fetchProviderModels(

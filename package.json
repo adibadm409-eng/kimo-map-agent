@@ -15,6 +15,7 @@
     "docx": "^9.7.1",
     "exceljs": "^4.4.0",
     "expo": "~54.0.0",
+    "expo-audio": "~1.1.1",
     "expo-clipboard": "~8.0.8",
     "expo-contacts": "~15.0.11",
     "expo-document-picker": "~14.0.8",
@@ -58,7 +59,7 @@
     "web": "expo start --web",
     "check": "tsc --noEmit",
     "lint": "eslint src audit --max-warnings 0",
-    "test:invariants": "node audit/safe_edit_invariants.mjs && node audit/domain_workflow_invariants.mjs && npx tsx audit/kimo_agent_invariants.mjs && npx tsx audit/screen_catalog_invariants.mjs && node audit/secret_storage_invariants.mjs && node audit/contact_button_invariants.mjs && node audit/reminder_invariants.mjs && node audit/offer_relationship_invariants.mjs && node audit/spatial_import_invariants.mjs && npx tsx audit/property_invariant_tests.mjs && node audit/partial_update_invariants.mjs && node audit/property_metadata_invariants.mjs && node audit/empty_database_invariants.mjs && node audit/cleanup_invariants.mjs"
+    "test:invariants": "node audit/agent_input_surface_invariants.mjs && node audit/audio_input_invariants.mjs && npx tsx audit/provider_compatibility_matrix.mjs && npx tsx audit/provider_runtime_wire_invariants.mjs && npx tsx audit/provider_failure_recovery_invariants.mjs && node audit/history_tool_roundtrip_invariants.mjs && npx tsx audit/provider_wire_invariants.mjs && node audit/safe_edit_invariants.mjs && node audit/domain_workflow_invariants.mjs && npx tsx audit/kimo_agent_invariants.mjs && npx tsx audit/screen_catalog_invariants.mjs && node audit/secret_storage_invariants.mjs && node audit/contact_button_invariants.mjs && node audit/reminder_invariants.mjs && node audit/offer_relationship_invariants.mjs && node audit/spatial_import_invariants.mjs && npx tsx audit/property_invariant_tests.mjs && node audit/partial_update_invariants.mjs && node audit/property_metadata_invariants.mjs && node audit/empty_database_invariants.mjs && node audit/cleanup_invariants.mjs"
   },
   "private": true
 }
