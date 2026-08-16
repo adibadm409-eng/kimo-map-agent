@@ -56,7 +56,8 @@ async function runLoop(
       const goal = String(lastUserMsg.content ?? '').trim()
       const assessment = assessSkill(goal)
       const match = assessment.match
-      const resumed = previousTask && ['proposed', 'awaiting_user', 'running', 'verifying'].includes(previousTask.status) && previousTask.userRequest !== goal
+      const continuationMessage = goal.startsWith('[إجابة المستخدم على سؤالك]') || goal.startsWith('[موافقة المستخدم على') || goal.startsWith('[رفض المستخدم للإجراء]')
+      const resumed = previousTask && continuationMessage && ['proposed', 'awaiting_user', 'running', 'verifying'].includes(previousTask.status)
       if (resumed) {
         runtimeTaskId = previousTask.id
         runtimeSkill = getSkillById(previousTask.skillId ?? '') ?? match.skill
