@@ -1,9 +1,11 @@
 import { getDB } from '../database/db'
 import {
   createProperty,
+  getAllProperties,
   updateProperty,
   deleteProperty,
   createClient,
+  getAllClients,
   updateClient,
   deleteClient,
   deleteOffer,
@@ -41,6 +43,35 @@ import { logChange } from '../database/audit'
 export type CreateSpec = { entity: EntityKey; data: Record<string, any> }
 export type UpdateSpec = { entity: EntityKey; id: string; data: Record<string, any> }
 export type DeleteSpec = { entity: EntityKey; id: string }
+
+function normalized(value: unknown): string {
+  return String(value ?? '').trim().toLocaleLowerCase('ar')
+}
+
+async function findNaturalDuplicate(entity: EntityKey, data: Record<string, any>): Promise<string | null> {
+  if (entity === 'properties') {
+    const name = normalized(data.name)
+    const address = normalized(data.address)
+    const ownerPhone = normalized(data.owner_phone)
+    if (!name && !ownerPhone) return null
+    const rows = await getAllProperties()
+    const found = rows.find((row: any) => {
+      const samePhone = ownerPhone && normalized(row.owner_phone) === ownerPhone
+      const sameIdentity = name && normalized(row.name) === name && (!address || normalized(row.address) === address)
+      return samePhone || sameIdentity
+    })
+    return found?.id ? String(found.id) : null
+  }
+  if (entity === 'clients') {
+    const phone = normalized(data.phone)
+    const name = normalized(data.name)
+    if (!phone && !name) return null
+    const rows = await getAllClients()
+    const found = rows.find((row: any) => (phone && normalized(row.phone) === phone) || (name && normalized(row.name) === name && normalized(row.email) === normalized(data.email)))
+    return found?.id ? String(found.id) : null
+  }
+  return null
+}
 
 function pickData(fields: { name: string }[], data: Record<string, any>): Record<string, any> {
   const out: Record<string, any> = {}
@@ -161,10 +192,12 @@ async function upsertPlot(blockId: string, p: Record<string, any>): Promise<stri
   return id
 }
 
-export async function agentCreate(spec: CreateSpec): Promise<{ id: string; plot_ids?: string[] }> {
+export async function agentCreate(spec: CreateSpec): Promise<{ id: string; plot_ids?: string[]; duplicate?: boolean }> {
   const entity = getEntityDef(spec.entity)
   if (!entity) throw new Error(`Unknown entity: ${spec.entity}`)
   const d = pickData(entity.fields, spec.data)
+  const naturalDuplicate = await findNaturalDuplicate(spec.entity, d)
+  if (naturalDuplicate && (spec.entity === 'properties' || spec.entity === 'clients')) return { id: naturalDuplicate, duplicate: true }
 
   switch (spec.entity) {
     case 'properties':
