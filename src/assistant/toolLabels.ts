@@ -29,6 +29,12 @@ export const TOOL_ARABIC: Record<string, string> = {
   dashboard_kpis: 'لوحة المؤشرات',
   search_everything: 'البحث الشامل',
   custom_field_set: 'تعيين حقل مخصص',
+  current_local_time: 'قراءة الوقت المحلي الحالي',
+  create_offer_with_reminder: 'إنشاء عرض وضبط تنبيه',
+  offer_reminder_set: 'ضبط أو إلغاء تنبيه العرض',
+  create_reminder: 'إنشاء تذكير محلي',
+  list_reminders: 'عرض التذكيرات القادمة',
+  cancel_reminder: 'إلغاء تذكير محلي',
 
   list_workspaces: 'قائمة مساحات العمل',
   workspace_get: 'عرض مساحة العمل',
@@ -81,6 +87,10 @@ const WRITE_TOOLS = new Set([
   'workspace_import_rows',
   'import_project_file',
   'remove_attachment',
+  'create_offer_with_reminder',
+  'offer_reminder_set',
+  'create_reminder',
+  'cancel_reminder',
 ])
 
 /** تسمية أداة بالعربية (بدون "جاري..."). */

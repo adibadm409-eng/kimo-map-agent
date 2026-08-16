@@ -18,7 +18,8 @@
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
-        "CAMERA"
+        "CAMERA",
+        "POST_NOTIFICATIONS"
       ]
     },
     "ios": {
@@ -38,7 +39,8 @@
         {
           "locationWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location while the app is open."
         }
-      ]
+      ],
+      "expo-notifications"
     ]
   }
 }

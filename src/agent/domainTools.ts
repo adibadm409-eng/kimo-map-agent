@@ -1,3 +1,6 @@
+import { agentCreate } from './crud'
+import { cancelReminder, createReminder, getAllOffers, getAllReminders, getReminder, setOfferReminder } from '../database/db'
+import { cancelOfferReminder, scheduleOfferReminder } from '../notifications/offerReminders'
 import {
   commitProjectImport,
   ensureProjectDomainSchema,
@@ -140,6 +143,133 @@ export const DOMAIN_TOOLS: DomainToolDef[] = [
       { name: 'to_date', type: 'string', description: 'YYYY-MM-DD' },
     ],
     handler: async (args) => projectCashflow(String(args.project_id), { fromDate: args.from_date ? String(args.from_date) : undefined, toDate: args.to_date ? String(args.to_date) : undefined }),
+  },
+  {
+    name: 'current_local_time',
+    description: 'قراءة الوقت الحالي من جهاز المستخدم محلياً مع التاريخ والمنطقة الزمنية. استخدمها قبل تفسير عبارات مثل بعد ساعة أو غداً أو ضبط موعد تنبيه؛ لا تعتمد على الذاكرة.',
+    args: [],
+    handler: async () => {
+      const now = new Date()
+      return {
+        iso: now.toISOString(),
+        local: now.toLocaleString('ar-YE', { dateStyle: 'full', timeStyle: 'long' }),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'local',
+        offsetMinutes: -now.getTimezoneOffset(),
+      }
+    },
+  },
+  {
+    name: 'create_offer_with_reminder',
+    description: 'إنشاء عرض شراء أو بيع محلياً ثم ضبط تنبيه متابعة اختياري له في العملية نفسها. اقرأ العقار والعميل أولاً، واستدعِ current_local_time إذا كان الموعد نسبياً. reminder_at يجب أن يكون ISO واضحاً وفي المستقبل؛ لا تخترع معرفات العقار أو العميل.',
+    args: [
+      { name: 'property_id', type: 'string', required: true, description: 'معرف العقار الموجود' },
+      { name: 'client_id', type: 'string', required: true, description: 'معرف العميل الموجود' },
+      { name: 'type', type: 'string', required: true, description: 'buy_offer أو sell_offer' },
+      { name: 'amount', type: 'number', required: true, description: 'قيمة العرض بالريال اليمني' },
+      { name: 'status', type: 'string', description: 'pending أو accepted أو rejected أو countered' },
+      { name: 'date', type: 'string', description: 'تاريخ العرض YYYY-MM-DD' },
+      { name: 'notes', type: 'string', description: 'ملاحظات العرض' },
+      { name: 'reminder_at', type: 'string', description: 'موعد التنبيه بصيغة ISO في المستقبل، أو اتركه فارغاً دون تنبيه' },
+    ],
+    handler: async (args) => {
+      if (!(Number(args.amount) >= 0)) throw new Error('مبلغ العرض غير صالح.')
+      const reminderAt = args.reminder_at ? String(args.reminder_at) : ''
+      const parsedReminder = reminderAt ? new Date(reminderAt) : null
+      if (parsedReminder && (Number.isNaN(parsedReminder.getTime()) || parsedReminder.getTime() <= Date.now())) throw new Error('موعد التنبيه غير صالح أو منتهٍ؛ استخدم current_local_time ثم أرسل موعداً مستقبلياً.')
+      const created = await agentCreate({
+        entity: 'offers',
+        data: {
+          property_id: String(args.property_id),
+          client_id: String(args.client_id),
+          type: String(args.type || 'buy_offer'),
+          amount: Number(args.amount),
+          status: String(args.status || 'pending'),
+          date: args.date ? String(args.date) : new Date().toISOString().slice(0, 10),
+          notes: args.notes ? String(args.notes) : '',
+        },
+      })
+      if (!reminderAt) return { id: created.id, offerCreated: true, reminderScheduled: false }
+      const parsed = parsedReminder as Date
+      const offers = await getAllOffers()
+      const offer = offers.find((item) => item.id === created.id)
+      if (!offer) throw new Error('أُنشئ العرض لكن تعذر قراءته لضبط التنبيه.')
+      let notificationId = ''
+      try {
+        notificationId = await scheduleOfferReminder(parsed, { offerId: created.id, propertyName: offer.property_name, clientName: offer.client_name, amount: Number(offer.amount) || 0 })
+        await setOfferReminder(created.id, parsed.toISOString(), notificationId)
+      } catch (error) {
+        if (notificationId) await cancelOfferReminder(notificationId).catch(() => {})
+        throw error
+      }
+      return { id: created.id, offerCreated: true, reminderScheduled: true, reminderAt: parsed.toISOString() }
+    },
+  },
+  {
+    name: 'offer_reminder_set',
+    description: 'ضبط أو إلغاء تنبيه متابعة لعرض موجود. اقرأ العرض أولاً. action=set يحتاج reminder_at ISO مستقبلياً؛ action=cancel يلغي التنبيه المحلي ويحذف موعده من العرض.',
+    args: [
+      { name: 'offer_id', type: 'string', required: true, description: 'معرف العرض الموجود' },
+      { name: 'action', type: 'string', required: true, description: 'set أو cancel' },
+      { name: 'reminder_at', type: 'string', description: 'موعد التنبيه ISO في المستقبل عند action=set' },
+    ],
+    handler: async (args) => {
+      const offerId = String(args.offer_id || '')
+      const action = String(args.action || 'set')
+      const offer = (await getAllOffers()).find((item) => item.id === offerId)
+      if (!offer) throw new Error('العرض غير موجود.')
+      if (action === 'cancel') {
+        await cancelOfferReminder(offer.reminder_notification_id)
+        await setOfferReminder(offerId, null, null)
+        return { offerId, reminderScheduled: false, cancelled: true }
+      }
+      if (action !== 'set') throw new Error('action يجب أن يكون set أو cancel.')
+      const reminderAt = String(args.reminder_at || '')
+      const parsed = new Date(reminderAt)
+      if (!reminderAt || Number.isNaN(parsed.getTime()) || parsed.getTime() <= Date.now()) throw new Error('موعد التنبيه غير صالح أو منتهٍ؛ استخدم current_local_time ثم أرسل موعداً مستقبلياً.')
+      await cancelOfferReminder(offer.reminder_notification_id)
+      let notificationId = ''
+      try {
+        notificationId = await scheduleOfferReminder(parsed, { offerId, propertyName: offer.property_name, clientName: offer.client_name, amount: Number(offer.amount) || 0 })
+        await setOfferReminder(offerId, parsed.toISOString(), notificationId)
+      } catch (error) {
+        if (notificationId) await cancelOfferReminder(notificationId).catch(() => {})
+        throw error
+      }
+      return { offerId, reminderScheduled: true, reminderAt: parsed.toISOString() }
+    },
+  },
+  {
+    name: 'create_reminder',
+    description: 'إنشاء تذكير محلي عام بنص يحدده المستخدم، مثل: ذكرني بعد ساعتين أن أتصل بالعميل. اقرأ current_local_time قبل تحويل الموعد النسبي، وأرسل remind_at بصيغة ISO مستقبلية واضحة. يعمل الإشعار حتى عند إغلاق التطبيق.',
+    args: [
+      { name: 'title', type: 'string', required: true, description: 'عنوان مختصر لما يجب تذكّره' },
+      { name: 'remind_at', type: 'string', required: true, description: 'الموعد بصيغة ISO في المستقبل' },
+      { name: 'body', type: 'string', description: 'تفاصيل إضافية للتذكير' },
+    ],
+    handler: async (args) => {
+      const id = await createReminder({ title: String(args.title || ''), body: args.body ? String(args.body) : '', remind_at: String(args.remind_at || '') })
+      const reminder = await getReminder(id)
+      return { id, reminderCreated: true, reminder: reminder ? { id: reminder.id, title: reminder.title, body: reminder.body, remind_at: reminder.remind_at, status: reminder.status } : null }
+    },
+  },
+  {
+    name: 'list_reminders',
+    description: 'عرض التذكيرات المحلية المجدولة القادمة. استخدمها عندما يسأل المستخدم عن تذكيراته أو يريد مراجعة ما تم ضبطه.',
+    args: [],
+    handler: async () => {
+      const reminders = await getAllReminders()
+      return { reminders: reminders.map((reminder) => ({ id: reminder.id, title: reminder.title, body: reminder.body, remind_at: reminder.remind_at, local_time: new Date(reminder.remind_at).toLocaleString('ar-YE', { dateStyle: 'full', timeStyle: 'short' }), status: reminder.status })) }
+    },
+  },
+  {
+    name: 'cancel_reminder',
+    description: 'إلغاء تذكير محلي عام موجود بعد تحديده بالمعرف. لا تستخدمه دون قراءة القائمة أو السجل والتأكد من التذكير المقصود.',
+    args: [{ name: 'reminder_id', type: 'string', required: true, description: 'معرف التذكير الموجود' }],
+    handler: async (args) => {
+      const id = String(args.reminder_id || '')
+      await cancelReminder(id)
+      return { id, cancelled: true }
+    },
   },
   {
     name: 'project_domain_initialize',

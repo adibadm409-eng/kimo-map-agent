@@ -6,7 +6,7 @@ import { useNavigation } from '@react-navigation/native'
 import { useTheme } from '../theme/ThemeContext'
 import { spacing, radius, fontSize } from '../theme/tokens'
 import { Card } from '../components/ui'
-import { getDB } from '../database/db'
+import { clearAllReminders, getDB } from '../database/db'
 import { getAllProjects } from '../database/projects'
 import { listWorkspaces } from '../database/workspace'
 import { listSessions } from '../assistant/store'
@@ -16,6 +16,7 @@ const countQueries = {
   properties: 'SELECT COUNT(*) as c FROM properties',
   clients: 'SELECT COUNT(*) as c FROM clients',
   offers: 'SELECT COUNT(*) as c FROM offers',
+  reminders: "SELECT COUNT(*) as c FROM reminders WHERE status = 'scheduled'",
   campaigns: 'SELECT COUNT(*) as c FROM campaigns',
   viewings: 'SELECT COUNT(*) as c FROM viewings',
   projects: 'SELECT COUNT(*) as c FROM projects',
@@ -39,13 +40,14 @@ const DELETE_ALL_TABLES = [
   'workspace_rows', 'workspace_tables', 'workspaces',
   'agent_runtime_events', 'agent_brain', 'agent_pending', 'agent_undo', 'agent_messages', 'agent_sessions',
   'agent_attachments', 'agent_generated_files', 'project_memory', 'change_log',
-  'custom_field_values', 'custom_fields', 'viewings', 'offers', 'campaigns', 'properties', 'clients', 'waypoints', 'areas',
+  'custom_field_values', 'custom_fields', 'reminders', 'viewings', 'offers', 'campaigns', 'properties', 'clients', 'waypoints', 'areas',
 ] as const
 
 const ICONS: Record<string, string> = {
   properties: 'business-outline',
   clients: 'people-outline',
   offers: 'pricetags-outline',
+  reminders: 'alarm-outline',
   campaigns: 'megaphone-outline',
   viewings: 'calendar-outline',
   projects: 'albums-outline',
@@ -95,6 +97,7 @@ export default function Settings() {
           style: 'destructive',
           onPress: async () => {
             try {
+              await clearAllReminders()
               const db = await getDB()
               await db.withTransactionAsync(async () => {
                 for (const table of DELETE_ALL_TABLES) {
@@ -112,7 +115,7 @@ export default function Settings() {
   }
 
   const labels: Record<string, string> = {
-    properties: 'العقارات', clients: 'العملاء', offers: 'العروض', campaigns: 'الحملات', viewings: 'المعاينات',
+    properties: 'العقارات', clients: 'العملاء', offers: 'العروض', reminders: 'التذكيرات القادمة', campaigns: 'الحملات', viewings: 'المعاينات',
     projects: 'المشاريع', blocks: 'البلوكات', plots: 'القطع', plot_payments: 'دفعات القطع',
     workspaces: 'مساحات العمل', workspace_rows: 'صفوف العمل', agent_sessions: 'جلسات كيمو',
     agent_messages: 'رسائل كيمو', agent_undo: 'تراجعات كيمو', agent_runtime_events: 'أحداث كيمو',

@@ -41,6 +41,18 @@ export interface Offer {
   status: 'pending' | 'accepted' | 'rejected' | 'countered'
   date: string
   notes: string
+  reminder_at: string
+  reminder_notification_id: string
+  created_at: string
+}
+
+export interface Reminder {
+  id: string
+  title: string
+  body: string
+  remind_at: string
+  notification_id: string
+  status: 'scheduled' | 'cancelled'
   created_at: string
 }
 

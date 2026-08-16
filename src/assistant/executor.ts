@@ -190,7 +190,7 @@ async function runLoop(
 
           const callArgs0 = parseToolArgs(call.arguments)
           const innerTool = call.name === 'execute' ? String(callArgs0.tool ?? 'execute') : call.name
-          const universalTools = new Set(['ask_user', 'request_confirmation', 'catalog', 'app_screen_catalog', 'list_entities', 'query', 'get', 'search_everything', 'data_snapshot', 'audit_log_query', 'review_my_work', 'generate_file', 'preview_update', 'undo_last', 'project_memory_save', 'project_memory_read', 'list_generated_files', 'review_generated_file'])
+          const universalTools = new Set(['ask_user', 'request_confirmation', 'catalog', 'app_screen_catalog', 'list_entities', 'query', 'get', 'search_everything', 'data_snapshot', 'audit_log_query', 'review_my_work', 'generate_file', 'preview_update', 'undo_last', 'project_memory_save', 'project_memory_read', 'list_generated_files', 'review_generated_file', 'current_local_time'])
           const skillAllowsTool = !runtimeSkill || universalTools.has(innerTool) || runtimeSkill.readTools.includes(innerTool) || runtimeSkill.writeTools.includes(innerTool) || runtimeSkill.preferredTools.includes(innerTool)
           if (!skillAllowsTool) {
             const denied = `[فشل] المهارة «${runtimeSkill?.label ?? 'الحالية'}» لا تستخدم الأداة «${innerTool}» في هذا المسار. سأعود إلى أدوات القراءة أو أسأل عن تغيير الهدف بدلاً من تنفيذ مسار غير مناسب.`

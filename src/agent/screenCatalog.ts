@@ -40,9 +40,14 @@ export const SCREEN_CATALOG: ScreenCatalogEntry[] = [
     safeEditPolicy: 'لا تدمج أو تحذف سجلات متشابهة تلقائياً؛ اعرض المرشحين واطلب قراراً صريحاً قبل الدمج أو الحذف.', risk: 'high', verificationTools: ['get', 'query'],
   },
   {
-    id: 'marketing', route: 'MarketingStack', label: 'التسويق والعروض', purpose: 'العروض والحملات والمشاهدات ونقاط المسار.',
-    entities: ['offers', 'campaigns', 'viewings', 'waypoints', 'areas'], readTools: ['query', 'get', 'catalog'], writeTools: ['create', 'update', 'delete'],
-    safeEditPolicy: 'عند تعديل حملة أو عرض، تحقق من الروابط والمدة والحالة؛ الحذف يحتاج معاينة وموافقة.', risk: 'medium', verificationTools: ['get', 'query', 'audit_log_query'],
+    id: 'marketing', route: 'MarketingStack', label: 'التسويق والعروض', purpose: 'العروض والحملات والمشاهدات ونقاط المسار مع مؤقتات تنبيه محلية مرتبطة بالعروض.',
+    entities: ['offers', 'reminders', 'campaigns', 'viewings', 'waypoints', 'areas'], readTools: ['query', 'get', 'catalog', 'current_local_time', 'list_reminders'], writeTools: ['create', 'update', 'delete', 'create_offer_with_reminder', 'offer_reminder_set', 'create_reminder', 'cancel_reminder'],
+    safeEditPolicy: 'عند تعديل حملة أو عرض، تحقق من الروابط والمدة والحالة؛ الحذف يحتاج معاينة وموافقة. لإنشاء عرض مع تنبيه أو تذكير عام اقرأ الوقت المحلي أولاً، تحقق من الموعد، ثم أعد قراءة التذكير بعد الحفظ.', risk: 'medium', verificationTools: ['get', 'query', 'audit_log_query'],
+  },
+  {
+    id: 'reminders', route: 'Reminders', label: 'التذكيرات', purpose: 'إدارة التذكيرات والإشعارات المحلية القادمة التي تعمل دون اتصال أو خادم.',
+    entities: ['reminders'], readTools: ['list_reminders', 'get', 'current_local_time'], writeTools: ['create_reminder', 'cancel_reminder'],
+    safeEditPolicy: 'لا تنشئ تذكيراً دون نص وموعد مستقبلي واضح؛ اقرأ الوقت المحلي للعبارات النسبية، واعرض التذكير قبل إلغائه عند غياب معرف واضح.', risk: 'medium', verificationTools: ['list_reminders', 'get'],
   },
   {
     id: 'reports', route: 'Reports', label: 'التقارير', purpose: 'تقارير المشاريع والمال والتصدير.',

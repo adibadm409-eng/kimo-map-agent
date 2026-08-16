@@ -32,6 +32,7 @@ import Settings from './src/screens/Settings'
 import ToolsScreen from './src/screens/Tools'
 import BackupManagerScreen from './src/screens/BackupManager'
 import AboutScreen from './src/screens/AboutScreen'
+import Reminders from './src/screens/Reminders'
 import MapSettings from './src/screens/map/MapSettings'
 import MapKeysSettings from './src/screens/map/MapKeysSettings'
 import MapScreen from './src/screens/MapScreen'
@@ -108,6 +109,7 @@ function MoreMenuScreen({ navigation }: any) {
     { label: 'أدوات التصدير والاستيراد', icon: 'cloud-upload-outline', screen: 'ToolsExport', color: '#0EA5E9' },
     { label: 'النسخ الاحتياطية', icon: 'archive-outline', screen: 'BackupManager', color: '#8B5CF6' },
     { label: 'المشاهدات', icon: 'calendar-outline', screen: 'ViewingsList', color: '#3B82F6' },
+    { label: 'التذكيرات', icon: 'alarm-outline', screen: 'Reminders', color: '#0EA5E9' },
     { label: 'الحملات', icon: 'megaphone-outline', screen: 'CampaignsList', color: '#7C3AED' },
     { label: 'التقارير', icon: 'bar-chart-outline', screen: 'ReportsMain', color: '#16A34A' },
     { label: 'الإعدادات', icon: 'settings-outline', screen: 'Settings', color: '#64748B' },
@@ -143,6 +145,7 @@ function MoreStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MoreMenu" component={MoreMenuScreen} />
       <Stack.Screen name="ViewingsList" component={Viewings} />
+      <Stack.Screen name="Reminders" component={Reminders} />
       <Stack.Screen name="ViewingForm" component={ViewingForm} />
       <Stack.Screen name="CampaignsList" component={Campaigns} />
       <Stack.Screen name="CampaignForm" component={CampaignForm} />

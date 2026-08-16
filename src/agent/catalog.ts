@@ -171,6 +171,7 @@ export const ALL_ENTITIES: EntityDef[] = [
       f('status', 'الحالة', 'select', { filterable: true, values: OFFER_STATUS_LABELS }),
       f('date', 'التاريخ', 'date', { filterable: true, sortable: true }),
       f('notes', 'ملاحظات', 'text', { searchable: true, filterable: true }),
+      f('reminder_at', 'موعد تنبيه المتابعة', 'datetime', { filterable: true, sortable: true }),
       f('created_at', 'تاريخ الإنشاء', 'datetime', { sortable: true }),
     ],
     namesJoin: {
