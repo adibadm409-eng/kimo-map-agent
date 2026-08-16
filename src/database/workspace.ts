@@ -659,12 +659,13 @@ export async function duplicateWorkspace(workspaceId: string, name?: string): Pr
 
 // ---------- المرفقات ----------
 
-export async function saveAttachment(data: { sessionId: string; name: string; uri: string; size: number; mime?: string }): Promise<void> {
+export async function saveAttachment(data: { sessionId: string; name: string; uri: string; size: number; mime?: string }): Promise<string> {
   const d = await db()
   const id = genId()
   await d.runAsync('INSERT INTO agent_attachments (id, session_id, name, uri, size, mime, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
     id, data.sessionId, data.name, data.uri, data.size ?? 0, data.mime ?? null, Date.now())
   await logChange({ action: 'create', scope: 'attachment', scopeId: data.name, after: { session_id: data.sessionId, name: data.name, size: data.size ?? 0 }, summary: `رفع مرفق "${data.name}"` })
+  return id
 }
 
 export async function listAttachments(): Promise<AttachmentRecord[]> {

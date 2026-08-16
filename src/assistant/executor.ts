@@ -419,8 +419,8 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
         } catch {}
         const name = att.name ?? (att.uri.split('/').pop() ?? 'ملف')
         mime = mimeOf(name)
-        await saveAttachment({ sessionId, name, uri: att.uri, size, mime })
-        content += `\n\n[ملف مرفق من المستخدم: "${name}" — الحجم ${(size / 1024).toFixed(0)} كيلوبايت. يمكنك معاينته بـ read_uploaded_file أو تحويله لمشروع منظم بـ import_project_file]`
+        const attachmentId = await saveAttachment({ sessionId, name, uri: att.uri, size, mime })
+        content += `\n\n[ملف مرفق من المستخدم: "${name}" — المعرف: ${attachmentId} — الحجم ${(size / 1024).toFixed(0)} كيلوبايت. يمكنك معاينته بـ read_uploaded_file أو فحصه ضمن property_change_preview ثم ربطه بـ attach_media_to_entity]`
       } catch {}
     }
   }
