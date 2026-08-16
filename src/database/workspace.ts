@@ -47,9 +47,23 @@ export interface WorkspaceRow {
   updatedAt: number
 }
 
+export type MediaTargetType = 'property' | 'offer'
+
 export interface AttachmentRecord {
   id: string
   sessionId: string
+  name: string
+  uri: string
+  size: number
+  mime: string | null
+  createdAt: number
+}
+
+export interface EntityMediaLink {
+  id: string
+  sourceAttachmentId: string
+  targetType: MediaTargetType
+  targetId: string
   name: string
   uri: string
   size: number
@@ -665,6 +679,51 @@ export async function listAttachments(): Promise<AttachmentRecord[]> {
     mime: r.mime ?? null,
     createdAt: r.created_at ?? 0,
   }))
+}
+
+function parseMediaList(value: unknown): Record<string, any>[] {
+  if (Array.isArray(value)) return value as Record<string, any>[]
+  try {
+    const parsed = JSON.parse(String(value || '[]'))
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+export async function linkAttachmentToEntity(input: { attachmentId?: string; attachmentName?: string; targetType: MediaTargetType; targetId: string }): Promise<{ link: EntityMediaLink; target: { type: MediaTargetType; id: string; name: string } }> {
+  const d = await db()
+  const targetTable = input.targetType === 'property' ? 'properties' : 'offers'
+  const target = await d.getFirstAsync<any>(`SELECT id, name, media FROM ${targetTable}${input.targetType === 'offer' ? ' WHERE id = ?' : ' WHERE id = ?'}`, input.targetId)
+  if (!target) throw new Error(input.targetType === 'property' ? 'العقار الهدف غير موجود.' : 'العرض الهدف غير موجود.')
+
+  const all = await listAttachments()
+  const candidates = input.attachmentId
+    ? all.filter((item) => item.id === input.attachmentId)
+    : all.filter((item) => item.name === String(input.attachmentName || '').trim())
+  if (!candidates.length) throw new Error('المرفق المطلوب غير موجود في مرفقات المحادثة.')
+  if (candidates.length > 1) throw new Error('يوجد أكثر من مرفق مطابق؛ استخدم اسم الملف الكامل أو معرف المرفق.')
+  const attachment = candidates[0]
+  const existing = await d.getFirstAsync<any>('SELECT * FROM entity_media WHERE source_attachment_id = ? AND entity_type = ? AND entity_id = ?', attachment.id, input.targetType, input.targetId)
+  if (existing) {
+    return {
+      link: { id: existing.id, sourceAttachmentId: existing.source_attachment_id, targetType: existing.entity_type, targetId: existing.entity_id, name: existing.name, uri: existing.uri, size: existing.size ?? 0, mime: existing.mime ?? null, createdAt: existing.created_at ?? 0 },
+      target: { type: input.targetType, id: target.id, name: target.name ?? (input.targetType === 'offer' ? 'العرض' : 'العقار') },
+    }
+  }
+
+  const media = parseMediaList(target.media)
+  const asset = { id: attachment.id, sourceAttachmentId: attachment.id, name: attachment.name, uri: attachment.uri, size: attachment.size, mime: attachment.mime, linkedAt: new Date().toISOString() }
+  const linkId = genId()
+  await d.withTransactionAsync(async () => {
+    await d.runAsync('INSERT INTO entity_media (id, source_attachment_id, entity_type, entity_id, name, uri, size, mime, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', linkId, attachment.id, input.targetType, input.targetId, attachment.name, attachment.uri, attachment.size ?? 0, attachment.mime ?? '', Date.now())
+    await d.runAsync(`UPDATE ${targetTable} SET media = ? WHERE id = ?`, JSON.stringify([...media, asset]), input.targetId)
+  })
+  await logChange({ action: 'update', scope: input.targetType, scopeId: input.targetId, after: { mediaAttachmentId: attachment.id, mediaName: attachment.name }, summary: `ربط الوسيط "${attachment.name}" بـ${input.targetType === 'offer' ? 'العرض' : 'العقار'}` })
+  return {
+    link: { id: linkId, sourceAttachmentId: attachment.id, targetType: input.targetType, targetId: input.targetId, name: attachment.name, uri: attachment.uri, size: attachment.size ?? 0, mime: attachment.mime ?? null, createdAt: Date.now() },
+    target: { type: input.targetType, id: target.id, name: target.name ?? (input.targetType === 'offer' ? 'العرض' : 'العقار') },
+  }
 }
 
 function findAttachment(attachments: AttachmentRecord[], name: string): AttachmentRecord | undefined {

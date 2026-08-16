@@ -46,6 +46,7 @@ async function safeMigrate(database: SQLite.SQLiteDatabase) {
   await addColumnIfMissing("properties", "media", "TEXT DEFAULT '[]'")
   await addColumnIfMissing("offers", "reminder_at", "TEXT DEFAULT ''")
   await addColumnIfMissing("offers", "reminder_notification_id", "TEXT DEFAULT ''")
+  await addColumnIfMissing("offers", "media", "TEXT DEFAULT '[]'")
   await ensureOfferPropertyOptional(database)
 }
 
@@ -65,12 +66,13 @@ async function ensureOfferPropertyOptional(database: SQLite.SQLiteDatabase): Pro
       notes TEXT DEFAULT '',
       reminder_at TEXT DEFAULT '',
       reminder_notification_id TEXT DEFAULT '',
+      media TEXT DEFAULT '[]',
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (property_id) REFERENCES properties (id) ON DELETE SET NULL,
       FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE
     );
-    INSERT INTO offers_migrated (id, property_id, client_id, type, amount, status, date, notes, reminder_at, reminder_notification_id, created_at)
-      SELECT id, NULLIF(property_id, ''), client_id, type, amount, status, date, notes, COALESCE(reminder_at, ''), COALESCE(reminder_notification_id, ''), created_at FROM offers;
+    INSERT INTO offers_migrated (id, property_id, client_id, type, amount, status, date, notes, reminder_at, reminder_notification_id, media, created_at)
+      SELECT id, NULLIF(property_id, ''), client_id, type, amount, status, date, notes, COALESCE(reminder_at, ''), COALESCE(reminder_notification_id, ''), COALESCE(media, '[]'), created_at FROM offers;
     DROP TABLE offers;
     ALTER TABLE offers_migrated RENAME TO offers;
     CREATE INDEX IF NOT EXISTS idx_offers_property ON offers (property_id);
@@ -133,6 +135,19 @@ async function initSchema(database: SQLite.SQLiteDatabase) {
       FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS entity_media (
+      id TEXT PRIMARY KEY,
+      source_attachment_id TEXT NOT NULL,
+      entity_type TEXT NOT NULL CHECK (entity_type IN ('property', 'offer')),
+      entity_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      uri TEXT NOT NULL,
+      size INTEGER DEFAULT 0,
+      mime TEXT DEFAULT '',
+      created_at INTEGER NOT NULL,
+      UNIQUE(source_attachment_id, entity_type, entity_id)
+    );
+
     CREATE TABLE IF NOT EXISTS reminders (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
@@ -168,6 +183,8 @@ async function initSchema(database: SQLite.SQLiteDatabase) {
       FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE
     );
 
+    CREATE INDEX IF NOT EXISTS idx_entity_media_target ON entity_media (entity_type, entity_id);
+    CREATE INDEX IF NOT EXISTS idx_entity_media_source ON entity_media (source_attachment_id);
     CREATE INDEX IF NOT EXISTS idx_offers_property ON offers (property_id);
     CREATE INDEX IF NOT EXISTS idx_reminders_status ON reminders (status);
     CREATE INDEX IF NOT EXISTS idx_reminders_remind_at ON reminders (remind_at);
@@ -386,7 +403,7 @@ export async function updateOffer(id: string, o: Partial<Offer>): Promise<void> 
   const db = await getDB()
   const before = await db.getFirstAsync('SELECT * FROM offers WHERE id = ?', [id]) as any
   if (!before) throw new Error(`العرض (${id}) غير موجود.`)
-  const allowed = new Set(['property_id', 'client_id', 'type', 'amount', 'status', 'date', 'notes'])
+  const allowed = new Set(['property_id', 'client_id', 'type', 'amount', 'status', 'date', 'notes', 'media'])
   const entries = Object.entries(o).filter(([key]) => allowed.has(key))
   if (!entries.length) return
   const values = entries.map(([key, value]) => key === 'property_id' ? (value ? String(value) : null) : value)
@@ -398,8 +415,8 @@ export async function createOffer(o: Partial<Offer>): Promise<string> {
   const db = await getDB()
   const id = genId()
   await db.runAsync(
-    'INSERT INTO offers (id,property_id,client_id,type,amount,status,date,notes) VALUES (?,?,?,?,?,?,?,?)',
-    [id, o.property_id ? String(o.property_id) : null, o.client_id || '', o.type || 'buy_offer', o.amount || 0, o.status || 'pending', o.date || '', o.notes || '']
+    'INSERT INTO offers (id,property_id,client_id,type,amount,status,date,notes,media) VALUES (?,?,?,?,?,?,?,?,?)',
+    [id, o.property_id ? String(o.property_id) : null, o.client_id || '', o.type || 'buy_offer', o.amount || 0, o.status || 'pending', o.date || '', o.notes || '', (o as any).media || '[]']
   )
   await logChange({ action: 'create', scope: 'offers', scopeId: id, after: o, summary: 'إنشاء عرض' })
   return id

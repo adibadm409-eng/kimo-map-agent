@@ -18,6 +18,7 @@ export interface Property {
   broker_name: string
   broker_phone: string
   created_at: string
+  media?: string
 }
 
 export interface Client {
@@ -44,6 +45,7 @@ export interface Offer {
   reminder_at: string
   reminder_notification_id: string
   created_at: string
+  media?: string
 }
 
 export interface Reminder {

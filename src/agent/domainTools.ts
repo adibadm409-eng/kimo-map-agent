@@ -1,5 +1,6 @@
 import { agentCreate } from './crud'
 import { cancelReminder, createReminder, getAllOffers, getAllReminders, getReminder, setOfferReminder } from '../database/db'
+import { linkAttachmentToEntity, type MediaTargetType } from '../database/workspace'
 import { cancelOfferReminder, scheduleOfferReminder } from '../notifications/offerReminders'
 import {
   commitProjectImport,
@@ -156,6 +157,22 @@ export const DOMAIN_TOOLS: DomainToolDef[] = [
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'local',
         offsetMinutes: -now.getTimezoneOffset(),
       }
+    },
+  },
+  {
+    name: 'attach_media_to_entity',
+    description: 'ربط مرفق موجود في المحادثة بعقار أو عرض محدد. استخدمه فقط بعد قراءة قائمة المرفقات وتحديد الهدف؛ target_type property للعقار أو offer للعرض. العملية لا تحذف المرفق الأصلي وهي idempotent، وتعيد قراءة الهدف ضمنياً لتأكيد الربط.',
+    args: [
+      { name: 'attachment_id', type: 'string', description: 'معرف المرفق من list_attachments' },
+      { name: 'attachment_name', type: 'string', description: 'اسم الملف الكامل عند عدم استخدام attachment_id' },
+      { name: 'target_type', type: 'string', required: true, description: 'property أو offer' },
+      { name: 'target_id', type: 'string', required: true, description: 'معرف العقار أو العرض الموجود' },
+    ],
+    handler: async (args) => {
+      const targetType = String(args.target_type || '') as MediaTargetType
+      if (targetType !== 'property' && targetType !== 'offer') throw new Error('target_type يجب أن يكون property أو offer.')
+      if (!String(args.attachment_id || '').trim() && !String(args.attachment_name || '').trim()) throw new Error('حدد attachment_id أو attachment_name للمرفق.')
+      return linkAttachmentToEntity({ attachmentId: args.attachment_id ? String(args.attachment_id) : undefined, attachmentName: args.attachment_name ? String(args.attachment_name) : undefined, targetType, targetId: String(args.target_id) })
     },
   },
   {
