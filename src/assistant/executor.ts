@@ -132,6 +132,7 @@ async function runLoop(
           )
         } catch (e: any) {
           if (isCancelled(sessionId)) {
+            if (runtimeTaskId) await transitionTaskRun(runtimeTaskId, 'cancelled', { lastError: 'أوقف المستخدم التنفيذ' })
             await persistAssistantText(sessionId, 'تم إيقاف الطلب.', 'system')
             if (emitEvents) emit({ type: 'text', content: 'تم إيقاف الطلب.' })
             return
@@ -142,6 +143,7 @@ async function runLoop(
           const finalMsg = errIsRetry
             ? `لم أستطع الوصول للمزود بعد إعادة المحاولة (3/5/10/30 ثانية): ${errMsg}. أعد المحاولة بعد قليل أو تحقق من اتصالك.`
             : `تعذّر إكمال الرد: ${errMsg}`
+          if (runtimeTaskId) await transitionTaskRun(runtimeTaskId, 'failed', { lastError: finalMsg })
           await persistAssistantText(sessionId, finalMsg, 'error').catch(() => {})
           if (emitEvents) emit({ type: 'error', message: finalMsg })
           return
