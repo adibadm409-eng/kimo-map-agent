@@ -200,6 +200,17 @@ async function appendTaskEvent(taskId: string, fromStatus: AgentTaskStatus | und
   await d.runAsync('INSERT INTO agent_task_events (id, task_id, event_type, from_status, to_status, payload, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)', genId(), taskId, 'status', fromStatus ?? null, toStatus, JSON.stringify(payload ?? {}), Date.now())
 }
 
+export async function appendTaskEvidence(taskId: string, evidence: any): Promise<void> {
+  const d = await db()
+  const row = await d.getFirstAsync<{ evidence: string }>('SELECT evidence FROM agent_task_runs WHERE id = ?', taskId)
+  if (!row) return
+  let current: any[] = []
+  try { current = JSON.parse(row.evidence || '[]') } catch {}
+  const next = [...current, { ...evidence, recordedAt: Date.now() }].slice(-100)
+  await d.runAsync('UPDATE agent_task_runs SET evidence = ?, updated_at = ? WHERE id = ?', JSON.stringify(next), Date.now(), taskId)
+  await d.runAsync('INSERT INTO agent_task_events (id, task_id, event_type, from_status, to_status, payload, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)', genId(), taskId, 'evidence', null, null, JSON.stringify(next[next.length - 1]), Date.now())
+}
+
 export async function getLatestTaskRun(sessionId: string): Promise<AgentTaskRun | null> {
   const d = await db()
   const row = await d.getFirstAsync<any>('SELECT * FROM agent_task_runs WHERE session_id = ? ORDER BY updated_at DESC LIMIT 1', sessionId)

@@ -11,7 +11,7 @@ import { publishRuntimeEvent } from './runtimeEvents'
 import { readModelHistory, messagesToLlm } from './history'
 import { handleToolCall, deleteOne, deleteApproved, deleteRefused } from './invokeTools'
 import { performUndo, toolSig } from './undo'
-import { createTaskRun, getLatestTaskRun, transitionTaskRun } from './store'
+import { appendTaskEvidence, createTaskRun, getLatestTaskRun, transitionTaskRun } from './store'
 import { emit, subscribeAgent, isAgentBusy, cancelAgent, markRunning, clearRunning, isCancelled, setAborter, clearAborter, type AgentEvent } from './agentRun'
 import { MAX_AGENT_RUNTIME_MS, MAX_REPEATED_TOOL_CALLS, MAX_TOOL_CALLS, MAX_TOOL_ROUNDS } from './constants'
 import * as FileSystem from 'expo-file-system/legacy'
@@ -283,6 +283,7 @@ async function runLoop(
               ? String(lastObs.meta.observation ?? lastObs.meta.result ?? '')
               : ''
             if (lastObs && lastObs.meta) {
+              if (runtimeTaskId) await appendTaskEvidence(runtimeTaskId, { tool: innerTool, ok: lastObs.meta.ok !== false, summary: String(lastObs.meta.observation ?? lastObs.meta.result ?? '').slice(0, 600) })
               if (emitEvents) {
                 const ok = lastObs.meta.ok !== false
                 const observationDetail = String(lastObs.meta.observation ?? lastObs.meta.result ?? '').slice(0, 600)
