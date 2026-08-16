@@ -157,10 +157,14 @@ async function runLoop(
           }
           // تثبيت الخطأ في السجل حتى يراه المستخدم ويعرف السبب — لا صمت ولا إخفاء
           const errMsg = e?.message ?? String(e)
-          const errIsRetry = typeof e?.kind === 'string' && ['network', 'timeout'].includes(e.kind)
+          const errIsRetry = typeof e?.kind === 'string' && ['network', 'timeout', 'rate_limit', 'server'].includes(e.kind)
           const finalMsg = errIsRetry
-            ? `لم أستطع الوصول للمزود بعد إعادة المحاولة (3/5/10/30 ثانية): ${errMsg}. أعد المحاولة بعد قليل أو تحقق من اتصالك.`
-            : `تعذّر إكمال الرد: ${errMsg}`
+            ? `تعذر الوصول للمزود مؤقتاً بعد سياسة التعافي (3/5/10/30 ثانية): ${errMsg}. تحقق من الاتصال أو جرّب لاحقاً.`
+            : e?.kind === 'invalid_request'
+              ? `رفض المزود صيغة الطلب؛ لم أكررها عشوائياً. راجع الموديل أو قدراته: ${errMsg}`
+              : e?.kind === 'auth'
+                ? `رفض المزود بيانات الاعتماد؛ تحقق من المفتاح والرابط والموديل: ${errMsg}`
+                : `تعذّر إكمال الرد: ${errMsg}`
           if (runtimeTaskId) await transitionTaskRun(runtimeTaskId, 'failed', { lastError: finalMsg })
           await persistAssistantText(sessionId, finalMsg, 'error').catch(() => {})
           if (emitEvents) emit({ type: 'error', message: finalMsg })

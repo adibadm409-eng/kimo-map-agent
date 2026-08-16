@@ -107,7 +107,7 @@ export function sanitizeWireFunction(fn: Record<string, any>): Record<string, an
   return out
 }
 
-export type LlmErrorKind = 'network' | 'timeout' | 'http' | 'parse' | 'unknown'
+export type LlmErrorKind = 'network' | 'timeout' | 'http' | 'invalid_request' | 'auth' | 'rate_limit' | 'server' | 'parse' | 'unknown'
 
 export class LlmError extends Error {
   kind: LlmErrorKind
@@ -117,8 +117,16 @@ export class LlmError extends Error {
     super(message)
     this.kind = kind
     this.status = status
-    this.retryable = retryable ?? (kind === 'network' || kind === 'timeout' || (status !== undefined && (status === 429 || status >= 500)))
+    this.retryable = retryable ?? (kind === 'network' || kind === 'timeout' || kind === 'rate_limit' || kind === 'server')
   }
+}
+
+function classifyHttpStatus(status: number): LlmErrorKind {
+  if (status === 400 || status === 404 || status === 409 || status === 422) return 'invalid_request'
+  if (status === 401 || status === 403) return 'auth'
+  if (status === 429) return 'rate_limit'
+  if (status >= 500) return 'server'
+  return 'http'
 }
 
 export interface ChatOpts {
@@ -215,7 +223,7 @@ async function postChatStream(opts: ChatOpts, signal: AbortSignal): Promise<Chat
     } catch {
       detail = await res.text().catch(() => '')
     }
-    throw new LlmError('http', `المزود رفض الطلب (${res.status}): ${detail || 'بدون تفاصيل'}`, res.status)
+    throw new LlmError(classifyHttpStatus(res.status), `المزود رفض الطلب (${res.status}): ${detail || 'بدون تفاصيل'}`, res.status)
   }
 
   if (!res.body) throw new LlmError('parse', 'المزود لم يرسل تيار استجابة')
@@ -348,7 +356,7 @@ async function postChat(opts: ChatOpts, signal: AbortSignal): Promise<ChatResult
       return out
     }),
   }
-  if (opts.functions && opts.functions.length) {
+  if (opts.functions && opts.functions.length && capabilities.supportsTools) {
     body.tools = opts.functions.map((f) => ({
       type: 'function',
       function: { name: f.name, description: f.description, parameters: f.parameters },
@@ -381,7 +389,7 @@ async function postChat(opts: ChatOpts, signal: AbortSignal): Promise<ChatResult
     } catch {
       detail = await res.text().catch(() => '')
     }
-    throw new LlmError('http', `المزود رفض الطلب (${res.status}): ${detail || 'بدون تفاصيل'}`, res.status)
+    throw new LlmError(classifyHttpStatus(res.status), `المزود رفض الطلب (${res.status}): ${detail || 'بدون تفاصيل'}`, res.status)
   }
 
   let data: any
