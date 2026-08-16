@@ -30,9 +30,9 @@ export const SCREEN_CATALOG: ScreenCatalogEntry[] = [
     notes: ['يدعم land وresidential_building وtower وcompound وcustom.', 'العقد الهرمية لا تُعامل كلها كقطع أراضٍ.'],
   },
   {
-    id: 'properties', route: 'PropertiesStack', label: 'العقارات', purpose: 'إدارة العقارات والوصف والموقع والحالة والنوع والصورة الاختيارية وبيانات الدلال والبيانات المخصصة.',
+    id: 'properties', route: 'PropertiesStack', label: 'العقارات', purpose: 'إدارة العقارات والوصف والموقع والحالة والنوع وصورة الأيقونة الاختيارية ومعرض الصور والفيديوهات وبيانات الدلال والبيانات المخصصة.',
     entities: ['properties', 'custom_fields', 'custom_field_values'], readTools: ['query', 'get', 'list_entities', 'catalog'], writeTools: ['create', 'update', 'custom_field_set'],
-    safeEditPolicy: 'اقرأ السجل الحالي أولاً، اعرض الفرق المقترح، لا تستبدل حقولاً غير مذكورة، ميّز الدلال عن المالك، ولا تنشئ أو تستبدل icon_uri بالتخمين، ثم تحقق من وجود السجل بعد التعديل.', risk: 'high', verificationTools: ['get', 'query'],
+    safeEditPolicy: 'اقرأ السجل الحالي أولاً، اعرض الفرق المقترح، لا تستبدل حقولاً غير مذكورة، ميّز الدلال عن المالك، افصل media كمعرض مستقل عن icon_uri، ولا تنشئ أو تستبدل أي URI بالتخمين، ثم تحقق من وجود السجل بعد التعديل.', risk: 'high', verificationTools: ['get', 'query'],
   },
   {
     id: 'clients', route: 'ClientsStack', label: 'العملاء', purpose: 'إدارة بيانات العملاء والاتصالات وربطهم بالعمليات.',

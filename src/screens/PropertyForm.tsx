@@ -127,15 +127,27 @@ export default function PropertyForm() {
     broker_name: '',
     broker_phone: '',
     icon_uri: '',
+    mediaUris: [] as string[],
   })
   const [locating, setLocating] = useState(false)
 
   useEffect(() => {
     let cancelled = false
     async function load() {
+      if (!editingId) {
+        setLoading(false)
+        return
+      }
       try {
         const p = await getProperty(editingId)
         if (p && !cancelled) {
+          let mediaUris: string[] = []
+          try {
+            const parsed = typeof p.media === 'string' ? JSON.parse(p.media || '[]') : p.media
+            if (Array.isArray(parsed)) mediaUris = parsed.filter((uri: unknown): uri is string => typeof uri === 'string' && uri.length > 0)
+          } catch {
+            mediaUris = []
+          }
           setForm({
             name: p.name || '',
             description: p.description || '',
@@ -152,15 +164,68 @@ export default function PropertyForm() {
             broker_name: p.broker_name || '',
             broker_phone: p.broker_phone || '',
             icon_uri: p.icon_uri || '',
+            mediaUris,
           })
         }
       } catch (e) {
         console.error('Failed to load property:', e)
+      } finally {
+        if (!cancelled) setLoading(false)
       }
     }
-    if (editingId) load()
+    load()
     return () => { cancelled = true }
   }, [editingId])
+
+  async function persistPickedMedia(uri: string): Promise<string> {
+    if (!FileSystem.documentDirectory) return uri
+    const dir = `${FileSystem.documentDirectory}property_media/`
+    const dirInfo = await FileSystem.getInfoAsync(dir)
+    if (!dirInfo.exists) await FileSystem.makeDirectoryAsync(dir, { intermediates: true })
+    const ext = (uri.split('.').pop()?.split('?')[0] || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+    const destination = `${dir}${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`
+    await FileSystem.copyAsync({ from: uri, to: destination })
+    return destination
+  }
+
+  async function handlePickMedia() {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
+      if (!permission.granted) {
+        Alert.alert('الإذن', 'اسمح بالوصول إلى الصور والفيديوهات لإضافتها إلى معرض العقار.')
+        return
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsMultipleSelection: true,
+        selectionLimit: 12,
+        quality: 0.75,
+      })
+      if (!result.canceled) {
+        const uris = await Promise.all(result.assets.map((asset) => persistPickedMedia(asset.uri)))
+        setForm((current) => ({ ...current, mediaUris: [...current.mediaUris, ...uris].slice(0, 12) }))
+      }
+    } catch (error) {
+      console.warn('Failed to choose property media:', error)
+    }
+  }
+
+  async function handleCaptureMedia() {
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync()
+      if (!permission.granted) {
+        Alert.alert('الإذن', 'اسمح باستخدام الكاميرا لالتقاط صورة أو فيديو للعقار.')
+        return
+      }
+      const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.All, quality: 0.75, videoMaxDuration: 60 })
+      if (!result.canceled && result.assets[0]?.uri) {
+        const uri = await persistPickedMedia(result.assets[0].uri)
+        setForm((current) => ({ ...current, mediaUris: [...current.mediaUris, uri].slice(0, 12) }))
+      }
+    } catch (error) {
+      console.warn('Failed to capture property media:', error)
+    }
+  }
 
   async function handlePickIcon() {
     try {
@@ -214,6 +279,7 @@ export default function PropertyForm() {
       broker_name: form.broker_name.trim(),
       broker_phone: form.broker_phone.trim(),
       icon_uri: form.icon_uri.trim(),
+      media: JSON.stringify(form.mediaUris),
     }
     if (editingId) {
       await updateProperty(editingId, data)
@@ -287,6 +353,21 @@ export default function PropertyForm() {
               {form.icon_uri ? <Pressable accessibilityRole="button" accessibilityLabel="إزالة صورة أيقونة العقار" onPress={() => setForm((current) => ({ ...current, icon_uri: '' }))} hitSlop={8}><Ionicons name="close-circle" size={22} color={colors.error} /></Pressable> : null}
             </View>
             <Text style={[styles.hint, { color: colors.textMuted }]}>تظهر في بطاقة التصفح السريع فقط، ويمكن تركها فارغة.</Text>
+          </View>
+          <View style={styles.mediaField}>
+            <View style={styles.mediaHeader}>
+              <View>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>معرض الصور والفيديوهات</Text>
+                <Text style={[styles.hint, { color: colors.textMuted }]}>مستقل عن صورة الأيقونة · {form.mediaUris.length}/12</Text>
+              </View>
+              <View style={styles.mediaActions}>
+                <Pressable accessibilityRole="button" accessibilityLabel="إضافة صور وفيديوهات من المعرض" onPress={handlePickMedia} style={[styles.mediaAction, { backgroundColor: colors.accentSurface }]}><Ionicons name="images-outline" size={16} color={colors.accent} /></Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel="التقاط صورة أو فيديو بالكاميرا" onPress={handleCaptureMedia} style={[styles.mediaAction, { backgroundColor: colors.accentSurface }]}><Ionicons name="camera-outline" size={16} color={colors.accent} /></Pressable>
+              </View>
+            </View>
+            {form.mediaUris.length > 0 ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.mediaStrip}>
+              {form.mediaUris.map((uri, index) => <View key={`${uri}-${index}`} style={styles.mediaThumbWrap}><Image source={{ uri }} style={styles.mediaThumb} /><Pressable accessibilityRole="button" accessibilityLabel={`إزالة الوسيط ${index + 1}`} onPress={() => setForm((current) => ({ ...current, mediaUris: current.mediaUris.filter((_, i) => i !== index) }))} style={styles.mediaRemove}><Ionicons name="close" size={12} color="#FFF" /></Pressable></View>)}
+            </ScrollView> : <Text style={[styles.hint, { color: colors.textMuted }]}>لم تتم إضافة صور أو فيديوهات بعد.</Text>}
           </View>
         </Card>
 
@@ -414,6 +495,14 @@ const styles = StyleSheet.create({
   iconPreview: { width: 58, height: 58, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   iconAction: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   iconActionText: { fontSize: fontSize.sm, fontFamily: 'Tajawal_700Bold' },
+  mediaField: { gap: spacing.sm },
+  mediaHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  mediaActions: { flexDirection: 'row', gap: spacing.xs },
+  mediaAction: { width: 36, height: 36, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  mediaStrip: { flexDirection: 'row', gap: spacing.sm, paddingVertical: spacing.xs },
+  mediaThumbWrap: { width: 76, height: 76, borderRadius: radius.md, overflow: 'hidden', position: 'relative' },
+  mediaThumb: { width: '100%', height: '100%', resizeMode: 'cover' },
+  mediaRemove: { position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(15,23,42,0.75)', alignItems: 'center', justifyContent: 'center' },
   sectionTitle: {
     fontSize: fontSize.lg,
     fontWeight: '700',

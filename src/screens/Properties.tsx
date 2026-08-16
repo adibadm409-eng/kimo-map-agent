@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { View, Text, StyleSheet, TextInput, Pressable, FlatList, RefreshControl, ScrollView, useWindowDimensions, Alert, Image } from 'react-native'
+import { View, Text, StyleSheet, TextInput, Pressable, FlatList, RefreshControl, ScrollView, Alert, Image } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
@@ -36,7 +36,6 @@ const PRICE_PRESETS = [
 export default function Properties() {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
-  const { width } = useWindowDimensions()
   const navigation = useNavigation<any>()
   const [properties, setProperties] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -78,58 +77,49 @@ export default function Properties() {
     return match && passStatus && passType && passPrice
   })
 
-  const cardWidth = (width - spacing.xl * 2 - spacing.md) / 2
+  function mediaCount(property: any): number {
+    try {
+      const parsed = typeof property.media === 'string' ? JSON.parse(property.media || '[]') : property.media
+      return Array.isArray(parsed) ? parsed.length : 0
+    } catch {
+      return 0
+    }
+  }
 
   function renderItem({ item: p }: { item: any }) {
     const iconName = TYPE_ICONS[p.type] || 'business-outline'
+    const count = mediaCount(p)
     return (
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`فتح تفاصيل العقار ${p.name || ''}`}
         onPress={() => navigation.navigate('PropertyDetail', { id: p.id })}
-        style={({ pressed }) => [styles.propCard, { width: cardWidth, opacity: pressed ? 0.8 : 1 }]}
+        style={({ pressed }) => [styles.propertyCardWrap, pressed && { opacity: 0.88, transform: [{ scale: 0.995 }] }]}
       >
-        <Card>
-                    <View style={[styles.propImage, { backgroundColor: colors.accentSurface }]}>
-            {p.icon_uri ? <Image source={{ uri: p.icon_uri }} style={styles.propertyIconImage} /> : <View style={[styles.propTypeIcon, { backgroundColor: colors.accent + '20' }]}>
-              <Ionicons name={iconName as any} size={36} color={colors.accent} />
-            </View>}
-
-            <View style={styles.propBadges}>
-              <StatusBadge label={STATUS_LABELS[p.status] || p.status} value={p.status} />
+        <Card style={[styles.propertyCard, { borderColor: colors.border }]}>
+          <View style={styles.propertyCardTop}>
+            <View style={[styles.propertyThumb, { backgroundColor: colors.accentSurface }]}>
+              {p.icon_uri ? <Image source={{ uri: p.icon_uri }} style={styles.propertyIconImage} /> : <View style={[styles.propTypeIcon, { backgroundColor: colors.accent + '20' }]}><Ionicons name={iconName as any} size={38} color={colors.accent} /></View>}
+              {count > 0 ? <View style={styles.mediaCountBadge}><Ionicons name="images-outline" size={12} color="#FFF" /><Text style={styles.mediaCountText}>{count}</Text></View> : null}
             </View>
-          </View>
-
-          <View style={styles.propBody}>
-            <Text style={[styles.propName, { color: colors.textPrimary }]} numberOfLines={1}>{p.name}</Text>
-            <Text style={[styles.typeText, { color: colors.accent }]} numberOfLines={1}>{TYPE_LABELS[p.type] || p.type}</Text>
-            <View style={styles.propMeta}>
-              <View style={styles.metaItem}>
-                <Ionicons name="resize-outline" size={12} color={colors.textMuted} />
-                <Text style={[styles.metaText, { color: colors.textSecondary }]}>{p.area} م²</Text>
+            <View style={styles.propertyMain}>
+              <View style={styles.propertyTitleRow}>
+                <Text style={[styles.propName, { color: colors.textPrimary }]} numberOfLines={1}>{p.name || 'عقار بدون اسم'}</Text>
+                <StatusBadge label={STATUS_LABELS[p.status] || p.status} value={p.status} />
               </View>
-              <View style={styles.metaItem}>
-                <Ionicons name="person-outline" size={12} color={colors.textMuted} />
-                <Text style={[styles.metaText, { color: colors.textSecondary }]} numberOfLines={1}>{p.owner_name || '—'}</Text>
+              <Text style={[styles.typeText, { color: colors.accent }]} numberOfLines={1}>{TYPE_LABELS[p.type] || p.type}</Text>
+              <Text style={[styles.propertyPrice, { color: colors.textPrimary }]} numberOfLines={1}>{formatPrice(p.price)} <Text style={[styles.propPriceUnit, { color: colors.textMuted }]}>ريال يمني</Text></Text>
+              <View style={styles.propMeta}>
+                <View style={styles.metaItem}><Ionicons name="resize-outline" size={14} color={colors.textMuted} /><Text style={[styles.metaText, { color: colors.textSecondary }]}>{p.area || 0} م²</Text></View>
+                {p.broker_name ? <View style={styles.metaItem}><Ionicons name="person-outline" size={14} color={colors.textMuted} /><Text style={[styles.metaText, { color: colors.textSecondary }]} numberOfLines={1}>{p.broker_name}</Text></View> : null}
               </View>
             </View>
-            {p.address ? (
-              <View style={[styles.propAddr, { backgroundColor: colors.surface }]}>
-                <Ionicons name="location-outline" size={11} color={colors.accent} />
-                <Text style={[styles.propAddrText, { color: colors.textSecondary }]} numberOfLines={1}>{p.address}</Text>
-              </View>
-            ) : null}
+            <Pressable accessibilityRole="button" accessibilityLabel={`حذف العقار ${p.name || ''}`} onPress={(event) => { event.stopPropagation(); handleDelete(p) }} style={({ pressed }) => [styles.deleteBtn, pressed && { opacity: 0.45 }]} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}><Ionicons name="trash-outline" size={17} color={colors.error} /></Pressable>
           </View>
-
-          <View style={[styles.propFooter, { borderTopColor: colors.border }]}>
-            <Text style={[styles.propPrice, { color: colors.accent }]}>
-              {formatPrice(p.price)} <Text style={[styles.propPriceUnit, { color: colors.textMuted }]}>ريال يمني</Text>
-            </Text>
-            <Pressable
-              onPress={() => handleDelete(p)}
-              style={({ pressed }) => [{ padding: spacing.sm }, pressed && { opacity: 0.5 }]}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            >
-              <Ionicons name="trash-outline" size={16} color={colors.error} />
-            </Pressable>
+          {p.address ? <View style={[styles.propAddr, { backgroundColor: colors.surface }]}><Ionicons name="location-outline" size={14} color={colors.accent} /><Text style={[styles.propAddrText, { color: colors.textSecondary }]} numberOfLines={1}>{p.address}</Text></View> : null}
+          <View style={[styles.propertyFooter, { borderTopColor: colors.border }]}>
+            <Text style={[styles.footerHint, { color: colors.textMuted }]}>{count ? `${count} وسائط في المعرض` : 'لا توجد وسائط'}</Text>
+            <Ionicons name="chevron-back" size={17} color={colors.textMuted} />
           </View>
         </Card>
       </Pressable>
@@ -219,9 +209,7 @@ export default function Properties() {
         data={filtered}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        numColumns={2}
         contentContainerStyle={styles.propGrid}
-        columnWrapperStyle={styles.propGridRow}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={colors.accent} />}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
@@ -312,21 +300,19 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   propGrid: {
-    padding: spacing.xl,
+    paddingHorizontal: spacing.xl,
     paddingTop: spacing.md,
+    paddingBottom: spacing.xxl,
     gap: spacing.md,
   },
-  propGridRow: {
-    gap: spacing.md,
-  },
-  propCard: {
-    maxWidth: '50%',
-  },
-  propImage: {
-    height: 100,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  propertyCardWrap: { width: '100%' },
+  propertyCard: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.xl, padding: spacing.md, gap: spacing.md },
+  propertyCardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md, direction: 'rtl' },
+  propertyThumb: { width: 104, height: 104, borderRadius: radius.lg, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative' },
+  propertyMain: { flex: 1, minWidth: 0, gap: spacing.xs },
+  propertyTitleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs },
+  deleteBtn: { padding: spacing.xs },
+  propImage: { height: 100, alignItems: 'center', justifyContent: 'center' },
   propTypeIcon: {
     width: 56,
     height: 56,
@@ -352,7 +338,8 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   propName: {
-    fontSize: fontSize.md,
+    flex: 1,
+    fontSize: fontSize.lg,
     fontWeight: '700',
     fontFamily: 'Tajawal_700Bold',
   },
@@ -384,12 +371,13 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     fontFamily: 'Tajawal_400Regular',
   },
+  propertyPrice: { fontSize: fontSize.xl, fontWeight: '800', fontFamily: 'Tajawal_800ExtraBold' },
+  propertyFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.sm },
+  mediaCountBadge: { position: 'absolute', bottom: 6, left: 6, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 6, paddingVertical: 3, borderRadius: radius.full, backgroundColor: 'rgba(15,23,42,0.78)' },
+  mediaCountText: { color: '#FFF', fontSize: fontSize.xs, fontFamily: 'Tajawal_700Bold' },
+  footerHint: { fontSize: fontSize.xs, fontFamily: 'Tajawal_500Medium' },
   propFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: spacing.lg,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg, borderTopWidth: StyleSheet.hairlineWidth,
   },
   propPrice: {
     fontSize: fontSize.xl,

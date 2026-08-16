@@ -42,6 +42,7 @@ async function safeMigrate(database: SQLite.SQLiteDatabase) {
   await addColumnIfMissing("properties", "icon_uri", "TEXT DEFAULT ''")
   await addColumnIfMissing("properties", "broker_name", "TEXT DEFAULT ''")
   await addColumnIfMissing("properties", "broker_phone", "TEXT DEFAULT ''")
+  await addColumnIfMissing("properties", "media", "TEXT DEFAULT '[]'")
 }
 
 async function initSchema(database: SQLite.SQLiteDatabase) {
@@ -66,6 +67,7 @@ async function initSchema(database: SQLite.SQLiteDatabase) {
       broker_name TEXT DEFAULT '',
       broker_phone TEXT DEFAULT '',
       icon_uri TEXT DEFAULT '',
+      media TEXT DEFAULT '[]',
       created_at TEXT DEFAULT (datetime('now'))
     );
 
@@ -240,8 +242,8 @@ export async function createProperty(p: Partial<Property>): Promise<string> {
   const db = await getDB()
   const id = genId()
   await db.runAsync(
-          'INSERT INTO properties (id,name,description,price,area,latitude,longitude,address,status,type,owner_name,owner_phone,owner_email,broker_name,broker_phone,icon_uri,geojson,category,area_sqm) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-      [id, p.name || '', p.description || '', p.price || 0, p.area || 0, p.latitude || 0, p.longitude || 0, p.address || '', p.status || 'for_sale', p.type || 'apartment', p.owner_name || '', p.owner_phone || '', p.owner_email || '', (p as any).broker_name || '', (p as any).broker_phone || '', (p as any).icon_uri || '', (p as any).geojson || '', (p as any).category || 'general', (p as any).area_sqm || 0]
+          'INSERT INTO properties (id,name,description,price,area,latitude,longitude,address,status,type,owner_name,owner_phone,owner_email,broker_name,broker_phone,icon_uri,media,geojson,category,area_sqm) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+      [id, p.name || '', p.description || '', p.price || 0, p.area || 0, p.latitude || 0, p.longitude || 0, p.address || '', p.status || 'for_sale', p.type || 'apartment', p.owner_name || '', p.owner_phone || '', p.owner_email || '', (p as any).broker_name || '', (p as any).broker_phone || '', (p as any).icon_uri || '', (p as any).media || '[]', (p as any).geojson || '', (p as any).category || 'general', (p as any).area_sqm || 0]
 
   )
   await logChange({ action: 'create', scope: 'properties', scopeId: id, after: p, summary: `إنشاء عقار "${p.name || ''}"` })
@@ -252,7 +254,8 @@ export async function updateProperty(id: string, p: Partial<Property>): Promise<
   const db = await getDB()
   const before = await db.getFirstAsync('SELECT * FROM properties WHERE id = ?', [id])
   if (!before) throw new Error(`العقار (${id}) غير موجود.`)
-  const allowed = new Set(['name', 'description', 'price', 'area', 'latitude', 'longitude', 'address', 'status', 'type', 'owner_name', 'owner_phone', 'owner_email', 'broker_name', 'broker_phone', 'icon_uri', 'geojson', 'category', 'area_sqm'])
+  const allowed = new Set(['name', 'description', 'price', 'area', 'latitude', 'longitude', 'address', 'status', 'type', 'owner_name', 'owner_phone', 'owner_email', 'broker_name', 'broker_phone', 'icon_uri', 'media', 'geojson', 'category', 'area_sqm'
+])
   const entries = Object.entries(p).filter(([key]) => allowed.has(key))
   if (!entries.length) return
   await db.runAsync(`UPDATE properties SET ${entries.map(([key]) => `${key} = ?`).join(', ')} WHERE id = ?`, [...entries.map(([, value]) => value), id])

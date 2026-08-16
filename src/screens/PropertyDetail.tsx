@@ -10,6 +10,7 @@ import { getProperty, deleteProperty, getAllOffers } from '../database/db'
 import { formatPrice, formatDate } from '../utils/helpers'
 import { STATUS_LABELS, TYPE_LABELS } from '../types'
 import { useReloadOnData } from '../database/dataSync'
+import { parseMediaList, MediaStrip, MediaPreview, type PinItem } from './MapScreenV2/cards/shareMedia'
 
 const TYPE_ICONS: Record<string, string> = {
   villa: 'home-outline', apartment: 'business-outline', house: 'home-outline', hotel: 'bed-outline', building: 'business-outline',
@@ -24,6 +25,7 @@ export default function PropertyDetail() {
   const navigation = useNavigation<any>()
   const [property, setProperty] = useState<any>(null)
   const [offers, setOffers] = useState<any[]>([])
+  const [previewIdx, setPreviewIdx] = useState<number | null>(null)
 
   async function load() {
     const id = route.params?.id
@@ -55,6 +57,8 @@ export default function PropertyDetail() {
   }
 
   const iconName = TYPE_ICONS[property.type] || 'business-outline'
+  const media = parseMediaList(property)
+  const mediaItem: PinItem = { kind: 'property', id: property.id, name: property.name, data: property }
 
   return (
     <ScrollView
@@ -75,6 +79,14 @@ export default function PropertyDetail() {
           <StatusBadge label={STATUS_LABELS[property.status] || property.status} value={property.status} />
         </View>
       </View>
+
+      {media.length > 0 ? <Card style={styles.section}>
+        <View style={styles.mediaHeader}>
+          <View><Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>معرض العقار</Text><Text style={[styles.mediaHint, { color: colors.textMuted }]}>{media.length} وسائط · اضغط للتوسيع</Text></View>
+          <Ionicons name="images-outline" size={20} color={colors.accent} />
+        </View>
+        <MediaStrip item={mediaItem} media={media} onMedia={setPreviewIdx} />
+      </Card> : null}
 
       <Card style={styles.section}>
         <Text style={[styles.propName, { color: colors.textPrimary }]}>{property.name}</Text>
@@ -204,6 +216,8 @@ export default function PropertyDetail() {
         )}
       </Card>
 
+      {previewIdx !== null ? <MediaPreview media={media} index={previewIdx} onClose={() => setPreviewIdx(null)} /> : null}
+
       <View style={styles.actionsRow}>
         <Pressable
           onPress={() => navigation.navigate('PropertyForm', { id: property.id })}
@@ -244,6 +258,8 @@ const styles = StyleSheet.create({
   },
   heroImage: { width: '100%', height: '100%', borderRadius: radius.lg, resizeMode: 'cover' },
   brokerRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.md },
+  mediaHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, marginBottom: spacing.sm },
+  mediaHint: { fontSize: fontSize.xs, fontFamily: 'Tajawal_400Regular', marginTop: 2 },
   propTypeIcon: {
     width: 96,
     height: 96,

@@ -1,12 +1,12 @@
-import React, { useState } from "react"
-import { View, Text, Pressable, StyleSheet, ScrollView, Modal, Share, Alert, useWindowDimensions } from "react-native"
+import React, { useEffect, useState } from "react"
+import { View, Text, Pressable, StyleSheet, ScrollView, Modal, Share, Alert, useWindowDimensions, Platform } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import * as Haptics from "expo-haptics"
 import { Image } from "expo-image"
 import * as Sharing from "expo-sharing"
 import * as Clipboard from "expo-clipboard"
 import { TYPE_LABELS } from "../../../types"
-import { useVideoPlayer, VideoView } from "expo-video"
+import { useVideoPlayer, VideoView, type VideoThumbnail } from "expo-video"
 
 const PROP_STATUS: Record<string, string> = { for_sale: "للبيع", sold: "مُباع", rented: "مؤجر", pending: "تحت المعالجة" }
 const WP_CATS: Record<string, string> = {
@@ -49,6 +49,23 @@ export function pinStatusText(kind: "property" | "waypoint", data: any): string 
   return kind === "property" ? PROP_STATUS[data.status] || data.status : ""
 }
 
+function VideoThumb({ uri }: { uri: string }) {
+  const player = useVideoPlayer(uri, (p) => { p.muted = true; p.pause() })
+  const [thumbnail, setThumbnail] = useState<VideoThumbnail | null>(null)
+
+  useEffect(() => {
+    let active = true
+    if (Platform.OS === 'web') return () => { active = false }
+    player.generateThumbnailsAsync(0.1, { maxWidth: 320 }).then(([result]) => {
+      if (active && result) setThumbnail(result)
+    }).catch(() => {})
+    return () => { active = false }
+  }, [player])
+
+  if (thumbnail) return <Image source={thumbnail as any} style={s.thumbImg} contentFit="cover" transition={150} />
+  return <VideoView player={player} style={s.videoThumbVideo} contentFit="cover" nativeControls={false} />
+}
+
 /* ─── شريط الوسائط الأفقي (معاينة صغيرة) ─────────────────────────────── */
 export function MediaStrip({ item, media, onMedia }: { item: PinItem; media: MediaItem[]; onMedia: (i: number) => void }) {
   if (!media.length) return null
@@ -58,8 +75,8 @@ export function MediaStrip({ item, media, onMedia }: { item: PinItem; media: Med
         <Pressable key={i} onPress={() => { Haptics.selectionAsync(); onMedia(i) }} style={s.thumb}>
           {m.video ? (
             <View style={s.videoThumb}>
-              <Ionicons name="videocam" size={18} color="#FFF" />
-              <Text style={s.videoThumbText}>فيديو</Text>
+              <VideoThumb uri={m.uri} />
+              <View style={s.videoBadge}><Ionicons name="videocam" size={12} color="#FFF" /><Text style={s.videoThumbText}>فيديو</Text></View>
             </View>
           ) : (
             <Image source={{ uri: m.uri }} style={s.thumbImg} contentFit="cover" transition={150} />
@@ -74,6 +91,7 @@ export function MediaStrip({ item, media, onMedia }: { item: PinItem; media: Med
 /* ─── معاينة الوسائط بملء الشاشة ─────────────────────────────────────── */
 export function MediaPreview({ media, index, onClose }: { media: MediaItem[]; index: number; onClose: () => void }) {
   const [i, setI] = useState(index)
+  useEffect(() => setI(index), [index])
   const cur = media[i]
   const { height } = useWindowDimensions()
   const player = useVideoPlayer(cur && cur.video ? cur.uri : "", (p) => { p.loop = true; p.play() })
@@ -83,7 +101,7 @@ export function MediaPreview({ media, index, onClose }: { media: MediaItem[]; in
       <View style={s.previewWrap}>
         <View style={s.previewTop}>
           <Text style={s.previewCount}>{i + 1} / {media.length}</Text>
-          <Pressable onPress={onClose} hitSlop={10} style={s.previewClose}>
+          <Pressable accessibilityRole="button" accessibilityLabel="إغلاق معاينة الوسائط" onPress={onClose} hitSlop={10} style={s.previewClose}>
             <Ionicons name="close" size={20} color="#FFF" />
           </Pressable>
         </View>
@@ -95,10 +113,10 @@ export function MediaPreview({ media, index, onClose }: { media: MediaItem[]; in
           )}
         </View>
         <View style={s.previewNav}>
-          <Pressable disabled={i === 0} onPress={() => setI(i - 1)} hitSlop={8} style={[s.navBtn, i === 0 && { opacity: 0.3 }]}>
+          <Pressable accessibilityRole="button" accessibilityLabel="الوسيط السابق" disabled={i === 0} onPress={() => setI(i - 1)} hitSlop={8} style={[s.navBtn, i === 0 && { opacity: 0.3 }]}>
             <Ionicons name="chevron-forward" size={22} color="#FFF" />
           </Pressable>
-          <Pressable disabled={i === media.length - 1} onPress={() => setI(i + 1)} hitSlop={8} style={[s.navBtn, i === media.length - 1 && { opacity: 0.3 }]}>
+          <Pressable accessibilityRole="button" accessibilityLabel="الوسيط التالي" disabled={i === media.length - 1} onPress={() => setI(i + 1)} hitSlop={8} style={[s.navBtn, i === media.length - 1 && { opacity: 0.3 }]}>
             <Ionicons name="chevron-back" size={22} color="#FFF" />
           </Pressable>
         </View>
@@ -311,8 +329,12 @@ const s = StyleSheet.create({
   strip: { gap: 8, paddingVertical: 6 },
   thumb: { width: 84, height: 58, borderRadius: 10, overflow: "hidden", backgroundColor: "#F1F5F9" },
   thumbImg: { width: "100%", height: "100%" },
-  videoThumb: { flex: 1, alignItems: "center", justifyContent: "center", gap: 2, backgroundColor: "#1E293B" },
-  videoThumbText: { fontSize: 9, fontFamily: "Tajawal_700Bold", color: "#FFF" },
+    videoThumb: {
+ flex: 1, alignItems: "center", justifyContent: "center", gap: 2, backgroundColor: "#1E293B" },
+    videoThumbVideo: { ...StyleSheet.absoluteFillObject },
+  videoBadge: { position: 'absolute', left: 6, bottom: 6, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(15,23,42,0.78)', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 3 },
+  videoThumbText: {
+ fontSize: 9, fontFamily: "Tajawal_700Bold", color: "#FFF" },
   thumbPlay: { position: "absolute", left: 4, bottom: 4, width: 16, height: 16, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.55)" },
 
   previewWrap: { flex: 1, backgroundColor: "rgba(2,6,23,0.96)" },
