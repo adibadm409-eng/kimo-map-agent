@@ -15,6 +15,18 @@ const offerTask = assessSkill('أنشئ عرض بيع لهذا العقار وا
 assert.equal(offerTask.shouldPlan, true)
 assert.equal(offerTask.match.skill.id, 'offer_management')
 
+const propertyTask = assessSkill('عدّل سعر العقار وأضف صورة للبيت')
+assert.equal(propertyTask.shouldPlan, true)
+assert.equal(propertyTask.match.skill.id, 'property_management')
+
+const clientTask = assessSkill('أنشئ عميلاً جديداً برقم الهاتف الموجود')
+assert.equal(clientTask.shouldPlan, true)
+assert.equal(clientTask.match.skill.id, 'client_relationship')
+
+const workspaceTask = assessSkill('أنشئ جدولاً جديداً للقطع وأضف الصفوف')
+assert.equal(workspaceTask.shouldPlan, true)
+assert.equal(workspaceTask.match.skill.id, 'workspace_operations')
+
 const custom = providerCapabilities({ id: 'custom', name: 'custom', color: '', baseUrl: '', defaultModels: [], modelsKind: 'openai' }, 'model-x')
 assert.equal(custom.supportsStreamOptions, false)
 assert.equal(custom.maxTokensField, 'max_tokens')

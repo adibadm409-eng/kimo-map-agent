@@ -87,6 +87,48 @@ export const AGENT_SKILLS: AgentSkill[] = [
     systemGuidance: 'ابدأ بالبحث الأوسع عندما لا يحدد المستخدم القسم، ثم ضيّق النتائج ولا تنفذ كتابة ضمنية.',
   },
   {
+    id: 'property_management',
+    label: 'إدارة العقارات والوسائط',
+    description: 'ينظم بيانات العقار وسعره وتصنيفه ووسائطه وبيانات الدلال دون خلطها ببيانات العرض أو العميل.',
+    triggers: ['عقار', 'عقارات', 'بيت', 'فندق', 'عمارة', 'برج سكني', 'مزرعة', 'قطعة أرض', 'هنجر', 'محل', 'سعر العقار', 'صورة العقار', 'فيديو العقار'],
+    preferredTools: ['catalog', 'query', 'get', 'create', 'update', 'preview_update', 'data_snapshot'],
+    readTools: ['catalog', 'query', 'get', 'search_everything', 'data_snapshot'],
+    writeTools: ['create', 'update', 'custom_field_set'],
+    requiredInputs: ['هوية العقار عند التعديل؛ والاسم أو البيانات الأساسية عند الإنشاء'],
+    questionPolicy: 'ask_on_missing',
+    verificationTools: ['get', 'query'],
+    recoveryPolicy: 'ask_user',
+    systemGuidance: 'افصل دائماً بين سجل العقار وسجل العرض وسجل العميل. لا تستبدل الوسائط ولا تحذفها ضمنياً. اقرأ السجل قبل التعديل، وأعد قراءته بعد الحفظ للتحقق من الحقول المتغيرة فقط.',
+  },
+  {
+    id: 'client_relationship',
+    label: 'إدارة العملاء والعلاقات',
+    description: 'ينظم العملاء وبيانات الاتصال والارتباطات بالعروض والمشاهدات دون افتراض هوية أو رقم.',
+    triggers: ['عميل', 'العميل', 'مشتري', 'بائع', 'هاتف العميل', 'رقم العميل', 'جهة اتصال', 'اتصل بالعميل', 'بيانات العميل'],
+    preferredTools: ['catalog', 'query', 'get', 'create', 'update', 'search_everything'],
+    readTools: ['catalog', 'query', 'get', 'search_everything'],
+    writeTools: ['create', 'update'],
+    requiredInputs: ['هوية العميل عند التعديل؛ والاسم أو وسيلة تعريف عند الإنشاء'],
+    questionPolicy: 'never_guess',
+    verificationTools: ['get', 'query'],
+    recoveryPolicy: 'ask_user',
+    systemGuidance: 'لا تدمج شخصين متشابهين بالاسم. اعرض المطابقات واطلب تحديداً عند الالتباس. حافظ على رقم الهاتف كما أدخله المستخدم بعد تطبيع المسافات فقط، واربط العرض بالعميل عبر المعرف لا عبر النص.',
+  },
+  {
+    id: 'workspace_operations',
+    label: 'إدارة الجداول ومساحات العمل',
+    description: 'يبني جداول محلية مرنة للبيانات التي لا يغطيها النموذج العقاري الأساسي، مع حماية بنية الأعمدة والصفوف.',
+    triggers: ['مساحة عمل', 'جدول', 'صف', 'صفوف', 'عمود', 'أعمدة', 'ورقة', 'داتا', 'بيانات مخصصة'],
+    preferredTools: ['list_workspaces', 'workspace_get', 'workspace_create', 'workspace_add_table', 'workspace_add_row', 'workspace_update_row', 'workspace_import_rows', 'workspace_create_full_table'],
+    readTools: ['list_workspaces', 'workspace_get', 'list_attachments', 'file_preview'],
+    writeTools: ['workspace_create', 'workspace_add_table', 'workspace_add_row', 'workspace_update_row', 'workspace_import_rows', 'workspace_create_full_table', 'workspace_rename_table', 'workspace_rename_column'],
+    requiredInputs: ['مساحة العمل أو الجدول المستهدف عند التعديل؛ وعنوان واضح عند الإنشاء'],
+    questionPolicy: 'ask_on_missing',
+    verificationTools: ['workspace_get'],
+    recoveryPolicy: 'replan',
+    systemGuidance: 'اقرأ بنية مساحة العمل والجدول قبل الكتابة. في الاستيراد اعرض معاينة أو ملخصاً للصفوف والتكرار. لا تغيّر أسماء الأعمدة أو تحذف صفوفاً دون طلب صريح وموافقة عند الخطر.',
+  },
+  {
     id: 'general_assistant',
     label: 'مساعد عقاري عام',
     description: 'يفهم السؤال العام ويطلب التحديد قبل الدخول في عملية تنفيذية.',
@@ -121,7 +163,8 @@ export function matchSkill(text: string): SkillMatch {
   const normalized = String(text ?? '').toLowerCase()
   const ranked = AGENT_SKILLS.map((skill) => {
     const hits = skill.triggers.filter((trigger) => normalized.includes(trigger.toLowerCase()))
-    const score = skill.id === 'general_assistant' ? 0.1 : hits.length ? Math.min(0.98, 0.2 + hits.length * 0.15) : 0
+    const specificityBonus = skill.id === 'general_assistant' || skill.id === 'data_search' ? 0 : 0.08
+    const score = skill.id === 'general_assistant' ? 0.1 : hits.length ? Math.min(0.98, 0.2 + hits.length * 0.15 + specificityBonus) : 0
     return { skill, score, missingInputs: [], reasons: hits.length ? [`مطابقة الكلمات: ${hits.join('، ')}`] : [] }
   }).sort((a, b) => b.score - a.score)
   return ranked[0] ?? { skill: AGENT_SKILLS[AGENT_SKILLS.length - 1], score: 0.1, missingInputs: [], reasons: [] }
