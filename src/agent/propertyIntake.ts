@@ -5,6 +5,8 @@ export type PropertyIntakeMode = 'create' | 'update' | 'ambiguous'
 export interface PropertyChangePreview {
   mode: PropertyIntakeMode
   confidence: number
+  risk: 'low' | 'medium' | 'high'
+  requiresApproval: boolean
   candidates: Array<{ id: string; name: string; score: number; reasons: string[] }>
   changes: Record<string, { before: unknown; after: unknown }>
   attachmentIds: string[]
@@ -47,6 +49,8 @@ export async function previewPropertyChange(input: { data: Record<string, any>; 
     return {
       mode: 'ambiguous',
       confidence: 0.05,
+      risk: 'medium',
+      requiresApproval: true,
       candidates: [],
       changes: {},
       attachmentIds,
@@ -58,6 +62,8 @@ export async function previewPropertyChange(input: { data: Record<string, any>; 
     return {
       mode: 'ambiguous',
       confidence: 0.1,
+      risk: 'high',
+      requiresApproval: true,
       candidates: [],
       changes: {},
       attachmentIds,
@@ -75,6 +81,8 @@ export async function previewPropertyChange(input: { data: Record<string, any>; 
     return {
       mode: 'create',
       confidence: 0.86,
+      risk: 'low',
+      requiresApproval: false,
       candidates: [],
       changes: {},
       attachmentIds,
@@ -87,6 +95,8 @@ export async function previewPropertyChange(input: { data: Record<string, any>; 
     return {
       mode: 'ambiguous',
       confidence: top.score,
+      risk: 'high',
+      requiresApproval: true,
       candidates,
       changes: {},
       attachmentIds,
@@ -101,9 +111,13 @@ export async function previewPropertyChange(input: { data: Record<string, any>; 
     const before = (top.row as any)[field]
     if (String(before ?? '') !== String(after ?? '')) changes[field] = { before, after }
   }
+  const sensitiveFields = new Set(['price', 'status', 'type', 'address', 'owner_name', 'owner_phone', 'broker_name', 'broker_phone'])
+  const requiresApproval = Object.keys(changes).some((field) => sensitiveFields.has(field))
   return {
     mode: 'update',
     confidence: top.score,
+    risk: requiresApproval ? 'high' : 'low',
+    requiresApproval,
     candidates,
     changes,
     attachmentIds,
