@@ -1,4 +1,5 @@
 import { TOOLS } from '../agent'
+import type { AgentSkill } from './agentContract'
 import type { BrainOp, AgentSettings } from './store'
 import type { FunctionDef } from './llm'
 import { buildToolSchemas } from './toolSchemas'
@@ -184,15 +185,24 @@ ${projectMemoryBlock}
 ردودك منظمة وواضحة، وإن نفذت خطوات فاذكرها باختصار.`
 }
 
-/** تعريفات الأدوات: كل أداة دالة مستقلة بتعريف JSON صريح (البنية الدقيقة للوسائط). */
-export function getAgentFunctions(): FunctionDef[] {
+/** تعريفات الأدوات المرئية للنموذج. أدوات المهارة فقط تُعرض، بينما يبقى التنفيذ
+ * محمياً بحارس مستقل داخل executor حتى لا تكون الصلاحية مجرد تعليمات نصية. */
+export function getAgentFunctions(skill?: AgentSkill | null): FunctionDef[] {
   const schemas = buildToolSchemas()
-  const toolFns: FunctionDef[] = TOOLS.map((t) => ({
+  const universal = new Set(['ask_user', 'request_confirmation', 'catalog', 'app_screen_catalog', 'list_entities', 'query', 'get', 'search_everything', 'data_snapshot', 'audit_log_query', 'review_my_work', 'generate_file', 'preview_update', 'undo_last', 'project_memory_save', 'project_memory_read', 'list_generated_files', 'review_generated_file', 'current_local_time'])
+  const allowed = skill
+    ? new Set([...universal, ...skill.readTools, ...skill.writeTools, ...skill.preferredTools])
+    : universal
+  const visibleTools = TOOLS.filter((tool) => allowed.has(tool.name))
+  const toolFns: FunctionDef[] = visibleTools.map((t) => ({
     name: t.name,
     description: t.description,
     parameters: schemas[t.name] ?? { type: 'object', properties: {}, required: [] },
   }))
-  return [...toolFns, ...WRAPPER_FUNCTIONS]
+  const wrappers = WRAPPER_FUNCTIONS.map((wrapper) => wrapper.name === 'execute'
+    ? { ...wrapper, description: `${wrapper.description}\nالأدوات المسموحة في هذه المهارة فقط: ${[...allowed].join('، ')}` }
+    : wrapper)
+  return [...toolFns, ...wrappers]
 }
 
 const WRAPPER_FUNCTIONS: FunctionDef[] = [

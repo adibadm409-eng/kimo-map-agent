@@ -113,7 +113,7 @@ async function runLoop(
               apiKey: conn.apiKey,
               model: conn.model,
               messages: [system, ...thread],
-              functions: getAgentFunctions(),
+              functions: getAgentFunctions(runtimeSkill),
               maxTokens: 4000,
               onDelta: (d) => {
                 liveText = d.content || liveText
