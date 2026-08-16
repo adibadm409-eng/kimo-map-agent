@@ -41,6 +41,18 @@ function scoreCandidate(input: Record<string, any>, row: Record<string, any>): {
 
 export async function previewPropertyChange(input: { data: Record<string, any>; attachmentIds?: string[] }): Promise<PropertyChangePreview> {
   const data = input.data && typeof input.data === 'object' ? input.data : {}
+  const hasIdentity = Boolean(clean(data.id) || clean(data.name) || clean(data.address) || clean(data.owner_phone) || clean(data.broker_phone))
+  const attachmentIds = Array.isArray(input.attachmentIds) ? input.attachmentIds.map(String).filter(Boolean) : []
+  if (!hasIdentity) {
+    return {
+      mode: 'ambiguous',
+      confidence: 0.05,
+      candidates: [],
+      changes: {},
+      attachmentIds,
+      explanation: 'بيانات العقار لا تحتوي اسماً أو عنواناً أو رقم تعريف يمكن الاعتماد عليه؛ اطلب من المستخدم معلومة أساسية قبل الإنشاء أو التحديث.',
+    }
+  }
   const properties = await getAllProperties()
   const ranked = properties
     .map((row) => ({ row, ...scoreCandidate(data, row) }))
@@ -49,7 +61,6 @@ export async function previewPropertyChange(input: { data: Record<string, any>; 
 
   const top = ranked[0]
   const second = ranked[1]
-  const attachmentIds = Array.isArray(input.attachmentIds) ? input.attachmentIds.map(String).filter(Boolean) : []
   if (!top) {
     return {
       mode: 'create',
