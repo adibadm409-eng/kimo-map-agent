@@ -54,6 +54,16 @@ export async function previewPropertyChange(input: { data: Record<string, any>; 
     }
   }
   const properties = await getAllProperties()
+  if (data.id && !properties.some((row) => String(row.id) === String(data.id))) {
+    return {
+      mode: 'ambiguous',
+      confidence: 0.1,
+      candidates: [],
+      changes: {},
+      attachmentIds,
+      explanation: 'المعرف المرسل غير موجود محلياً؛ لن أنشئ عقاراً جديداً بالمعرف نفسه قبل تأكيد المستخدم.',
+    }
+  }
   const ranked = properties
     .map((row) => ({ row, ...scoreCandidate(data, row) }))
     .filter((candidate) => candidate.score >= 0.3)
