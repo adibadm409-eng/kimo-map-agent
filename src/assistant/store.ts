@@ -80,6 +80,11 @@ function db(): Promise<SQLite.SQLiteDatabase> {
       const d = await getDB()
       await d.execAsync(`
         CREATE TABLE IF NOT EXISTS agent_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS agent_secret_values (
+          secret_id TEXT PRIMARY KEY,
+          value TEXT NOT NULL,
+          updated_at INTEGER NOT NULL
+        );
         CREATE TABLE IF NOT EXISTS agent_sessions (
           id TEXT PRIMARY KEY, title TEXT, created_at INTEGER, updated_at INTEGER,
           provider_label TEXT, model TEXT, mode TEXT
@@ -160,20 +165,55 @@ function secretKey(id: string): string {
   return `${SECRET_PREFIX}${encodeURIComponent(id)}`
 }
 
+async function readDatabaseSecret(id: string): Promise<string> {
+  const d = await db()
+  const row = await d.getFirstAsync<{ value: string }>('SELECT value FROM agent_secret_values WHERE secret_id = ?', id)
+  return row?.value ?? ''
+}
+
+async function writeDatabaseSecret(id: string, value: string): Promise<void> {
+  const d = await db()
+  if (value) {
+    await d.runAsync(
+      'INSERT OR REPLACE INTO agent_secret_values (secret_id, value, updated_at) VALUES (?, ?, ?)',
+      id,
+      value,
+      Date.now(),
+    )
+  } else {
+    await d.runAsync('DELETE FROM agent_secret_values WHERE secret_id = ?', id)
+  }
+}
+
 async function readSecret(id: string, legacy?: string): Promise<string> {
-  if (Platform.OS === 'web') return legacy ?? ''
-  try {
-    const stored = await SecureStore.getItemAsync(secretKey(id))
-    if (stored) return stored
-    if (legacy) {
-      await SecureStore.setItemAsync(secretKey(id), legacy, { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK })
-      return legacy
+  const databaseValue = await readDatabaseSecret(id).catch(() => '')
+  if (databaseValue) {
+    if (Platform.OS !== 'web') {
+      await SecureStore.setItemAsync(secretKey(id), databaseValue, { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK }).catch(() => {})
     }
-  } catch {}
-  return legacy ?? ''
+    return databaseValue
+  }
+  if (Platform.OS !== 'web') {
+    try {
+      const stored = await SecureStore.getItemAsync(secretKey(id))
+      if (stored) {
+        await writeDatabaseSecret(id, stored).catch(() => {})
+        return stored
+      }
+    } catch {}
+  }
+  if (legacy) {
+    await writeDatabaseSecret(id, legacy).catch(() => {})
+    if (Platform.OS !== 'web') {
+      await SecureStore.setItemAsync(secretKey(id), legacy, { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK }).catch(() => {})
+    }
+    return legacy
+  }
+  return ''
 }
 
 async function writeSecret(id: string, value: string): Promise<void> {
+  await writeDatabaseSecret(id, value)
   if (Platform.OS === 'web') return
   try {
     if (value) await SecureStore.setItemAsync(secretKey(id), value, { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK })
@@ -197,11 +237,29 @@ async function persistSecrets(keys: Record<string, string>, customProviders: Cus
     await writeSecret(`custom:${provider.id}`, provider.apiKey ?? '')
     return { ...provider, apiKey: '' }
   }))
-  // SQLite يحتفظ بأسماء المزودات فقط كمؤشرات حتى تعرف hydrateSecrets ما الذي
-  // يجب قراءته من SecureStore. حفظ {} هنا كان يجعل المفتاح يختفي بعد أول
-  // setSettings ثم لا يُعاد تحميله عند مغادرة شاشة الإعدادات.
+  // agent_settings يحتفظ بمؤشرات المزودات، بينما القيمة الفعلية محفوظة في
+  // agent_secret_values داخل SQLite ومكررة في SecureStore على المنصات الأصلية.
+  // لذلك لا يؤدي حفظ الإعدادات العامة أو مغادرة الشاشة إلى تفريغ المفتاح.
   const keyMarkers = Object.fromEntries(Object.keys(keys ?? {}).map((provider) => [provider, '']))
   return { keys: keyMarkers, customProviders: sanitizedCustom }
+}
+
+export async function saveAgentApiKey(providerId: string, value: string): Promise<string> {
+  const normalized = value.trim()
+  const current = await getSettings()
+  if (providerId.startsWith('custom:')) {
+    const customId = providerId.slice('custom:'.length)
+    const customProviders = current.customProviders.map((provider) => provider.id === customId ? { ...provider, apiKey: normalized } : provider)
+    await setSettings({ customProviders })
+  } else {
+    await setSettings({ keys: { ...current.keys, [providerId]: normalized } })
+  }
+  const verified = await getSettings()
+  const saved = providerId.startsWith('custom:')
+    ? verified.customProviders.find((provider) => provider.id === providerId.slice('custom:'.length))?.apiKey ?? ''
+    : verified.keys[providerId] ?? ''
+  if (saved !== normalized) throw new Error('تعذر التحقق من حفظ مفتاح API داخل قاعدة البيانات المحلية.')
+  return saved
 }
 
 export async function clearStoredAgentSecrets(): Promise<void> {

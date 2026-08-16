@@ -15,6 +15,7 @@ import {
   testConnection,
   getSettings,
   setSettings,
+  saveAgentApiKey,
   type AgentSettings,
   type ProviderDef,
   type ProviderId,
@@ -47,6 +48,7 @@ export default function AgentSettings({ navigation }: any) {
   const [modelPickerOpen, setModelPickerOpen] = useState(false)
   const [fetchingModels, setFetchingModels] = useState(false)
   const [testing, setTesting] = useState(false)
+  const [savingKey, setSavingKey] = useState(false)
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
 
   useEffect(() => {
@@ -105,6 +107,32 @@ export default function AgentSettings({ navigation }: any) {
     const def = providerDefFor(activeKey, settings?.customProviders ?? [])
     setBaseUrl(def.baseUrl)
   }, [activeKey, settings?.customProviders])
+
+  const onSaveApiKey = useCallback(async () => {
+    const value = apiKey.trim()
+    if (!value) {
+      Alert.alert('مفتاح مطلوب', 'أدخل مفتاح API أولاً ثم اضغط زر الحفظ الصريح.')
+      return
+    }
+    setSavingKey(true)
+    try {
+      await saveAgentApiKey(activeKey, value)
+      setSettingsState((current) => current ? {
+        ...current,
+        keys: activeKey.startsWith('custom:') ? current.keys : { ...current.keys, [activeKey]: value },
+        customProviders: activeKey.startsWith('custom:')
+          ? current.customProviders.map((provider) => provider.id === activeKey.slice('custom:'.length) ? { ...provider, apiKey: value } : provider)
+          : current.customProviders,
+      } : current)
+      setApiKey(value)
+      Alert.alert('تم الحفظ', 'تم حفظ مفتاح API والتحقق من وجوده داخل قاعدة البيانات المحلية.')
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+    } catch (error: any) {
+      Alert.alert('تعذر الحفظ', error?.message || 'تعذر حفظ المفتاح داخل قاعدة البيانات المحلية.')
+    } finally {
+      setSavingKey(false)
+    }
+  }, [activeKey, apiKey])
 
   const onFetchModels = useCallback(async () => {
     if (!apiKey.trim()) {
@@ -276,7 +304,6 @@ export default function AgentSettings({ navigation }: any) {
                 value={apiKey}
                 onChangeText={(t) => {
                   setApiKey(t)
-                  void save({ keys: { ...settings.keys, [activeKey]: t } })
                 }}
                 placeholder="sk-..."
                 placeholderTextColor={colors.textMuted}
@@ -289,6 +316,15 @@ export default function AgentSettings({ navigation }: any) {
                 <Ionicons name={showKey ? 'eye-off-outline' : 'eye-outline'} size={18} color={colors.textSecondary} />
               </Pressable>
             </View>
+            <Pressable
+              onPress={onSaveApiKey}
+              disabled={savingKey}
+              style={({ pressed }) => [styles.saveKeyBtn, { backgroundColor: colors.accent, opacity: pressed || savingKey ? 0.65 : 1 }]}
+            >
+              {savingKey ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="save-outline" size={17} color="#fff" />}
+              <Text style={styles.saveKeyBtnText}>{savingKey ? 'جاري الحفظ والتحقق...' : 'حفظ المفتاح في قاعدة البيانات'}</Text>
+            </Pressable>
+            <Text style={[styles.muted, { color: colors.textMuted }]}>لن يعتمد الحفظ على مغادرة الشاشة؛ اضغط الزر بعد كتابة المفتاح.</Text>
           </View>
 
           <View style={styles.fieldWrap}>
@@ -460,6 +496,8 @@ const styles = StyleSheet.create({
   modelField: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 12 },
   modelLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   modelName: { flex: 1, fontSize: fontSize.md, fontFamily: 'Tajawal_700Bold' },
+  saveKeyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 46, borderRadius: radius.full, marginTop: spacing.sm },
+  saveKeyBtnText: { color: '#fff', fontSize: fontSize.sm, fontWeight: '700', fontFamily: 'Tajawal_700Bold' },
   fetchBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.full },
   fetchBtnText: { fontSize: fontSize.sm, fontWeight: '700', fontFamily: 'Tajawal_700Bold' },
   modeCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, borderWidth: 1, borderRadius: radius.md, padding: spacing.md },

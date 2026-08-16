@@ -23,6 +23,7 @@ export {
   getSettings,
   setSettings,
   setSetting,
+  saveAgentApiKey,
   genId,
   activeConfig,
   listSessions,
