@@ -57,6 +57,8 @@ export const TOOL_ARABIC: Record<string, string> = {
   workspace_duplicate_table: 'نسخ جدول',
   workspace_duplicate_workspace: 'نسخ مساحة عمل',
   list_attachments: 'قائمة المرفقات',
+  property_change_preview: 'معاينة إنشاء أو تحديث العقار',
+  attach_media_to_entity: 'ربط الوسيط بالعقار أو العرض',
   read_uploaded_file: 'معاينة الملف',
   import_project_file: 'استيراد المشروع',
   remove_attachment: 'حذف مرفق',
