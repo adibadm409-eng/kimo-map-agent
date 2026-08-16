@@ -1,4 +1,4 @@
-import { agentCreate } from './crud'
+import { agentCreate, agentUpdate } from './crud'
 import { cancelReminder, createReminder, getAllOffers, getAllReminders, getReminder, setOfferReminder } from '../database/db'
 import { linkAttachmentToEntity, type MediaTargetType } from '../database/workspace'
 import { cancelOfferReminder, scheduleOfferReminder } from '../notifications/offerReminders'
@@ -47,6 +47,36 @@ function planFromArgs(args: Record<string, any>): ProjectImportPlan {
 }
 
 export const DOMAIN_TOOLS: DomainToolDef[] = [
+  {
+    name: 'property_intake_apply',
+    description: 'تطبيق إدخال عقار مع مرفقاته بعد المعاينة: يعيد فحص create/update/ambiguous، يمنع إنشاء سجل عند وجود مطابقة، ويطلب approved=true للتغييرات الحساسة، ثم يربط الوسائط بالعقار دون حذف الأصل. استخدم property_change_preview أولاً.',
+    args: [
+      { name: 'data', type: 'object', required: true, description: 'حقول العقار المستخرجة من الطلب' },
+      { name: 'attachment_ids', type: 'array', description: 'معرفات المرفقات التي طلب المستخدم ربطها بالعقار' },
+      { name: 'approved', type: 'boolean', description: 'true فقط بعد موافقة المستخدم على تغييرات risk=high' },
+    ],
+    handler: async (args) => {
+      const preview = await previewPropertyChange({ data: (args.data && typeof args.data === 'object' ? args.data : {}) as Record<string, any>, attachmentIds: Array.isArray(args.attachment_ids) ? args.attachment_ids : [] })
+      if (preview.mode === 'ambiguous') return { applied: false, requiresClarification: true, preview }
+      if (preview.requiresApproval && args.approved !== true) return { applied: false, requiresApproval: true, preview }
+      const data = (args.data && typeof args.data === 'object' ? args.data : {}) as Record<string, any>
+      const sessionId = args.__session_id ? String(args.__session_id) : undefined
+      let propertyId = ''
+      if (preview.mode === 'update') {
+        propertyId = String(preview.candidates[0]?.id ?? '')
+        if (!propertyId) return { applied: false, requiresClarification: true, preview }
+        await agentUpdate({ entity: 'properties', id: propertyId, data })
+      } else {
+        const created = await agentCreate({ entity: 'properties', data })
+        propertyId = created.id
+      }
+      const links: any[] = []
+      for (const attachmentId of preview.attachmentIds) {
+        links.push(await linkAttachmentToEntity({ attachmentId, targetType: 'property', targetId: propertyId, sessionId }))
+      }
+      return { applied: true, mode: preview.mode, propertyId, links, preview }
+    },
+  },
   {
     name: 'property_change_preview',
     description: 'معاينة ذكية لبيانات عقار واردة من رسالة أو مرفقات: تبحث في العقارات المحلية وتحدد هل المسار create أو update أو ambiguous، وتعرض التغييرات المرشحة دون كتابة. استخدمها قبل create/update عندما يرسل المستخدم تفاصيل عقار أو وسائط مرتبطة به.',
