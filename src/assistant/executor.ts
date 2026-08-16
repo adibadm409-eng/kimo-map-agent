@@ -1,7 +1,7 @@
 import { getMessages, getSettings, createSession, listUndo, activeConfig, updateSessionMeta, getPending, clearPending, addBrainOp, listBrain, clearBrain, type Message, type BrainOp, type AgentSettings } from './store'
 import { saveAttachment } from '../database/workspace'
 import { chatWithRetry, parseToolArgs, toWireToolCall, type ChatMessage, type ToolCall } from './llm'
-import type { ProviderDef } from './providers'
+import { defaultProvider, type ProviderDef, type ProviderId } from './providers'
 import { analyzeIntent, buildContextSummary } from './intent'
 import { persistUser, persistAssistantText, mimeOf } from './persist'
 import { buildSystemPrompt, getAgentFunctions } from './prompts'
@@ -16,8 +16,12 @@ import { emit, subscribeAgent, isAgentBusy, cancelAgent, markRunning, clearRunni
 import { MAX_AGENT_RUNTIME_MS, MAX_REPEATED_TOOL_CALLS, MAX_TOOL_CALLS, MAX_TOOL_ROUNDS } from './constants'
 import * as FileSystem from 'expo-file-system/legacy'
 
-function providerProxy(conn: { baseUrl: string; providerName: string }): ProviderDef {
-  return { id: 'custom', name: conn.providerName, color: '#888888', baseUrl: conn.baseUrl, defaultModels: [], modelsKind: 'none' }
+function providerProxy(conn: { providerId: string; baseUrl: string; providerName: string }): ProviderDef {
+  if (conn.providerId.startsWith('custom:')) {
+    return { id: 'custom', name: conn.providerName, color: '#888888', baseUrl: conn.baseUrl, defaultModels: [], modelsKind: 'openai' }
+  }
+  const def = defaultProvider(conn.providerId as ProviderId)
+  return { ...def, baseUrl: conn.baseUrl || def.baseUrl }
 }
 
 function hashOf(s: string): string {
@@ -36,7 +40,7 @@ function truncate(s: string, n: number): string {
 async function runLoop(
   sessionId: string,
   s: AgentSettings,
-  conn: { baseUrl: string; apiKey: string; providerName: string; model: string },
+  conn: { providerId: string; baseUrl: string; apiKey: string; providerName: string; model: string },
   emitEvents: boolean
 ): Promise<void> {
   const aborter = new AbortController()
@@ -350,6 +354,7 @@ async function runLoop(
 
 interface ConnConfig {
   settings: AgentSettings
+  providerId: string
   providerName: string
   model: string
   baseUrl: string
@@ -361,6 +366,7 @@ async function resolveConfig(): Promise<ConnConfig> {
   const cfg = await activeConfig(settings)
   return {
     settings,
+    providerId: cfg.providerId,
     providerName: cfg.providerName,
     model: cfg.model,
     baseUrl: cfg.baseUrl,
