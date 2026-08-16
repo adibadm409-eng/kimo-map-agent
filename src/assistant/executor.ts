@@ -54,6 +54,7 @@ async function runLoop(
     let runtimeTaskId: string | undefined
     let runtimeEvidenceCount = 0
     let runtimeSuccessfulEvidenceCount = 0
+    let runtimeLastEvidenceOk = true
     if (lastUserMsg) {
       const goal = String(lastUserMsg.content ?? '').trim()
       const assessment = assessSkill(goal)
@@ -189,7 +190,7 @@ async function runLoop(
               emit({ type: 'text', content: finalText })
             }
           }
-          const taskHasEvidence = !runtimeTaskId || (runtimeEvidenceCount > 0 && runtimeSuccessfulEvidenceCount > 0)
+          const taskHasEvidence = !runtimeTaskId || (runtimeEvidenceCount > 0 && runtimeSuccessfulEvidenceCount > 0 && runtimeLastEvidenceOk)
           if (runtimeTaskId && !taskHasEvidence) {
             const noEvidence = 'وصل رد نصي، لكن لم تُثبت خطوة تنفيذ ناجحة؛ لذلك لن أعلِن اكتمال المهمة. راجع الطلب أو أعد المحاولة.'
             await transitionTaskRun(runtimeTaskId, 'failed', { lastError: noEvidence })
@@ -295,6 +296,7 @@ async function runLoop(
             if (lastObs && lastObs.meta) {
               const evidenceOk = lastObs.meta.ok !== false
               runtimeEvidenceCount++
+              runtimeLastEvidenceOk = evidenceOk
               if (evidenceOk) runtimeSuccessfulEvidenceCount++
               if (runtimeTaskId) await appendTaskEvidence(runtimeTaskId, { tool: innerTool, ok: evidenceOk, summary: String(lastObs.meta.observation ?? lastObs.meta.result ?? '').slice(0, 600) })
               if (emitEvents) {
