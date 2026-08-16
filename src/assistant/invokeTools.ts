@@ -102,6 +102,7 @@ export async function runRegistryTool(
   emitEvents: boolean
 ): Promise<boolean> {
   const args = adaptToolArgs(tool, rawArgs ?? {})
+  if (tool === 'attach_media_to_entity') (args as any).__session_id = sessionId
 
   if (tool === 'update' && String(args.entity ?? '') === 'plots' && args.data && (Object.prototype.hasOwnProperty.call(args.data, 'paid_amount') || Object.prototype.hasOwnProperty.call(args.data, 'remaining_amount'))) {
     const obs = '[فشل] لا تعدل paid_amount أو remaining_amount مباشرة؛ استخدم مسار دفتر النقد لتسجيل دفعة أو عكسها حتى تبقى الأرقام قابلة للمراجعة.'

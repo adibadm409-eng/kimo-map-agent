@@ -182,7 +182,7 @@ export const DOMAIN_TOOLS: DomainToolDef[] = [
       const targetType = String(args.target_type || '') as MediaTargetType
       if (targetType !== 'property' && targetType !== 'offer') throw new Error('target_type يجب أن يكون property أو offer.')
       if (!String(args.attachment_id || '').trim() && !String(args.attachment_name || '').trim()) throw new Error('حدد attachment_id أو attachment_name للمرفق.')
-      return linkAttachmentToEntity({ attachmentId: args.attachment_id ? String(args.attachment_id) : undefined, attachmentName: args.attachment_name ? String(args.attachment_name) : undefined, targetType, targetId: String(args.target_id) })
+      return linkAttachmentToEntity({ attachmentId: args.attachment_id ? String(args.attachment_id) : undefined, attachmentName: args.attachment_name ? String(args.attachment_name) : undefined, targetType, targetId: String(args.target_id), sessionId: args.__session_id ? String(args.__session_id) : undefined })
     },
   },
   {

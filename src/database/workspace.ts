@@ -692,16 +692,17 @@ function parseMediaList(value: unknown): Record<string, any>[] {
   }
 }
 
-export async function linkAttachmentToEntity(input: { attachmentId?: string; attachmentName?: string; targetType: MediaTargetType; targetId: string }): Promise<{ link: EntityMediaLink; target: { type: MediaTargetType; id: string; name: string } }> {
+export async function linkAttachmentToEntity(input: { attachmentId?: string; attachmentName?: string; targetType: MediaTargetType; targetId: string; sessionId?: string }): Promise<{ link: EntityMediaLink; target: { type: MediaTargetType; id: string; name: string } }> {
   const d = await db()
   const targetTable = input.targetType === 'property' ? 'properties' : 'offers'
   const target = await d.getFirstAsync<any>(`SELECT id, name, media FROM ${targetTable}${input.targetType === 'offer' ? ' WHERE id = ?' : ' WHERE id = ?'}`, input.targetId)
   if (!target) throw new Error(input.targetType === 'property' ? 'العقار الهدف غير موجود.' : 'العرض الهدف غير موجود.')
 
   const all = await listAttachments()
+  const scoped = input.sessionId ? all.filter((item) => item.sessionId === input.sessionId) : all
   const candidates = input.attachmentId
-    ? all.filter((item) => item.id === input.attachmentId)
-    : all.filter((item) => item.name === String(input.attachmentName || '').trim())
+    ? scoped.filter((item) => item.id === input.attachmentId)
+    : scoped.filter((item) => item.name === String(input.attachmentName || '').trim())
   if (!candidates.length) throw new Error('المرفق المطلوب غير موجود في مرفقات المحادثة.')
   if (candidates.length > 1) throw new Error('يوجد أكثر من مرفق مطابق؛ استخدم اسم الملف الكامل أو معرف المرفق.')
   const attachment = candidates[0]
