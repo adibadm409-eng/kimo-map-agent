@@ -102,6 +102,21 @@ export const AGENT_SKILLS: AgentSkill[] = [
   },
 ]
 
+export interface SkillAssessment {
+  match: SkillMatch
+  intent: 'conversation' | 'execution' | 'question' | 'ambiguous'
+  shouldPlan: boolean
+  confidence: number
+}
+
+function classifyIntent(text: string, match: SkillMatch): SkillAssessment['intent'] {
+  const normalized = String(text ?? '').trim().toLowerCase()
+  if (!normalized || /^(مرحبا|مرحباً|هلا|أهلا|اهلا|السلام عليكم|شكرا|شكرًا|كيف حالك)[!.؟\s]*$/.test(normalized)) return 'conversation'
+  if (match.skill.id === 'general_assistant') return /\?|؟|ما الذي|كيف|هل/.test(normalized) ? 'question' : 'ambiguous'
+  if (/أنشئ|أضف|سجل|سجّل|عدّل|عدل|حدّث|احذف|حذف|استورد|استيراد|ذكرني|تذكير|اعرض|ابحث|راجع|حلل|احسب/.test(normalized)) return 'execution'
+  return 'ambiguous'
+}
+
 export function matchSkill(text: string): SkillMatch {
   const normalized = String(text ?? '').toLowerCase()
   const ranked = AGENT_SKILLS.map((skill) => {
@@ -110,6 +125,13 @@ export function matchSkill(text: string): SkillMatch {
     return { skill, score, missingInputs: [], reasons: hits.length ? [`مطابقة الكلمات: ${hits.join('، ')}`] : [] }
   }).sort((a, b) => b.score - a.score)
   return ranked[0] ?? { skill: AGENT_SKILLS[AGENT_SKILLS.length - 1], score: 0.1, missingInputs: [], reasons: [] }
+}
+
+export function assessSkill(text: string): SkillAssessment {
+  const match = matchSkill(text)
+  const intent = classifyIntent(text, match)
+  const shouldPlan = intent === 'execution' && match.skill.id !== 'general_assistant' && match.score >= 0.2
+  return { match, intent, shouldPlan, confidence: shouldPlan ? match.score : Math.max(0.1, match.score) }
 }
 
 export function planForSkill(skill: AgentSkill, goal: string): AgentPlan {

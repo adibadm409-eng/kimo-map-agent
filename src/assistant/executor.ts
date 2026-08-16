@@ -5,7 +5,7 @@ import type { ProviderDef } from './providers'
 import { analyzeIntent, buildContextSummary } from './intent'
 import { persistUser, persistAssistantText, mimeOf } from './persist'
 import { buildSystemPrompt, getAgentFunctions } from './prompts'
-import { matchSkill, planForSkill } from './skills'
+import { assessSkill, planForSkill } from './skills'
 import { completePlanStep, type AgentPlan, type AgentSkill } from './agentContract'
 import { publishRuntimeEvent } from './runtimeEvents'
 import { readModelHistory, messagesToLlm } from './history'
@@ -53,15 +53,15 @@ async function runLoop(
     let runtimeTaskId: string | undefined
     if (lastUserMsg) {
       const goal = String(lastUserMsg.content ?? '').trim()
-      const match = matchSkill(goal)
+      const assessment = assessSkill(goal)
+      const match = assessment.match
       runtimeSkill = match.skill
-      // لا تُعدّ كل رسالة مهمة تنفيذية: التحيات والأسئلة العامة لا تنشئ بطاقة
-      // خطة ولا تدّعي مراحل لم ينفذها الوكيل. لا نعلن الخطة إلا عند وجود
-      // مطابقة تشغيلية واضحة (أي كلمة تشغيلية فعلية، لا general_assistant الافتراضي).
-      const shouldPlan = match.score > 0.1 && runtimeSkill.id !== 'general_assistant'
+      // لا تُعدّ كل رسالة مهمة تنفيذية: الخطة تأتي من بوابة النية المركزية
+      // التي تميز المحادثة والسؤال العام والغموض عن طلب تنفيذ فعلي.
+      const shouldPlan = assessment.shouldPlan
       runtimePlan = shouldPlan ? planForSkill(runtimeSkill, goal) : null
       if (shouldPlan && runtimePlan) {
-        const task = await createTaskRun({ sessionId, userRequest: goal, skillId: runtimeSkill.id, confidence: match.score, plan: runtimePlan })
+        const task = await createTaskRun({ sessionId, userRequest: goal, skillId: runtimeSkill.id, intent: assessment.intent, confidence: assessment.confidence, plan: runtimePlan })
         runtimeTaskId = task.id
         await transitionTaskRun(runtimeTaskId, 'running', { plan: runtimePlan })
       }
