@@ -7,6 +7,7 @@ import {
   updateClient,
   deleteClient,
   deleteOffer,
+  updateOffer,
   deleteCampaign,
   deleteViewing,
   createWaypoint,
@@ -247,6 +248,10 @@ export async function agentUpdate(spec: UpdateSpec): Promise<{ id: string }> {
       assertNonEmptyPatch(spec.entity, d)
       await updateClient(spec.id, d as any)
       return { id: spec.id }
+    case 'offers':
+      assertNonEmptyPatch(spec.entity, d)
+      await updateOffer(spec.id, d as any)
+      return { id: spec.id }
     case 'waypoints':
       assertNonEmptyPatch(spec.entity, d)
       await updateWaypoint(spec.id, d as any)
@@ -355,7 +360,7 @@ async function dbOfferCreate(d: Record<string, any>): Promise<string> {
   const id = genId()
   await db.runAsync(
     'INSERT INTO offers (id,property_id,client_id,type,amount,status,date,notes) VALUES (?,?,?,?,?,?,?,?)',
-    [id, str(d.property_id), str(d.client_id), str(d.type, 'buy_offer'), num(d.amount), str(d.status, 'pending'), str(d.date), str(d.notes)]
+    [id, d.property_id ? str(d.property_id) : null, str(d.client_id), str(d.type, 'buy_offer'), num(d.amount), str(d.status, 'pending'), str(d.date), str(d.notes)]
   )
   return id
 }

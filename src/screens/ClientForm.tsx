@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics'
 import { useTheme } from '../theme/ThemeContext'
 import { spacing, radius, fontSize } from '../theme/tokens'
 import { Card } from '../components/ui'
+import { ContactPickerButton } from '../components/ContactPickerButton'
 import { getClient, createClient, updateClient } from '../database/db'
 
 const TYPES = [
@@ -126,6 +127,7 @@ export default function ClientForm() {
 
         <Card style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>معلومات التواصل</Text>
+          <ContactPickerButton onSelect={({ name, phone }) => setForm((current) => ({ ...current, name: name || current.name, phone: phone || current.phone }))} />
           <FormInput label="الاسم" value={form.name} onChange={(v) => setForm({ ...form, name: v })} placeholder="الاسم الكامل" />
           <FormInput label="رقم الجوال" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} placeholder="05XXXXXXXX" keyboardType="phone-pad" />
           <FormInput label="البريد الإلكتروني" value={form.email} onChange={(v) => setForm({ ...form, email: v })} placeholder="email@example.com" keyboardType="email-address" />

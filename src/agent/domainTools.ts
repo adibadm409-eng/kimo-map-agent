@@ -162,7 +162,7 @@ export const DOMAIN_TOOLS: DomainToolDef[] = [
     name: 'create_offer_with_reminder',
     description: 'إنشاء عرض شراء أو بيع محلياً ثم ضبط تنبيه متابعة اختياري له في العملية نفسها. اقرأ العقار والعميل أولاً، واستدعِ current_local_time إذا كان الموعد نسبياً. reminder_at يجب أن يكون ISO واضحاً وفي المستقبل؛ لا تخترع معرفات العقار أو العميل.',
     args: [
-      { name: 'property_id', type: 'string', required: true, description: 'معرف العقار الموجود' },
+      { name: 'property_id', type: 'string', description: 'معرف العقار الموجود؛ اختياري لعرض طلب الشراء ويمكن ربطه لاحقاً' },
       { name: 'client_id', type: 'string', required: true, description: 'معرف العميل الموجود' },
       { name: 'type', type: 'string', required: true, description: 'buy_offer أو sell_offer' },
       { name: 'amount', type: 'number', required: true, description: 'قيمة العرض بالريال اليمني' },
@@ -173,15 +173,17 @@ export const DOMAIN_TOOLS: DomainToolDef[] = [
     ],
     handler: async (args) => {
       if (!(Number(args.amount) >= 0)) throw new Error('مبلغ العرض غير صالح.')
+      const type = String(args.type || 'buy_offer')
+      if (type === 'sell_offer' && !String(args.property_id || '').trim()) throw new Error('عرض البيع يحتاج عقاراً مرتبطاً.')
       const reminderAt = args.reminder_at ? String(args.reminder_at) : ''
       const parsedReminder = reminderAt ? new Date(reminderAt) : null
       if (parsedReminder && (Number.isNaN(parsedReminder.getTime()) || parsedReminder.getTime() <= Date.now())) throw new Error('موعد التنبيه غير صالح أو منتهٍ؛ استخدم current_local_time ثم أرسل موعداً مستقبلياً.')
       const created = await agentCreate({
         entity: 'offers',
         data: {
-          property_id: String(args.property_id),
+          property_id: args.property_id ? String(args.property_id) : null,
           client_id: String(args.client_id),
-          type: String(args.type || 'buy_offer'),
+          type,
           amount: Number(args.amount),
           status: String(args.status || 'pending'),
           date: args.date ? String(args.date) : new Date().toISOString().slice(0, 10),

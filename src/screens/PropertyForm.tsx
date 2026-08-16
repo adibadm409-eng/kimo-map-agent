@@ -10,6 +10,7 @@ import { getProperty, createProperty, updateProperty } from '../database/db'
 import * as Location from 'expo-location'
 import * as ImagePicker from 'expo-image-picker'
 import * as FileSystem from 'expo-file-system/legacy'
+import { ContactPickerButton } from '../components/ContactPickerButton'
 
 const TYPES = [
   { key: 'apartment', label: 'شقة', icon: 'business-outline' },
@@ -438,6 +439,7 @@ export default function PropertyForm() {
 
         <Card style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>معلومات المالك</Text>
+          <ContactPickerButton label="اختيار جهة اتصال المالك" onSelect={({ name, phone }) => setForm((current) => ({ ...current, owner_name: name || current.owner_name, owner_phone: phone || current.owner_phone }))} />
           <FormInput label="اسم المالك" value={form.owner_name} onChange={(v) => setForm({ ...form, owner_name: v })} placeholder="الاسم الكامل" />
           <FormInput label="رقم الجوال" value={form.owner_phone} onChange={(v) => setForm({ ...form, owner_phone: v })} placeholder="05XXXXXXXX" keyboardType="phone-pad" />
           <FormInput label="البريد الإلكتروني" value={form.owner_email} onChange={(v) => setForm({ ...form, owner_email: v })} placeholder="email@example.com" keyboardType="email-address" />
@@ -445,6 +447,7 @@ export default function PropertyForm() {
 
         <Card style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>الدلال / صاحب العرض الأصلي</Text>
+          <ContactPickerButton label="اختيار جهة اتصال الدلال" onSelect={({ name, phone }) => setForm((current) => ({ ...current, broker_name: name || current.broker_name, broker_phone: phone || current.broker_phone }))} />
           <FormInput label="اسم الدلال" value={form.broker_name} onChange={(v) => setForm({ ...form, broker_name: v })} placeholder="اسم الدلال" />
           <FormInput label="رقم الدلال" value={form.broker_phone} onChange={(v) => setForm({ ...form, broker_phone: v })} placeholder="رقم الهاتف" keyboardType="phone-pad" />
           <Text style={[styles.hint, { color: colors.textMuted }]}>هذه البيانات اختيارية وتحفظ مع العقار لتسهيل الرجوع إلى مصدر العرض.</Text>

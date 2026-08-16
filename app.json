@@ -19,7 +19,8 @@
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "CAMERA",
-        "POST_NOTIFICATIONS"
+        "POST_NOTIFICATIONS",
+        "READ_CONTACTS"
       ]
     },
     "ios": {
@@ -40,7 +41,13 @@
           "locationWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location while the app is open."
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "اسمح للتطبيق بالوصول إلى جهات الاتصال لاختيار الأسماء والأرقام بسرعة."
+        }
+      ]
     ]
   }
 }

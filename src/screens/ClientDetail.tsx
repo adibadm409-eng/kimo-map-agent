@@ -151,7 +151,7 @@ export default function ClientDetail() {
             <View key={o.id} style={[styles.offerRow, { borderBottomColor: colors.border }]}>
               <View style={styles.offerInfo}>
                 <Text style={[styles.offerProperty, { color: colors.textPrimary }]} numberOfLines={1}>
-                  {o.property_name}
+                  {o.property_name || 'طلب شراء غير مرتبط بعقار'}
                 </Text>
                 <Text style={[styles.offerAmount, { color: colors.accent }]}>
                   {formatPrice(o.amount)} ريال يمني

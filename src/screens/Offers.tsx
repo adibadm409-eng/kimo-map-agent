@@ -95,7 +95,7 @@ export default function Offers() {
   }
 
   const filtered = offers.filter((o) => {
-    const match = o.property_name.includes(search) || o.client_name.includes(search)
+    const match = String(o.property_name || '').includes(search) || String(o.client_name || '').includes(search) || String(o.notes || '').includes(search)
     const pass = filter === 'all' || o.type === filter
     return match && pass
   })
@@ -113,7 +113,7 @@ export default function Offers() {
               <Ionicons name={icon as any} size={20} color={colors.accent} />
             </View>
             <View style={styles.cardInfo}>
-              <Text style={[styles.propertyName, { color: colors.textPrimary }]} numberOfLines={1}>{o.property_name}</Text>
+              <Text style={[styles.propertyName, { color: colors.textPrimary }]} numberOfLines={1}>{o.property_name || 'طلب شراء غير مرتبط بعقار'}</Text>
               <Text style={[styles.clientName, { color: colors.textSecondary }]} numberOfLines={1}>{o.client_name}</Text>
             </View>
             <StatusBadge label={STATUS_LABELS[o.status] || o.status} value={o.status} />
@@ -206,7 +206,7 @@ export default function Offers() {
       <OfferReminderModal
         visible={Boolean(reminderOffer)}
         initialAt={reminderOffer?.reminder_at}
-        title={reminderOffer ? `${reminderOffer.property_name || 'العرض'} — ${reminderOffer.client_name || 'بدون عميل'}` : 'العرض'}
+        title={reminderOffer ? `${reminderOffer.property_name || 'طلب شراء غير مرتبط بعقار'} — ${reminderOffer.client_name || 'بدون عميل'}` : 'العرض'}
         onClose={() => setReminderOffer(null)}
         onSave={saveReminder}
       />

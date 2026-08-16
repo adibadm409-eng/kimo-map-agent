@@ -46,6 +46,37 @@ async function safeMigrate(database: SQLite.SQLiteDatabase) {
   await addColumnIfMissing("properties", "media", "TEXT DEFAULT '[]'")
   await addColumnIfMissing("offers", "reminder_at", "TEXT DEFAULT ''")
   await addColumnIfMissing("offers", "reminder_notification_id", "TEXT DEFAULT ''")
+  await ensureOfferPropertyOptional(database)
+}
+
+async function ensureOfferPropertyOptional(database: SQLite.SQLiteDatabase): Promise<void> {
+  const table = await database.getFirstAsync<{ sql: string }>("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'offers'")
+  if (!table?.sql || !/property_id\s+TEXT\s+NOT NULL/i.test(table.sql)) return
+  await database.execAsync(`
+    PRAGMA foreign_keys = OFF;
+    CREATE TABLE offers_migrated (
+      id TEXT PRIMARY KEY,
+      property_id TEXT,
+      client_id TEXT NOT NULL,
+      type TEXT DEFAULT 'buy_offer',
+      amount REAL DEFAULT 0,
+      status TEXT DEFAULT 'pending',
+      date TEXT DEFAULT '',
+      notes TEXT DEFAULT '',
+      reminder_at TEXT DEFAULT '',
+      reminder_notification_id TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (property_id) REFERENCES properties (id) ON DELETE SET NULL,
+      FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE
+    );
+    INSERT INTO offers_migrated (id, property_id, client_id, type, amount, status, date, notes, reminder_at, reminder_notification_id, created_at)
+      SELECT id, NULLIF(property_id, ''), client_id, type, amount, status, date, notes, COALESCE(reminder_at, ''), COALESCE(reminder_notification_id, ''), created_at FROM offers;
+    DROP TABLE offers;
+    ALTER TABLE offers_migrated RENAME TO offers;
+    CREATE INDEX IF NOT EXISTS idx_offers_property ON offers (property_id);
+    CREATE INDEX IF NOT EXISTS idx_offers_client ON offers (client_id);
+    PRAGMA foreign_keys = ON;
+  `)
 }
 
 async function initSchema(database: SQLite.SQLiteDatabase) {
@@ -88,7 +119,7 @@ async function initSchema(database: SQLite.SQLiteDatabase) {
 
     CREATE TABLE IF NOT EXISTS offers (
       id TEXT PRIMARY KEY,
-      property_id TEXT NOT NULL,
+      property_id TEXT,
       client_id TEXT NOT NULL,
       type TEXT DEFAULT 'buy_offer',
       amount REAL DEFAULT 0,
@@ -98,7 +129,7 @@ async function initSchema(database: SQLite.SQLiteDatabase) {
       reminder_at TEXT DEFAULT '',
       reminder_notification_id TEXT DEFAULT '',
       created_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (property_id) REFERENCES properties (id) ON DELETE CASCADE,
+      FOREIGN KEY (property_id) REFERENCES properties (id) ON DELETE SET NULL,
       FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE
     );
 
@@ -329,6 +360,17 @@ export async function deleteClient(id: string): Promise<void> {
 }
 
 // CRUD helpers - OFFER
+export async function getOffer(id: string): Promise<any | null> {
+  const db = await getDB()
+  return await db.getFirstAsync(`
+    SELECT o.*, p.name as property_name, c.name as client_name
+    FROM offers o
+    LEFT JOIN properties p ON o.property_id = p.id
+    LEFT JOIN clients c ON o.client_id = c.id
+    WHERE o.id = ?
+  `, [id])
+}
+
 export async function getAllOffers(): Promise<any[]> {
   const db = await getDB()
   return await db.getAllAsync(`
@@ -340,12 +382,24 @@ export async function getAllOffers(): Promise<any[]> {
   `) as any[]
 }
 
+export async function updateOffer(id: string, o: Partial<Offer>): Promise<void> {
+  const db = await getDB()
+  const before = await db.getFirstAsync('SELECT * FROM offers WHERE id = ?', [id]) as any
+  if (!before) throw new Error(`العرض (${id}) غير موجود.`)
+  const allowed = new Set(['property_id', 'client_id', 'type', 'amount', 'status', 'date', 'notes'])
+  const entries = Object.entries(o).filter(([key]) => allowed.has(key))
+  if (!entries.length) return
+  const values = entries.map(([key, value]) => key === 'property_id' ? (value ? String(value) : null) : value)
+  await db.runAsync(`UPDATE offers SET ${entries.map(([key]) => `${key} = ?`).join(', ')} WHERE id = ?`, [...values, id])
+  await logChange({ action: 'update', scope: 'offers', scopeId: id, before, after: Object.fromEntries(entries), summary: `تعديل عرض (${id})` })
+}
+
 export async function createOffer(o: Partial<Offer>): Promise<string> {
   const db = await getDB()
   const id = genId()
   await db.runAsync(
     'INSERT INTO offers (id,property_id,client_id,type,amount,status,date,notes) VALUES (?,?,?,?,?,?,?,?)',
-    [id, o.property_id || '', o.client_id || '', o.type || 'buy_offer', o.amount || 0, o.status || 'pending', o.date || '', o.notes || '']
+    [id, o.property_id ? String(o.property_id) : null, o.client_id || '', o.type || 'buy_offer', o.amount || 0, o.status || 'pending', o.date || '', o.notes || '']
   )
   await logChange({ action: 'create', scope: 'offers', scopeId: id, after: o, summary: 'إنشاء عرض' })
   return id

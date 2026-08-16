@@ -34,7 +34,7 @@ export interface Client {
 
 export interface Offer {
   id: string
-  property_id: string
+  property_id: string | null
   client_id: string
   type: 'buy_offer' | 'sell_offer'
   amount: number

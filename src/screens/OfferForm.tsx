@@ -7,7 +7,8 @@ import * as Haptics from 'expo-haptics'
 import { useTheme } from '../theme/ThemeContext'
 import { spacing, radius, fontSize } from '../theme/tokens'
 import { Card } from '../components/ui'
-import { getAllProperties, getAllClients, createOffer } from '../database/db'
+import { ContactPickerButton } from '../components/ContactPickerButton'
+import { getAllProperties, getAllClients, getOffer, createClient, createOffer, updateOffer } from '../database/db'
 import { formatPrice } from '../utils/helpers'
 
 const TYPES = [
@@ -27,6 +28,8 @@ export default function OfferForm() {
   const insets = useSafeAreaInsets()
   const route = useRoute<any>()
   const navigation = useNavigation<any>()
+  const editingId = route.params?.id
+  const [loading, setLoading] = useState(!!editingId)
   const [properties, setProperties] = useState<any[]>([])
   const [clients, setClients] = useState<any[]>([])
   const [form, setForm] = useState({
@@ -38,36 +41,77 @@ export default function OfferForm() {
     let cancelled = false
     async function load() {
       try {
-        const [props, cls] = await Promise.all([getAllProperties(), getAllClients()])
+        const [props, cls, existing] = await Promise.all([getAllProperties(), getAllClients(), editingId ? getOffer(editingId) : Promise.resolve(null)])
         if (!cancelled) {
           setProperties(props)
           setClients(cls)
+          if (existing) {
+            setForm({
+              property_id: existing.property_id || '',
+              client_id: existing.client_id || '',
+              type: existing.type || 'buy_offer',
+              amount: String(existing.amount ?? ''),
+              status: existing.status || 'pending',
+              date: existing.date || new Date().toISOString().split('T')[0],
+              notes: existing.notes || '',
+            })
+          }
         }
       } catch (e) {
         console.error('Failed to load form data:', e)
       }
+      if (!cancelled) setLoading(false)
     }
     load()
     return () => { cancelled = true }
-  }, [])
+  }, [editingId])
+
+  function handleClientContact(contact: { name: string; phone: string }) {
+    const normalized = contact.phone.replace(/\D/g, '')
+    const existing = clients.find((client) => client.phone.replace(/\D/g, '') === normalized && normalized)
+    if (existing) {
+      setForm((current) => ({ ...current, client_id: existing.id }))
+      Alert.alert('تم اختيار العميل', `تم ربط العرض بالعميل «${existing.name}».`)
+      return
+    }
+    Alert.alert('إضافة طالب الشراء', `هل تريد إنشاء «${contact.name || 'عميل جديد'}» كعميل طالب للعرض؟`, [
+      { text: 'إلغاء', style: 'cancel' },
+      { text: 'إنشاء واختيار', onPress: async () => {
+        try {
+          const id = await createClient({ name: contact.name || 'عميل جديد', phone: contact.phone, type: 'buyer', email: '', notes: '', budget_min: 0, budget_max: 0 })
+          const nextClients = await getAllClients()
+          setClients(nextClients)
+          setForm((current) => ({ ...current, client_id: id }))
+        } catch {
+          Alert.alert('خطأ', 'تعذر إنشاء العميل')
+        }
+      } },
+    ])
+  }
 
   async function handleSave() {
-    if (!form.property_id) { Alert.alert('تنبيه', 'الرجاء اختيار عقار'); return }
-    if (!form.client_id) { Alert.alert('تنبيه', 'الرجاء اختيار عميل'); return }
+    if (form.type === 'sell_offer' && !form.property_id) { Alert.alert('تنبيه', 'عرض البيع يحتاج عقاراً مرتبطاً'); return }
+    if (!form.client_id) { Alert.alert('تنبيه', 'الرجاء اختيار العميل طالب العرض'); return }
     if (!form.amount) { Alert.alert('تنبيه', 'الرجاء إدخال المبلغ'); return }
     try {
-      await createOffer({
-        property_id: form.property_id, client_id: form.client_id,
+      const offerData = {
+        property_id: form.property_id || null, client_id: form.client_id,
         type: form.type as 'buy_offer' | 'sell_offer',
         amount: Number(form.amount) || 0,
         status: form.status as 'accepted' | 'pending' | 'countered' | 'rejected',
         date: form.date, notes: form.notes,
-      })
+      }
+      if (editingId) await updateOffer(editingId, offerData)
+      else await createOffer(offerData)
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       navigation.goBack()
     } catch (e) {
       Alert.alert('خطأ', 'تعذر حفظ العرض')
     }
+  }
+
+  if (loading) {
+    return <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: colors.textMuted, fontFamily: 'Tajawal_400Regular' }}>جاري التحميل...</Text></View>
   }
 
   function Picker({ label, value, options, onChange, placeholder }: {
@@ -140,7 +184,7 @@ export default function OfferForm() {
           <Pressable onPress={() => navigation.goBack()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
             <Ionicons name="chevron-forward" size={24} color={colors.textPrimary} />
           </Pressable>
-          <Text style={[styles.pageTitle, { color: colors.textPrimary }]}>عرض جديد</Text>
+          <Text style={[styles.pageTitle, { color: colors.textPrimary }]}>{editingId ? 'تعديل العرض' : 'عرض جديد'}</Text>
         </View>
 
         <Card style={styles.section}>
@@ -182,12 +226,13 @@ export default function OfferForm() {
 
         <Card style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>العقار والعميل</Text>
+          <ContactPickerButton label="اختيار طالب الشراء من جهات الاتصال" onSelect={handleClientContact} />
           <Picker
-            label="العقار"
+            label={form.type === 'buy_offer' ? 'العقار (اختياري لطلب الشراء)' : 'العقار'}
             value={form.property_id}
             onChange={(v) => setForm({ ...form, property_id: v })}
-            options={properties.map((p) => ({ id: p.id, label: p.name, subtitle: formatPrice(p.price) + ' ريال يمني' }))}
-            placeholder="لا توجد عقارات"
+            options={form.type === 'buy_offer' ? [{ id: '', label: 'بدون عقار', subtitle: 'يربط لاحقاً' }, ...properties.map((p) => ({ id: p.id, label: p.name, subtitle: formatPrice(p.price) + ' ريال يمني' }))] : properties.map((p) => ({ id: p.id, label: p.name, subtitle: formatPrice(p.price) + ' ريال يمني' }))}
+            placeholder={form.type === 'buy_offer' ? 'يمكن ربط العقار لاحقاً' : 'لا توجد عقارات'}
           />
           <Picker
             label="العميل"
@@ -211,7 +256,7 @@ export default function OfferForm() {
           </Pressable>
           <Pressable onPress={handleSave} style={({ pressed }) => [styles.actionBtn, { backgroundColor: colors.accent, opacity: pressed ? 0.7 : 1 }]}>
             <Ionicons name="checkmark" size={18} color="#FFF" />
-            <Text style={[styles.actionBtnText, { color: '#FFF' }]}>حفظ</Text>
+            <Text style={[styles.actionBtnText, { color: '#FFF' }]}>{editingId ? 'حفظ التعديل' : 'حفظ'}</Text>
           </Pressable>
         </View>
       </ScrollView>
