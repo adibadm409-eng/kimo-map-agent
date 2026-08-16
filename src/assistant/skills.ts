@@ -3,6 +3,20 @@ import { makePlan } from './agentContract'
 
 export const AGENT_SKILLS: AgentSkill[] = [
   {
+    id: 'project_operations',
+    label: 'إدارة المشروع العقاري',
+    description: 'ينشئ وينظم المشاريع الهرمية وبلوكاتها وقطعها ووحداتها ويتابع سلامة الروابط والبيانات المالية.',
+    triggers: ['أنشئ مشروع', 'إنشاء مشروع', 'مشروع عقاري', 'أضف بلوك', 'أنشئ بلوك', 'أضف قطعة', 'أنشئ قطعة', 'طابق', 'وحدة سكنية', 'عدّل القطعة', 'تعديل المشروع'],
+    preferredTools: ['project_profile_get', 'project_nodes_list', 'project_tree', 'project_financials', 'project_cashflow', 'project_integrity_check', 'query', 'get', 'create', 'update'],
+    readTools: ['project_profile_get', 'project_nodes_list', 'project_tree', 'project_financials', 'project_cashflow', 'project_integrity_check', 'query', 'get'],
+    writeTools: ['create', 'update'],
+    requiredInputs: ['هوية المشروع عند التعديل؛ واسم المشروع ونوعه عند الإنشاء؛ وهوية الأصل عند التعديل'],
+    questionPolicy: 'ask_on_missing',
+    verificationTools: ['project_tree', 'project_financials', 'project_integrity_check'],
+    recoveryPolicy: 'replan',
+    systemGuidance: 'تعامل مع المشروع كهرم: مشروع ثم بلوك/مبنى ثم قطعة/وحدة ثم دفعات. اقرأ المستوى الأب قبل إنشاء المستوى الابن، لا تكرر الأكواد، ولا تعلن سلامة المشروع قبل قراءة integrity أو tree بعد الكتابة.',
+  },
+  {
     id: 'project_import',
     label: 'تنظيم مشروع عقاري',
     description: 'يحوّل البيانات غير المنظمة إلى مشروع هرمي قابل للمراجعة والإدارة.',

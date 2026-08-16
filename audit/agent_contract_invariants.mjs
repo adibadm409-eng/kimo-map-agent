@@ -11,6 +11,10 @@ const generalQuestion = assessSkill('ما الذي تستطيع فعله؟')
 assert.equal(generalQuestion.shouldPlan, false)
 assert.equal(generalQuestion.intent, 'question')
 
+const projectOperationsTask = assessSkill('أنشئ مشروع عقاري جديداً مع بلوك وقطع')
+assert.equal(projectOperationsTask.shouldPlan, true)
+assert.equal(projectOperationsTask.match.skill.id, 'project_operations')
+
 const offerTask = assessSkill('أنشئ عرض بيع لهذا العقار واربط تذكيراً للمتابعة')
 assert.equal(offerTask.shouldPlan, true)
 assert.equal(offerTask.match.skill.id, 'offer_management')
