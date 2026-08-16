@@ -725,6 +725,19 @@ export const TOOLS: ToolDef[] = [
   },
 ]
 
+export function validateToolArgs(tool: ToolDef, args: Record<string, any>): string | null {
+  const input = args ?? {}
+  for (const spec of tool.args) {
+    const value = input[spec.name]
+    const missing = value === undefined || value === null || (spec.type === 'string' && !String(value).trim())
+    if (missing && spec.required) return `الحقل الإلزامي مفقود: ${spec.name}`
+    if (missing) continue
+    const actual = Array.isArray(value) ? 'array' : typeof value
+    if (actual !== spec.type) return `نوع الحقل غير صحيح: ${spec.name} — المتوقع ${spec.type}، الوارد ${actual}`
+  }
+  return null
+}
+
 export async function executeTool(
   name: string,
   args: Record<string, any>
@@ -734,6 +747,8 @@ export async function executeTool(
     const available = TOOLS.map((t) => t.name).join(', ')
     return { ok: false, error: `أداة غير معروفة: ${name}. المتاح: ${available}` }
   }
+  const validationError = validateToolArgs(tool, args ?? {})
+  if (validationError) return { ok: false, error: `[TOOL_INPUT_INVALID] ${validationError}` }
   try {
     const result = await tool.handler(args ?? {})
     return { ok: true, result }
