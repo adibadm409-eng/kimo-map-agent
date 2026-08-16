@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { assessSkill } from '../src/assistant/skills.ts'
 import { providerCapabilities } from '../src/assistant/providers.ts'
-import { normalizeToolCallId } from '../src/assistant/llm.ts'
+import { LlmError, normalizeToolCallId } from '../src/assistant/llm.ts'
 
 const greeting = assessSkill('مرحباً')
 assert.equal(greeting.shouldPlan, false)
@@ -44,4 +44,8 @@ assert.equal(gemini.supportsStreamOptions, false)
 const normalized = normalizeToolCallId('call_01JABCD-legacy')
 assert.match(normalized, /^[A-Za-z0-9]{9}$/)
 assert.equal(normalizeToolCallId('call_01JABCD-legacy'), normalized)
+assert.equal(new LlmError('rate_limit', 'x', 429).retryable, true)
+assert.equal(new LlmError('server', 'x', 503).retryable, true)
+assert.equal(new LlmError('auth', 'x', 401).retryable, false)
+assert.equal(new LlmError('invalid_request', 'x', 400).retryable, false)
 console.log('Agent contract invariants: PASS')
