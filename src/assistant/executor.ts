@@ -5,13 +5,13 @@ import type { ProviderDef } from './providers'
 import { analyzeIntent, buildContextSummary } from './intent'
 import { persistUser, persistAssistantText, mimeOf } from './persist'
 import { buildSystemPrompt, getAgentFunctions } from './prompts'
-import { assessSkill, planForSkill } from './skills'
+import { assessSkill, getSkillById, planForSkill } from './skills'
 import { completePlanStep, type AgentPlan, type AgentSkill } from './agentContract'
 import { publishRuntimeEvent } from './runtimeEvents'
 import { readModelHistory, messagesToLlm } from './history'
 import { handleToolCall, deleteOne, deleteApproved, deleteRefused } from './invokeTools'
 import { performUndo, toolSig } from './undo'
-import { createTaskRun, transitionTaskRun } from './store'
+import { createTaskRun, getLatestTaskRun, transitionTaskRun } from './store'
 import { emit, subscribeAgent, isAgentBusy, cancelAgent, markRunning, clearRunning, isCancelled, setAborter, clearAborter, type AgentEvent } from './agentRun'
 import { MAX_AGENT_RUNTIME_MS, MAX_REPEATED_TOOL_CALLS, MAX_TOOL_CALLS, MAX_TOOL_ROUNDS } from './constants'
 import * as FileSystem from 'expo-file-system/legacy'
@@ -48,6 +48,7 @@ async function runLoop(
     let totalCalls = 0
     const lastObsHashForSig = new Map<string, string>()
     const lastUserMsg = (await getMessages(sessionId)).filter((m) => m.role === 'user').pop()
+    const previousTask = await getLatestTaskRun(sessionId).catch(() => null)
     let runtimePlan: AgentPlan | null = null
     let runtimeSkill: AgentSkill | null = null
     let runtimeTaskId: string | undefined
@@ -55,16 +56,25 @@ async function runLoop(
       const goal = String(lastUserMsg.content ?? '').trim()
       const assessment = assessSkill(goal)
       const match = assessment.match
-      runtimeSkill = match.skill
-      // لا تُعدّ كل رسالة مهمة تنفيذية: الخطة تأتي من بوابة النية المركزية
-      // التي تميز المحادثة والسؤال العام والغموض عن طلب تنفيذ فعلي.
-      const shouldPlan = assessment.shouldPlan
-      runtimePlan = shouldPlan ? planForSkill(runtimeSkill, goal) : null
-      if (shouldPlan && runtimePlan) {
-        const task = await createTaskRun({ sessionId, userRequest: goal, skillId: runtimeSkill.id, intent: assessment.intent, confidence: assessment.confidence, plan: runtimePlan })
-        runtimeTaskId = task.id
+      const resumed = previousTask && ['proposed', 'awaiting_user', 'running', 'verifying'].includes(previousTask.status) && previousTask.userRequest !== goal
+      if (resumed) {
+        runtimeTaskId = previousTask.id
+        runtimeSkill = getSkillById(previousTask.skillId ?? '') ?? match.skill
+        runtimePlan = (previousTask.plan as AgentPlan | undefined) ?? planForSkill(runtimeSkill, goal)
         await transitionTaskRun(runtimeTaskId, 'running', { plan: runtimePlan })
+      } else {
+        runtimeSkill = match.skill
+        // لا تُعدّ كل رسالة مهمة تنفيذية: الخطة تأتي من بوابة النية المركزية
+        // التي تميز المحادثة والسؤال العام والغموض عن طلب تنفيذ فعلي.
+        const shouldPlan = assessment.shouldPlan
+        runtimePlan = shouldPlan ? planForSkill(runtimeSkill, goal) : null
+        if (shouldPlan && runtimePlan) {
+          const task = await createTaskRun({ sessionId, userRequest: goal, skillId: runtimeSkill.id, intent: assessment.intent, confidence: assessment.confidence, plan: runtimePlan })
+          runtimeTaskId = task.id
+          await transitionTaskRun(runtimeTaskId, 'running', { plan: runtimePlan })
+        }
       }
+      const shouldPlan = !!runtimeTaskId && !!runtimePlan
       if (emitEvents && shouldPlan && runtimePlan) {
         publishRuntimeEvent(sessionId, { type: 'phase', phase: 'understand', label: 'أفهم طلبك', detail: match.reasons.join(' ') || 'أحدد نوع المهمة قبل اختيار المسار.' })
         publishRuntimeEvent(sessionId, { type: 'skill', skill: { id: runtimeSkill.id, label: runtimeSkill.label, description: runtimeSkill.description } })
@@ -294,6 +304,7 @@ async function runLoop(
             lastObsHashForSig.set(sig, hashOf(obsText))
           }
           if (!cont) {
+            if (runtimeTaskId) await transitionTaskRun(runtimeTaskId, 'awaiting_user', { plan: runtimePlan ?? undefined })
             paused = true
             break
           }

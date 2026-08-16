@@ -127,6 +127,10 @@ export function matchSkill(text: string): SkillMatch {
   return ranked[0] ?? { skill: AGENT_SKILLS[AGENT_SKILLS.length - 1], score: 0.1, missingInputs: [], reasons: [] }
 }
 
+export function getSkillById(id: string): AgentSkill | undefined {
+  return AGENT_SKILLS.find((skill) => skill.id === id)
+}
+
 export function assessSkill(text: string): SkillAssessment {
   const match = matchSkill(text)
   const intent = classifyIntent(text, match)
