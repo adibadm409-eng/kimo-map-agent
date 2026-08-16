@@ -112,7 +112,7 @@ export const AGENT_SKILLS: AgentSkill[] = [
     questionPolicy: 'ask_on_missing',
     verificationTools: ['get', 'query'],
     recoveryPolicy: 'ask_user',
-    systemGuidance: 'افصل دائماً بين سجل العقار وسجل العرض وسجل العميل. عند وصول تفاصيل عقار مع مرفقات، ابدأ بـlist_attachments ثم property_change_preview؛ إذا كانت النتيجة update أو ambiguous فلا تنشئ سجلاً جديداً، واسأل عند الالتباس، وإذا كانت create فتحقق من الحقول الأساسية قبل الكتابة. بعد create أو update استخدم attach_media_to_entity للوجهة التي حددها المستخدم ثم get للتحقق. لا تستبدل الوسائط ولا تحذفها ضمنياً.',
+    systemGuidance: 'افصل دائماً بين سجل العقار وسجل العرض وسجل العميل. عند وصول تفاصيل عقار مع مرفقات، ابدأ بـlist_attachments ثم property_change_preview؛ إذا كانت النتيجة update أو ambiguous فلا تنشئ سجلاً جديداً، واسأل عند الالتباس، وإذا كانت create فتحقق من الحقول الأساسية قبل الكتابة. إذا أعادت المعاينة requiresApproval=true أو risk=high فاستخدم request_confirmation قبل update أو أي ربط حساس. بعد create أو update استخدم attach_media_to_entity للوجهة التي حددها المستخدم ثم get للتحقق. لا تستبدل الوسائط ولا تحذفها ضمنياً.',
   },
   {
     id: 'client_relationship',
