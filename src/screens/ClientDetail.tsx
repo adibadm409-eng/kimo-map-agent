@@ -11,6 +11,7 @@ import { getClient, deleteClient, getAllOffers } from '../database/db'
 import { formatPrice, formatDate } from '../utils/helpers'
 import { STATUS_LABELS } from '../types'
 import { useReloadOnData } from '../database/dataSync'
+import { CallButton } from '../components/CallButton'
 
 export default function ClientDetail() {
   const { colors } = useTheme()
@@ -77,16 +78,14 @@ export default function ClientDetail() {
       <Card style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>معلومات التواصل</Text>
         {client.phone ? (
-          <Pressable
-            style={styles.infoRow}
-            onPress={() => Linking.openURL(`tel:${client.phone}`)}
-          >
+          <View style={styles.infoRow}>
             <View style={[styles.infoIcon, { backgroundColor: colors.successSurface }]}>
               <Ionicons name="call-outline" size={16} color={colors.success} />
             </View>
             <Text style={[styles.infoLabel, { color: colors.textMuted }]}>الجوال</Text>
-            <Text style={[styles.infoValue, { color: colors.textPrimary }]}>{client.phone}</Text>
-          </Pressable>
+            <Text style={[styles.infoValue, { color: colors.textPrimary }]} numberOfLines={1}>{client.phone}</Text>
+            <CallButton phone={client.phone} compact iconColor={colors.success} />
+          </View>
         ) : null}
         {client.email ? (
           <Pressable

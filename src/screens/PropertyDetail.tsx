@@ -9,6 +9,7 @@ import { Card, StatusBadge } from '../components/ui'
 import { getProperty, deleteProperty, getAllOffers } from '../database/db'
 import { formatPrice, formatDate } from '../utils/helpers'
 import { STATUS_LABELS, TYPE_LABELS } from '../types'
+import { CallButton } from '../components/CallButton'
 import { useReloadOnData } from '../database/dataSync'
 import { parseMediaList, MediaStrip, MediaPreview, type PinItem } from './MapScreenV2/cards/shareMedia'
 
@@ -157,7 +158,7 @@ export default function PropertyDetail() {
             <View style={[styles.ownerAvatar, { backgroundColor: colors.warningSurface }]}><Ionicons name="megaphone-outline" size={22} color={colors.warning} /></View>
             <View style={styles.ownerDetails}>
               <Text style={[styles.ownerName, { color: colors.textPrimary }]}>{property.broker_name || '—'}</Text>
-              {property.broker_phone ? <Pressable accessibilityRole="button" accessibilityLabel={`الاتصال بالدلال ${property.broker_name || ''}`} style={styles.contactRow} onPress={() => Linking.openURL(`tel:${property.broker_phone}`)}><Ionicons name="call-outline" size={14} color={colors.success} /><Text style={[styles.contactText, { color: colors.textSecondary }]}>{property.broker_phone}</Text></Pressable> : null}
+              {property.broker_phone ? <CallButton phone={property.broker_phone} label={property.broker_phone} style={styles.contactRow} textStyle={{ color: colors.textSecondary }} iconColor={colors.success} /> : null}
             </View>
           </View>
         </Card>
@@ -171,15 +172,7 @@ export default function PropertyDetail() {
           </View>
           <View style={styles.ownerDetails}>
             <Text style={[styles.ownerName, { color: colors.textPrimary }]}>{property.owner_name || '—'}</Text>
-            {property.owner_phone ? (
-              <Pressable
-                style={styles.contactRow}
-                onPress={() => Linking.openURL(`tel:${property.owner_phone}`)}
-              >
-                <Ionicons name="call-outline" size={14} color={colors.success} />
-                <Text style={[styles.contactText, { color: colors.textSecondary }]}>{property.owner_phone}</Text>
-              </Pressable>
-            ) : null}
+            {property.owner_phone ? <CallButton phone={property.owner_phone} label={property.owner_phone} style={styles.contactRow} textStyle={{ color: colors.textSecondary }} iconColor={colors.success} /> : null}
             {property.owner_email ? (
               <Pressable
                 style={styles.contactRow}

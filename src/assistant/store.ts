@@ -1,5 +1,5 @@
 import { getDB } from '../database/db'
-import { defaultProvider, type CustomProviderDef, type ProviderId } from './providers'
+import { defaultProvider, PROVIDERS, type CustomProviderDef, type ProviderId } from './providers'
 import * as SQLite from 'expo-sqlite'
 import * as SecureStore from 'expo-secure-store'
 import { Platform } from 'react-native'
@@ -197,7 +197,11 @@ async function persistSecrets(keys: Record<string, string>, customProviders: Cus
     await writeSecret(`custom:${provider.id}`, provider.apiKey ?? '')
     return { ...provider, apiKey: '' }
   }))
-  return { keys: {}, customProviders: sanitizedCustom }
+  // SQLite يحتفظ بأسماء المزودات فقط كمؤشرات حتى تعرف hydrateSecrets ما الذي
+  // يجب قراءته من SecureStore. حفظ {} هنا كان يجعل المفتاح يختفي بعد أول
+  // setSettings ثم لا يُعاد تحميله عند مغادرة شاشة الإعدادات.
+  const keyMarkers = Object.fromEntries(Object.keys(keys ?? {}).map((provider) => [provider, '']))
+  return { keys: keyMarkers, customProviders: sanitizedCustom }
 }
 
 export async function clearStoredAgentSecrets(): Promise<void> {
@@ -226,7 +230,14 @@ export async function getSettings(): Promise<AgentSettings> {
   if (map.has('customProviders')) { try { s.customProviders = JSON.parse(map.get('customProviders')!) } catch {} }
   if (map.has('modelLists')) { try { s.modelLists = JSON.parse(map.get('modelLists')!) } catch {} }
   if (map.has('mode')) s.mode = map.get('mode') === 'edit' ? 'edit' : 'read'
-  const hydrated = await hydrateSecrets(s.keys, s.customProviders)
+  // ترحيل مفاتيح الإصدارات التي كانت تكتب keys={} في SQLite: نقرأ كل مزود
+  // مدمج من SecureStore حتى لا يضيع المفتاح الموجود فعلاً بسبب غياب المؤشر القديم.
+  const knownProviders = new Set([
+    ...Object.keys(s.keys),
+    ...PROVIDERS.filter((provider) => provider.id !== 'custom').map((provider) => provider.id),
+  ])
+  const keyInputs = Object.fromEntries([...knownProviders].map((provider) => [provider, s.keys[provider] ?? '']))
+  const hydrated = await hydrateSecrets(keyInputs, s.customProviders)
   s.keys = hydrated.keys
   s.customProviders = hydrated.customProviders
   return s

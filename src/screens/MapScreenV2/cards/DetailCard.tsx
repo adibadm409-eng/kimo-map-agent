@@ -7,6 +7,7 @@ import { toDMS, fmtDistCalc } from "../../map/utils"
 import { markerColor } from "../../map/constants"
 import type { DetailItem } from "../types"
 import { TYPE_LABELS } from "../../../types"
+import { CallButton } from "../../../components/CallButton"
 import { parseMediaList, MediaStrip, MediaPreview, InlineVideoPlayer, ShareSheet, type PinItem, type MediaItem } from "./shareMedia"
 
 const PROP_STATUS: Record<string, string> = { for_sale: "للبيع", sold: "مُباع", rented: "مؤجر", pending: "تحت المعالجة" }
@@ -71,7 +72,7 @@ function PropertyDetail({ detail, onClose, onDelete, onOpenProperty }: any) {
         <Row icon="resize-outline" label="المساحة" value={`${data.area} م²`} />
         <Row icon="location-outline" label="العنوان" value={data.address || "—"} />
         <Row icon="person-outline" label="المالك" value={data.owner_name || "—"} />
-        <Row icon="call-outline" label="الهاتف" value={data.owner_phone || "—"} />
+        {data.owner_phone ? <PhoneRow value={data.owner_phone} /> : <Row icon="call-outline" label="الهاتف" value="—" />}
         {data.description ? (
           <View style={s.descBox}>
             <Text style={s.descText}>{data.description}</Text>
@@ -150,7 +151,7 @@ function WaypointDetail({ detail, onClose, onDelete, onNavigate }: any) {
       <ScrollView style={{ maxHeight: SH * 0.45 }} bounces nestedScrollEnabled>
         <Row icon="folder-outline" label="الفئة" value={WP_CATS[data.category] || data.category} />
         {data.owner_name && <Row icon="person" label="المالك" value={data.owner_name} />}
-        {data.owner_phone && <Row icon="call" label="الهاتف" value={data.owner_phone} />}
+        {data.owner_phone && <PhoneRow value={data.owner_phone} />}
         {data.owner_contact && <Row icon="chatbox-outline" label="تواصل" value={data.owner_contact} />}
         {data.price > 0 && <Row icon="pricetag" label="السعر" value={`${Number(data.price).toLocaleString()} ر.ي`} />}
         {data.area_sqm > 0 && <Row icon="resize" label="المساحة" value={`${data.area_sqm} م²`} />}
@@ -274,6 +275,21 @@ function AreaDetail({ detail, onClose, onDelete }: any) {
   )
 }
 
+function PhoneRow({ value }: { value: string }) {
+  return (
+    <View style={s.row}>
+      <Ionicons name="call-outline" size={16} color="#16A34A" />
+      <View style={s.rowContent}>
+        <Text style={s.label}>الهاتف</Text>
+        <View style={s.phoneValue}>
+          <Text style={s.valueText} numberOfLines={1}>{value}</Text>
+          <CallButton phone={value} compact iconColor="#16A34A" />
+        </View>
+      </View>
+    </View>
+  )
+}
+
 function Row({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
     <View style={s.row}>
@@ -295,6 +311,7 @@ const s = StyleSheet.create({
   rowContent: { flex: 1, flexDirection: "row-reverse", justifyContent: "space-between", alignItems: "center" },
   label: { fontSize: fontSize.sm, fontFamily: "Tajawal_500Medium", color: "#64748B" },
   valueText: { fontSize: fontSize.sm, fontFamily: "Tajawal_700Bold", color: "#1E293B" },
+  phoneValue: { flexDirection: "row-reverse", alignItems: "center", gap: spacing.xs, flexShrink: 1 },
   rowInline: { flexDirection: "row-reverse", alignItems: "center", gap: 4, paddingVertical: spacing.sm - 1, paddingHorizontal: spacing.lg },
   descBox: { margin: spacing.md, padding: spacing.md, borderRadius: radius.md, backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0" },
   descText: { fontSize: fontSize.sm, fontFamily: "Tajawal_400Regular", color: "#475569", lineHeight: 20 },

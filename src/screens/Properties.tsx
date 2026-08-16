@@ -9,6 +9,7 @@ import { Card, StatusBadge } from '../components/ui'
 import { getAllProperties, deleteProperty } from '../database/db'
 import { formatPrice } from '../utils/helpers'
 import { STATUS_LABELS, TYPE_LABELS } from '../types'
+import { CallButton } from '../components/CallButton'
 
 const STATUS_FILTERS = [
   { key: 'all', label: 'الجميع' },
@@ -112,6 +113,7 @@ export default function Properties() {
               <View style={styles.propMeta}>
                 <View style={styles.metaItem}><Ionicons name="resize-outline" size={14} color={colors.textMuted} /><Text style={[styles.metaText, { color: colors.textSecondary }]}>{p.area || 0} م²</Text></View>
                 {p.broker_name ? <View style={styles.metaItem}><Ionicons name="person-outline" size={14} color={colors.textMuted} /><Text style={[styles.metaText, { color: colors.textSecondary }]} numberOfLines={1}>{p.broker_name}</Text></View> : null}
+                {p.broker_phone ? <View style={styles.metaItem}><Ionicons name="call-outline" size={14} color={colors.success} /><Text style={[styles.metaText, { color: colors.textSecondary }]} numberOfLines={1}>{p.broker_phone}</Text><CallButton phone={p.broker_phone} compact iconColor={colors.success} /></View> : null}
               </View>
             </View>
             <Pressable accessibilityRole="button" accessibilityLabel={`حذف العقار ${p.name || ''}`} onPress={(event) => { event.stopPropagation(); handleDelete(p) }} style={({ pressed }) => [styles.deleteBtn, pressed && { opacity: 0.45 }]} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}><Ionicons name="trash-outline" size={17} color={colors.error} /></Pressable>

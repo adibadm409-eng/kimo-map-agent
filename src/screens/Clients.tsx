@@ -10,6 +10,7 @@ import { spacing, radius, fontSize } from '../theme/tokens'
 import { Card, StatusBadge } from '../components/ui'
 import { getAllClients, deleteClient } from '../database/db'
 import { formatPrice } from '../utils/helpers'
+import { CallButton } from '../components/CallButton'
 
 const FILTERS = [
   { key: 'all', label: 'الجميع' },
@@ -77,7 +78,7 @@ export default function Clients() {
               <Text style={[styles.name, { color: colors.textPrimary }]} numberOfLines={1}>{c.name || 'بدون اسم'}</Text>
               <View style={styles.typeRow}><View style={[styles.typeDot, { backgroundColor: color }]} /><Text style={[styles.typeText, { color: colors.textSecondary }]}>{typeLabel}</Text></View>
               <View style={styles.clientContacts}>
-                {c.phone ? <View style={styles.contactRow}><Ionicons name="call-outline" size={14} color={colors.accent} /><Text style={[styles.contactText, { color: colors.textSecondary }]} numberOfLines={1}>{c.phone}</Text></View> : null}
+                {c.phone ? <View style={styles.contactRow}><Ionicons name="call-outline" size={14} color={colors.accent} /><Text style={[styles.contactText, { color: colors.textSecondary }]} numberOfLines={1}>{c.phone}</Text><CallButton phone={c.phone} compact iconColor={colors.success} /></View> : null}
                 {c.email ? <View style={styles.contactRow}><Ionicons name="mail-outline" size={14} color={colors.accent} /><Text style={[styles.contactText, { color: colors.textSecondary }]} numberOfLines={1}>{c.email}</Text></View> : null}
                 {!c.phone && !c.email ? <Text style={[styles.noContact, { color: colors.textMuted }]}>لا توجد بيانات اتصال</Text> : null}
               </View>
