@@ -1,6 +1,6 @@
 import { getMessages, type Message } from './store'
 import type { ChatMessage } from './llm'
-import { sanitizeWireFunction, makeToolCallId } from './llm'
+import { sanitizeWireFunction, normalizeToolCallId } from './llm'
 import { summarizeToolResult } from './toolLabels'
 import { MAX_HISTORY_MESSAGES } from './constants'
 
@@ -45,7 +45,7 @@ export function messagesToLlm(msgs: Message[]): ChatMessage[] {
           if (typeof f.arguments !== 'string') f.arguments = JSON.stringify(f.arguments)
           if (typeof f.name !== 'string' || !f.name.trim()) f.name = 'execute'
           t.function = sanitizeWireFunction(f)
-          if (!t.id) t.id = tc.id ?? raw.id ?? makeToolCallId()
+          t.id = normalizeToolCallId(t.id ?? tc.id ?? raw.id)
           return t
         })
         // لا نُرسل نداء أداة منفصلة عن ملاحظتها خارج النهاية — وإلا رفض المزود
@@ -58,7 +58,7 @@ export function messagesToLlm(msgs: Message[]): ChatMessage[] {
       // ملاحظة النتيجة: نص الحالة الصريحة [نجاح]/[فشل] + [تحقق] — وعي الوكيل بنجاح أدائه
       const obs = m.meta.observation != null ? String(m.meta.observation) : String(m.meta.result ?? '')
       if (obs.trim()) {
-        out.push({ role: 'tool', tool_call_id: String(m.meta.tool_call_id), name: String(m.meta.name ?? 'execute'), content: obs })
+        out.push({ role: 'tool', tool_call_id: normalizeToolCallId(m.meta.tool_call_id), name: String(m.meta.name ?? 'execute'), content: obs })
       }
     }
   }

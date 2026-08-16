@@ -8,6 +8,13 @@ export type ProviderId =
   | 'nvidia'
   | 'custom'
 
+export interface ProviderCapabilities {
+  supportsTools: boolean
+  supportsStreaming: boolean
+  supportsStreamOptions: boolean
+  maxTokensField: 'max_tokens' | 'max_completion_tokens'
+}
+
 export interface ProviderDef {
   id: ProviderId
   name: string
@@ -134,6 +141,19 @@ function providerKey(id: ProviderId, customId?: string): string {
 
 export function providerLabel(p: ProviderDef | undefined): string {
   return p?.name ?? 'مزود غير محدد'
+}
+
+/** ملف قدرات محافظ: لا نرسل خياراً لا يثبت أن المزود يدعمه. */
+export function providerCapabilities(def: ProviderDef, model = ''): ProviderCapabilities {
+  const normalizedModel = model.toLowerCase()
+  const newerOpenAiStyle = def.id === 'openai' && /^(gpt-5|o[1-9])/.test(normalizedModel)
+  return {
+    supportsTools: true,
+    supportsStreaming: true,
+    // stream_options ليس جزءاً مضموناً من كل بوابات OpenAI-compatible، خصوصاً custom وGemini.
+    supportsStreamOptions: def.id !== 'custom' && def.id !== 'gemini' && def.id !== 'alibaba',
+    maxTokensField: newerOpenAiStyle ? 'max_completion_tokens' : 'max_tokens',
+  }
 }
 
 /** جلب قائمة الموديلات الحية من المزود عند توفّره (ليست كل المزودين يوفّرون واجهة). */

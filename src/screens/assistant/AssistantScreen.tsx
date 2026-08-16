@@ -69,6 +69,7 @@ export default function AssistantScreen({ navigation }: any) {
   const [activeSkill, setActiveSkill] = useState<Pick<AgentSkill, 'id' | 'label' | 'description'> | null>(null)
   const [agentDecisions, setAgentDecisions] = useState<AgentDecision[]>([])
   const [agentObservations, setAgentObservations] = useState<VisibleAgentEvent[]>([])
+  const [agentPanelCollapsed, setAgentPanelCollapsed] = useState(true)
   const [liveSteps, setLiveSteps] = useState<string[]>([])
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const listRef = useRef<FlatList>(null)
@@ -189,6 +190,8 @@ export default function AssistantScreen({ navigation }: any) {
       }
       if (e.type === 'plan') {
         setAgentPlan(e.plan)
+        // الخطة الجديدة تُظهر عنوانها فقط؛ يقرر المستخدم فتح التفاصيل.
+        setAgentPanelCollapsed(true)
         return
       }
       if (e.type === 'plan_step') {
@@ -589,7 +592,13 @@ export default function AssistantScreen({ navigation }: any) {
     const lastObservationDetail = lastObservation && 'detail' in lastObservation ? lastObservation.detail : ''
     return (
       <View style={[styles.agentPanel, { backgroundColor: colors.bgSecondary, borderColor: colors.border }]}>
-        <View style={styles.agentPanelHeader}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={agentPanelCollapsed ? 'توسيع لوحة مهام كيمو' : 'طي لوحة مهام كيمو'}
+          accessibilityState={{ expanded: !agentPanelCollapsed }}
+          onPress={() => setAgentPanelCollapsed((value) => !value)}
+          style={styles.agentPanelHeader}
+        >
           <View style={styles.agentIdentity}>
             <View style={[styles.agentAvatar, { backgroundColor: colors.accent }]}><Ionicons name="sparkles" size={15} color="#fff" /></View>
             <View style={styles.agentPanelTitleWrap}>
@@ -597,12 +606,15 @@ export default function AssistantScreen({ navigation }: any) {
               <Text style={[styles.agentPanelSub, { color: colors.textMuted }]}>{phaseLabel(agentPhase)}{currentStep ? ` · ${currentStep.title}` : ''}</Text>
             </View>
           </View>
-          <View style={[styles.phaseChip, { backgroundColor: agentPhase === 'error' ? colors.errorSurface : agentPhase === 'complete' ? colors.successSurface : colors.accentSurface }]}>
+          <View style={styles.panelHeaderActions}>
+            <View style={[styles.phaseChip, { backgroundColor: agentPhase === 'error' ? colors.errorSurface : agentPhase === 'complete' ? colors.successSurface : colors.accentSurface }]}>
             <Ionicons name={phaseIcon(agentPhase) as any} size={13} color={agentPhase === 'error' ? colors.error : agentPhase === 'complete' ? colors.success : colors.accent} />
-            <Text style={[styles.phaseChipText, { color: agentPhase === 'error' ? colors.error : agentPhase === 'complete' ? colors.success : colors.accent }]}>{phaseLabel(agentPhase)}</Text>
+              <Text style={[styles.phaseChipText, { color: agentPhase === 'error' ? colors.error : agentPhase === 'complete' ? colors.success : colors.accent }]}>{phaseLabel(agentPhase)}</Text>
+            </View>
+            <Ionicons name={agentPanelCollapsed ? 'chevron-down' : 'chevron-up'} size={17} color={colors.textMuted} />
           </View>
-        </View>
-        {activeSkill ? (
+        </Pressable>
+        {!agentPanelCollapsed && activeSkill ? (
           <View style={[styles.skillRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <Ionicons name="construct-outline" size={15} color={colors.accent} />
             <View style={styles.skillBody}>
@@ -611,7 +623,7 @@ export default function AssistantScreen({ navigation }: any) {
             </View>
           </View>
         ) : null}
-        {activePlan ? (
+        {!agentPanelCollapsed && activePlan ? (
           <View style={styles.planWrap}>
             <View style={styles.planTitleRow}>
               <Text style={[styles.planTitle, { color: colors.textPrimary }]}>{activePlan.goal}</Text>
@@ -627,13 +639,13 @@ export default function AssistantScreen({ navigation }: any) {
             </View>
           </View>
         ) : null}
-        {lastDecision ? (
+        {!agentPanelCollapsed && lastDecision ? (
           <View style={[styles.decisionRow, { backgroundColor: lastDecision.kind === 'question' ? colors.warningSurface : colors.surface, borderColor: colors.border }]}>
             <Ionicons name={lastDecision.kind === 'question' ? 'help-circle-outline' : 'git-branch-outline'} size={15} color={lastDecision.kind === 'question' ? colors.warning : colors.accent} />
             <View style={styles.skillBody}><Text style={[styles.decisionTitle, { color: colors.textPrimary }]}>{lastDecision.title}</Text><Text style={[styles.skillDescription, { color: colors.textSecondary }]} numberOfLines={2}>{lastDecision.detail}</Text></View>
           </View>
         ) : null}
-        {lastObservation ? (
+        {!agentPanelCollapsed && lastObservation ? (
           <View style={styles.observationRow}>
             <Ionicons name={lastObservation.type === 'recovery' ? 'refresh-outline' : 'information-circle-outline'} size={14} color={lastObservation.type === 'recovery' ? colors.warning : colors.textMuted} />
             <Text style={[styles.observationText, { color: colors.textMuted }]} numberOfLines={2}>{lastObservationDetail}</Text>
@@ -991,7 +1003,7 @@ export default function AssistantScreen({ navigation }: any) {
         }
       />
 
-      <View style={[styles.inputArea, { paddingBottom: Platform.OS === 'ios' && kbHeight > 0 ? kbHeight + 4 : Math.max(insets.bottom, 2), backgroundColor: colors.bgSecondary, borderTopColor: colors.border }]}>
+      <View style={[styles.inputArea, { paddingBottom: kbHeight > 0 ? kbHeight + 4 : Math.max(insets.bottom, 2), backgroundColor: colors.bgSecondary, borderTopColor: colors.border }]}>
           {/* زر النزول لآخر رسالة — يطفو فوق زر الإرسال ولا يظهر إلا خارج نهاية المحادثة */}
           {!atBottom && (
             <Pressable
@@ -1223,6 +1235,7 @@ const styles = StyleSheet.create({
   agentPanelSub: { fontSize: fontSize.xs, fontFamily: 'Tajawal_400Regular' },
   phaseChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 5, borderRadius: radius.full, maxWidth: 145 },
   phaseChipText: { fontSize: fontSize.xs, fontFamily: 'Tajawal_700Bold' },
+  panelHeaderActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   skillRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: spacing.sm },
   skillBody: { flex: 1, gap: 1 },
   skillLabel: { fontSize: fontSize.sm, fontFamily: 'Tajawal_700Bold' },

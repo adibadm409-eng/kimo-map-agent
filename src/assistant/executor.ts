@@ -11,6 +11,7 @@ import { publishRuntimeEvent } from './runtimeEvents'
 import { readModelHistory, messagesToLlm } from './history'
 import { handleToolCall, deleteOne, deleteApproved, deleteRefused } from './invokeTools'
 import { performUndo, toolSig } from './undo'
+import { createTaskRun, transitionTaskRun } from './store'
 import { emit, subscribeAgent, isAgentBusy, cancelAgent, markRunning, clearRunning, isCancelled, setAborter, clearAborter, type AgentEvent } from './agentRun'
 import { MAX_AGENT_RUNTIME_MS, MAX_REPEATED_TOOL_CALLS, MAX_TOOL_CALLS, MAX_TOOL_ROUNDS } from './constants'
 import * as FileSystem from 'expo-file-system/legacy'
@@ -49,6 +50,7 @@ async function runLoop(
     const lastUserMsg = (await getMessages(sessionId)).filter((m) => m.role === 'user').pop()
     let runtimePlan: AgentPlan | null = null
     let runtimeSkill: AgentSkill | null = null
+    let runtimeTaskId: string | undefined
     if (lastUserMsg) {
       const goal = String(lastUserMsg.content ?? '').trim()
       const match = matchSkill(goal)
@@ -58,6 +60,11 @@ async function runLoop(
       // مطابقة تشغيلية واضحة (أي كلمة تشغيلية فعلية، لا general_assistant الافتراضي).
       const shouldPlan = match.score > 0.1 && runtimeSkill.id !== 'general_assistant'
       runtimePlan = shouldPlan ? planForSkill(runtimeSkill, goal) : null
+      if (shouldPlan && runtimePlan) {
+        const task = await createTaskRun({ sessionId, userRequest: goal, skillId: runtimeSkill.id, confidence: match.score, plan: runtimePlan })
+        runtimeTaskId = task.id
+        await transitionTaskRun(runtimeTaskId, 'running', { plan: runtimePlan })
+      }
       if (emitEvents && shouldPlan && runtimePlan) {
         publishRuntimeEvent(sessionId, { type: 'phase', phase: 'understand', label: 'أفهم طلبك', detail: match.reasons.join(' ') || 'أحدد نوع المهمة قبل اختيار المسار.' })
         publishRuntimeEvent(sessionId, { type: 'skill', skill: { id: runtimeSkill.id, label: runtimeSkill.label, description: runtimeSkill.description } })
@@ -167,13 +174,13 @@ async function runLoop(
               emit({ type: 'text', content: finalText })
             }
           }
+          if (runtimeTaskId) await transitionTaskRun(runtimeTaskId, 'verifying', { plan: runtimePlan ?? undefined })
+          if (runtimePlan) runtimePlan = runtimePlan.steps.reduce((current, step) => completePlanStep(current, step.id), runtimePlan)
           if (emitEvents) {
             publishRuntimeEvent(sessionId, { type: 'phase', phase: 'complete', label: 'اكتملت المهمة', detail: 'وصلت إلى رد نهائي بعد تنفيذ الخطوات المتاحة.' })
-            if (runtimePlan) {
-              runtimePlan = runtimePlan.steps.reduce((current, step) => completePlanStep(current, step.id), runtimePlan)
-              publishRuntimeEvent(sessionId, { type: 'plan', plan: runtimePlan })
-            }
+            if (runtimePlan) publishRuntimeEvent(sessionId, { type: 'plan', plan: runtimePlan })
           }
+          if (runtimeTaskId) await transitionTaskRun(runtimeTaskId, 'completed', { plan: runtimePlan ?? undefined, evidence: [{ type: 'assistant_response', summary: finalText.slice(0, 500) }] })
           finished = true
           break
         }
@@ -294,6 +301,7 @@ async function runLoop(
       // إذا استُنفدت جولات هذه المهمة دون أن يختم الوكيل إجابته، نُسلم العنان للمستخدم
       // ليكمل برسالة جديدة — لا نعلن فشلاً ولا نتهم الوكيل بالتكرار.
       if (!finished && !isCancelled(sessionId)) {
+        if (runtimeTaskId) await transitionTaskRun(runtimeTaskId, 'failed', { lastError: 'انتهت الجولة قبل إغلاق المهمة' })
         await persistAssistantText(
           sessionId,
           'أنجزت ما أمكن تنفيذه ضمن هذه الجولة من الأدوات. أخبرني ما تريد إكماله أو تعديله وسأكمل من حيث توقفت.',

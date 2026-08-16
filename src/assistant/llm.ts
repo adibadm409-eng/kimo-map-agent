@@ -1,5 +1,5 @@
 import type { ProviderDef } from './providers'
-import { normalizeBaseUrl } from './providers'
+import { normalizeBaseUrl, providerCapabilities } from './providers'
 
 export interface ToolCall {
   id: string
@@ -16,6 +16,23 @@ export function makeToolCallId(): string {
   const pool = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
   let out = ''
   for (let i = 0; i < 9; i++) out += pool[Math.floor(Math.random() * pool.length)]
+  return out
+}
+
+/** معرف ثابت من تسعة محارف، يحافظ على نفس القيمة بين assistant وtool. */
+export function normalizeToolCallId(raw: unknown): string {
+  const value = String(raw ?? '').trim()
+  if (/^[A-Za-z0-9]{9}$/.test(value)) return value
+  const source = value || makeToolCallId()
+  const pool = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  let hash = 2166136261
+  for (let i = 0; i < source.length; i++) hash = Math.imul(hash ^ source.charCodeAt(i), 16777619)
+  let out = ''
+  let n = hash >>> 0
+  for (let i = 0; i < 9; i++) {
+    n = Math.imul(n ^ (n >>> 13), 2246822519) >>> 0
+    out += pool[n % pool.length]
+  }
   return out
 }
 
@@ -69,7 +86,7 @@ export function toWireToolCall(call: ToolCall): Record<string, any> {
   // تثبيت thought_signature عند مجيئه من المزوّد في موضعه الصريح (داخل function)
   const sig = otherExtra.thought_signature ?? raw.function?.thought_signature ?? raw.thought_signature
   if (sig !== undefined) fn.thought_signature = sig
-  return { id: call.id ?? raw.id ?? makeToolCallId(), type: 'function', function: fn }
+  return { id: normalizeToolCallId(call.id ?? raw.id), type: 'function', function: fn }
 }
 
 /**
@@ -155,6 +172,7 @@ async function postChatStream(opts: ChatOpts, signal: AbortSignal): Promise<Chat
   if (!opts.apiKey.trim()) throw new LlmError('unknown', 'لا يوجد مفتاح API — أضفه من إعدادات المساعد')
   if (!opts.model.trim()) throw new LlmError('unknown', 'لم يتم اختيار الموديل — اختر موديلاً من الإعدادات')
 
+  const capabilities = providerCapabilities(opts.provider, opts.model)
   const body: Record<string, any> = {
     model: opts.model,
     messages: opts.messages.map((m) => {
@@ -164,17 +182,17 @@ async function postChatStream(opts: ChatOpts, signal: AbortSignal): Promise<Chat
       if (m.tool_calls) out.tool_calls = m.tool_calls
       return out
     }),
-    stream: true,
-    stream_options: { include_usage: true },
+    stream: capabilities.supportsStreaming,
   }
-  if (opts.functions && opts.functions.length) {
+  if (capabilities.supportsStreamOptions) body.stream_options = { include_usage: true }
+  if (opts.functions && opts.functions.length && capabilities.supportsTools) {
     body.tools = opts.functions.map((f) => ({
       type: 'function',
       function: { name: f.name, description: f.description, parameters: f.parameters },
     }))
   }
   if (opts.temperature !== undefined) body.temperature = opts.temperature
-  if (opts.maxTokens) body.max_tokens = opts.maxTokens
+  if (opts.maxTokens) body[capabilities.maxTokensField] = opts.maxTokens
 
   let res: Response
   try {
@@ -314,6 +332,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 async function postChat(opts: ChatOpts, signal: AbortSignal): Promise<ChatResult> {
+  const capabilities = providerCapabilities(opts.provider, opts.model)
   const base = normalizeBaseUrl(opts.baseUrl && opts.baseUrl.trim() ? opts.baseUrl : opts.provider.baseUrl)
   if (!base) throw new LlmError('unknown', 'رابط المزود غير مكتمل — أضف الرابط من إعدادات المساعد')
   if (!opts.apiKey.trim()) throw new LlmError('unknown', 'لا يوجد مفتاح API — أضفه من إعدادات المساعد')
@@ -336,7 +355,7 @@ async function postChat(opts: ChatOpts, signal: AbortSignal): Promise<ChatResult
     }))
   }
   if (opts.temperature !== undefined) body.temperature = opts.temperature
-  if (opts.maxTokens) body.max_tokens = opts.maxTokens
+  if (opts.maxTokens) body[capabilities.maxTokensField] = opts.maxTokens
 
   let res: Response
   try {
@@ -389,7 +408,7 @@ const msg = choice.message ?? {}
       }
     }
     return {
-      id: tc.id ?? makeToolCallId(),
+      id: normalizeToolCallId(tc.id),
       name: tc.function?.name ?? '',
       // بعض المزودين يرسل الوسائط ككائن وليس نص JSON — نطبّعه دائماً
       arguments: typeof tc.function?.arguments === 'string' ? tc.function.arguments : tc.function?.arguments != null ? JSON.stringify(tc.function.arguments) : '{}',

@@ -104,10 +104,22 @@ function db(): Promise<SQLite.SQLiteDatabase> {
         CREATE TABLE IF NOT EXISTS agent_runtime_events (
           id TEXT PRIMARY KEY, session_id TEXT NOT NULL, event_type TEXT NOT NULL, payload TEXT NOT NULL, created_at INTEGER NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS agent_task_runs (
+          id TEXT PRIMARY KEY, session_id TEXT NOT NULL, user_request TEXT NOT NULL,
+          skill_id TEXT, intent TEXT, confidence REAL, status TEXT NOT NULL,
+          plan TEXT, current_step_id TEXT, evidence TEXT, last_error TEXT,
+          started_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, completed_at INTEGER
+        );
+        CREATE TABLE IF NOT EXISTS agent_task_events (
+          id TEXT PRIMARY KEY, task_id TEXT NOT NULL, event_type TEXT NOT NULL,
+          from_status TEXT, to_status TEXT, payload TEXT NOT NULL, created_at INTEGER NOT NULL
+        );
         CREATE INDEX IF NOT EXISTS idx_agent_msgs ON agent_messages (session_id, created_at);
         CREATE INDEX IF NOT EXISTS idx_agent_undo ON agent_undo (session_id, created_at);
         CREATE INDEX IF NOT EXISTS idx_agent_brain ON agent_brain (session_id, created_at);
         CREATE INDEX IF NOT EXISTS idx_agent_runtime_events ON agent_runtime_events (session_id, created_at);
+        CREATE INDEX IF NOT EXISTS idx_agent_task_runs ON agent_task_runs (session_id, updated_at);
+        CREATE INDEX IF NOT EXISTS idx_agent_task_events ON agent_task_events (task_id, created_at);
 
         -- ترحيل قواعد البيانات التي أنشئت قبل إضافة صورة after لسجل التراجع.
       `)
@@ -128,6 +140,56 @@ export interface AgentRuntimeEvent {
   eventType: string
   payload: any
   createdAt: number
+}
+
+export type AgentTaskStatus = 'proposed' | 'awaiting_user' | 'running' | 'verifying' | 'completed' | 'failed' | 'cancelled'
+
+export interface AgentTaskRun {
+  id: string
+  sessionId: string
+  userRequest: string
+  skillId?: string
+  intent?: string
+  confidence?: number
+  status: AgentTaskStatus
+  plan?: any
+  currentStepId?: string
+  evidence: any[]
+  lastError?: string
+  startedAt: number
+  updatedAt: number
+  completedAt?: number
+}
+
+export async function createTaskRun(input: Pick<AgentTaskRun, 'sessionId' | 'userRequest' | 'skillId' | 'intent' | 'confidence' | 'plan'>): Promise<AgentTaskRun> {
+  const d = await db()
+  const now = Date.now()
+  const task: AgentTaskRun = { id: `task-${genId()}`, sessionId: input.sessionId, userRequest: input.userRequest, skillId: input.skillId, intent: input.intent, confidence: input.confidence, status: 'proposed', plan: input.plan, evidence: [], startedAt: now, updatedAt: now }
+  await d.runAsync('INSERT INTO agent_task_runs (id, session_id, user_request, skill_id, intent, confidence, status, plan, evidence, started_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', task.id, task.sessionId, task.userRequest, task.skillId ?? null, task.intent ?? null, task.confidence ?? null, task.status, task.plan ? JSON.stringify(task.plan) : null, '[]', now, now)
+  await appendTaskEvent(task.id, undefined, 'proposed', { userRequest: task.userRequest })
+  return task
+}
+
+export async function transitionTaskRun(taskId: string, status: AgentTaskStatus, patch: Partial<Pick<AgentTaskRun, 'currentStepId' | 'evidence' | 'lastError' | 'plan'>> = {}): Promise<void> {
+  const d = await db()
+  const row = await d.getFirstAsync<{ status: AgentTaskStatus }>('SELECT status FROM agent_task_runs WHERE id = ?', taskId)
+  if (!row) return
+  const now = Date.now()
+  const completedAt = ['completed', 'failed', 'cancelled'].includes(status) ? now : null
+  await d.runAsync('UPDATE agent_task_runs SET status = ?, current_step_id = COALESCE(?, current_step_id), evidence = COALESCE(?, evidence), last_error = COALESCE(?, last_error), plan = COALESCE(?, plan), updated_at = ?, completed_at = ? WHERE id = ?', status, patch.currentStepId ?? null, patch.evidence ? JSON.stringify(patch.evidence) : null, patch.lastError ?? null, patch.plan ? JSON.stringify(patch.plan) : null, now, completedAt, taskId)
+  await appendTaskEvent(taskId, row.status, status, patch)
+}
+
+async function appendTaskEvent(taskId: string, fromStatus: AgentTaskStatus | undefined, toStatus: AgentTaskStatus, payload: any): Promise<void> {
+  const d = await db()
+  await d.runAsync('INSERT INTO agent_task_events (id, task_id, event_type, from_status, to_status, payload, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)', genId(), taskId, 'status', fromStatus ?? null, toStatus, JSON.stringify(payload ?? {}), Date.now())
+}
+
+export async function getLatestTaskRun(sessionId: string): Promise<AgentTaskRun | null> {
+  const d = await db()
+  const row = await d.getFirstAsync<any>('SELECT * FROM agent_task_runs WHERE session_id = ? ORDER BY updated_at DESC LIMIT 1', sessionId)
+  if (!row) return null
+  return { id: row.id, sessionId: row.session_id, userRequest: row.user_request, skillId: row.skill_id ?? undefined, intent: row.intent ?? undefined, confidence: row.confidence ?? undefined, status: row.status, plan: row.plan ? JSON.parse(row.plan) : undefined, currentStepId: row.current_step_id ?? undefined, evidence: row.evidence ? JSON.parse(row.evidence) : [], lastError: row.last_error ?? undefined, startedAt: row.started_at, updatedAt: row.updated_at, completedAt: row.completed_at ?? undefined }
 }
 
 export async function saveRuntimeEvent(sessionId: string, eventType: string, payload: any): Promise<void> {
