@@ -98,6 +98,22 @@ export function normalizeMistralToolCallId(raw: unknown): string {
   return `M${token}`
 }
 
+/**
+ * تطبيع اسم الأداة القادم من مزود خارجي قبل التحقق أو إعادة بث التاريخ.
+ * بعض نماذج Mistral قد تعيد الاسم داخل مساحة أسماء مثل `{}.execute` أو
+ * تضيف محارف bidi خفية؛ واجهة Chat Completions لا تقبل النقطة أو الأقواس
+ * في اسم الدالة، بينما عقد Kimo الداخلي يستخدم الاسم الأخير فقط.
+ */
+export function normalizeProviderToolName(raw: unknown): string {
+  const value = String(raw ?? '')
+    .trim()
+    .replace(/[\u200B-\u200F\u202A-\u202E\u2060-\u206F]/g, '')
+  if (!value) return ''
+  const parts = value.split('.').map((part) => part.trim()).filter(Boolean)
+  const last = parts.at(-1) ?? value
+  return parts.length > 1 && /^[A-Za-z0-9_-]+$/.test(last) ? last : value
+}
+
 function wireToolCallId(raw: unknown, family: ProviderWireFamily): string {
   return family === 'mistral-chat' ? normalizeMistralToolCallId(raw) : String(raw ?? '').trim()
 }
@@ -152,7 +168,7 @@ function serializeToolCall(call: InternalToolCall, family: ProviderWireFamily, i
     id: wireId ?? wireToolCallId(call.id, family),
     type: 'function',
     function: {
-      name: String(fn.name ?? call.name ?? '').trim(),
+      name: normalizeProviderToolName(fn.name ?? call.name),
       arguments: args,
     },
   }

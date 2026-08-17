@@ -1,4 +1,5 @@
 import { getDB } from '../database/db'
+import { resolveProjectRef } from './projectRef'
 
 export type ProjectKind = 'land' | 'residential_building' | 'tower' | 'compound' | 'custom'
 export type ProjectNodeKind = 'project' | 'building' | 'block' | 'floor' | 'unit' | 'plot' | 'parking' | 'shop' | 'common_area' | 'custom'
@@ -591,14 +592,15 @@ export async function projectIntegrityCheck(projectId?: string): Promise<{
 }> {
   await ensureProjectDomainSchema()
   const db = await getDB()
-  const where = projectId ? 'WHERE project_id = ?' : ''
-  const params = projectId ? [projectId] : []
-  const orphanRow = await db.getFirstAsync<{ c: number }>(`SELECT COUNT(*) AS c FROM project_nodes WHERE parent_id IS NOT NULL AND parent_id NOT IN (SELECT id FROM project_nodes) ${where ? 'AND project_id = ?' : ''}`, projectId ? [projectId] : [])
+  const resolvedProjectId = projectId ? await resolveProjectRef(projectId) : undefined
+  const where = resolvedProjectId ? 'WHERE project_id = ?' : ''
+  const params = resolvedProjectId ? [resolvedProjectId] : []
+  const orphanRow = await db.getFirstAsync<{ c: number }>(`SELECT COUNT(*) AS c FROM project_nodes WHERE parent_id IS NOT NULL AND parent_id NOT IN (SELECT id FROM project_nodes) ${where ? 'AND project_id = ?' : ''}`, resolvedProjectId ? [resolvedProjectId] : [])
   const duplicateCodeRows = await db.getAllAsync<{ parent_id: string | null; code: string; count: number }>(`SELECT parent_id, code, COUNT(*) AS count FROM project_nodes ${where} GROUP BY project_id, parent_id, code HAVING COUNT(*) > 1`, params)
   const duplicateCodes = duplicateCodeRows.map((row) => ({ parentId: row.parent_id, code: row.code, count: row.count }))
   const moneyWhere = where ? `${where} AND` : 'WHERE'
   const moneyRows = await db.getAllAsync<{ id: string; value: number; paid_amount: number; remaining_amount: number }>(`SELECT id, value, paid_amount, remaining_amount FROM project_nodes ${moneyWhere} (paid_amount < 0 OR remaining_amount < 0 OR ABS((paid_amount + remaining_amount) - value) > 0.01)`, params)
-  const legacyDrift = projectId ? await db.getAllAsync<{ id: string; plot_count: number; actual: number }>(`SELECT b.id, b.plot_count, COUNT(p.id) AS actual FROM blocks b LEFT JOIN plots p ON p.block_id = b.id WHERE b.project_id = ? GROUP BY b.id HAVING b.plot_count != COUNT(p.id)`, [projectId]) : []
+  const legacyDrift = resolvedProjectId ? await db.getAllAsync<{ id: string; plot_count: number; actual: number }>(`SELECT b.id, b.plot_count, COUNT(p.id) AS actual FROM blocks b LEFT JOIN plots p ON p.block_id = b.id WHERE b.project_id = ? GROUP BY b.id HAVING b.plot_count != COUNT(p.id)`, [resolvedProjectId]) : []
   const warnings: string[] = []
   if ((orphanRow?.c ?? 0) > 0) warnings.push('توجد عقد مشروع يتيمة.')
   if (duplicateCodes.length > 0) warnings.push('توجد أكواد أصول مكررة داخل نفس الأب.')
@@ -606,7 +608,7 @@ export async function projectIntegrityCheck(projectId?: string): Promise<{
   if (legacyDrift.length > 0) warnings.push('عدادات البلوكات القديمة لا تطابق عدد القطع.')
   return {
     ok: (orphanRow?.c ?? 0) === 0 && duplicateCodes.length === 0 && moneyRows.length === 0 && legacyDrift.length === 0,
-    projectId: projectId ?? null,
+    projectId: resolvedProjectId ?? null,
     orphanNodes: orphanRow?.c ?? 0,
     duplicateCodes,
     moneyDrift: moneyRows.map((r) => ({ nodeId: r.id, value: Number(r.value) || 0, paid: Number(r.paid_amount) || 0, remaining: Number(r.remaining_amount) || 0, difference: Math.round(((Number(r.value) || 0) - (Number(r.paid_amount) || 0) - (Number(r.remaining_amount) || 0)) * 100) / 100 })),
@@ -618,6 +620,7 @@ export async function projectIntegrityCheck(projectId?: string): Promise<{
 export async function recordLedgerPayment(input: LedgerPaymentInput): Promise<{ ledgerId: string; paidAmount: number; remainingAmount: number; status: ProjectNodeStatus }> {
   await ensureProjectDomainSchema()
   const db = await getDB()
+  const projectId = await resolveProjectRef(input.projectId)
   const amount = numberValue(input.amount)
   if (!(amount > 0)) throw new Error('مبلغ الدفعة يجب أن يكون أكبر من صفر.')
   const payDate = normalizeDate(input.payDate)
@@ -629,7 +632,7 @@ export async function recordLedgerPayment(input: LedgerPaymentInput): Promise<{ 
   let status: ProjectNodeStatus = 'available'
   await db.withTransactionAsync(async () => {
     let asset: { id: string; value: number; paid_amount: number; remaining_amount: number; status: ProjectNodeStatus } | null = null
-    if (input.nodeId) asset = await db.getFirstAsync<any>('SELECT id, value, paid_amount, remaining_amount, status FROM project_nodes WHERE id = ? AND project_id = ?', [input.nodeId, input.projectId])
+    if (input.nodeId) asset = await db.getFirstAsync<any>('SELECT id, value, paid_amount, remaining_amount, status FROM project_nodes WHERE id = ? AND project_id = ?', [input.nodeId, projectId])
     if (!asset && input.plotId) asset = await db.getFirstAsync<any>('SELECT id, value, paid_amount, remaining_amount, status FROM plots WHERE id = ?', [input.plotId])
     if (!asset) throw new Error('الأصل المالي غير موجود في المشروع المحدد.')
     const currentPaid = numberValue(asset.paid_amount)
@@ -639,7 +642,7 @@ export async function recordLedgerPayment(input: LedgerPaymentInput): Promise<{ 
     remainingAmount = Math.max(0, Math.round((currentRemaining - amount) * 100) / 100)
     status = remainingAmount <= 0 ? 'sold' : 'installment'
     await db.runAsync(`INSERT INTO cash_ledger_entries (id, project_id, node_id, plot_id, kind, amount, currency, pay_date, method, reference, note, source)
-      VALUES (?, ?, ?, ?, 'payment', ?, ?, ?, ?, ?, ?, ?)`, [ledgerId, input.projectId, input.nodeId ?? null, input.plotId ?? null, amount, input.currency ?? 'YER', payDate, input.method, input.reference ?? input.bankRefNo ?? input.cashReceiptNo ?? '', input.note ?? '', input.source ?? 'user'])
+      VALUES (?, ?, ?, ?, 'payment', ?, ?, ?, ?, ?, ?, ?)`, [ledgerId, projectId, input.nodeId ?? null, input.plotId ?? null, amount, input.currency ?? 'YER', payDate, input.method, input.reference ?? input.bankRefNo ?? input.cashReceiptNo ?? '', input.note ?? '', input.source ?? 'user'])
     if (input.nodeId) await db.runAsync('UPDATE project_nodes SET paid_amount = ?, remaining_amount = ?, status = ?, version = version + 1, updated_at = datetime(\'now\') WHERE id = ?', [paidAmount, remainingAmount, status, input.nodeId])
     if (input.plotId) {
       const plot = await db.getFirstAsync<{ plot_no: string; block_id: string }>('SELECT plot_no, block_id FROM plots WHERE id = ?', [input.plotId])
@@ -654,8 +657,9 @@ export async function recordLedgerPayment(input: LedgerPaymentInput): Promise<{ 
 export async function projectCashflow(projectId: string, options: { fromDate?: string; toDate?: string } = {}): Promise<{ entries: Record<string, any>[]; totals: { count: number; amount: number; byMethod: Record<string, number>; byMonth: Record<string, number> } }> {
   await ensureProjectDomainSchema()
   const db = await getDB()
+  const resolvedProjectId = await resolveProjectRef(projectId)
   const conditions = ['l.project_id = ?']
-  const params: any[] = [projectId]
+  const params: any[] = [resolvedProjectId]
   if (options.fromDate) { conditions.push('l.pay_date >= ?'); params.push(normalizeDate(options.fromDate)) }
   if (options.toDate) { conditions.push('l.pay_date <= ?'); params.push(normalizeDate(options.toDate)) }
   const entries = await db.getAllAsync<any>(`SELECT l.*, n.code, n.name as node_name, p.plot_no FROM cash_ledger_entries l LEFT JOIN project_nodes n ON n.id = l.node_id LEFT JOIN plots p ON p.id = l.plot_id WHERE ${conditions.join(' AND ')} ORDER BY l.pay_date DESC, l.created_at DESC`, params)
@@ -706,7 +710,8 @@ export async function reverseLedgerPayment(paymentId: string, plotId?: string, r
 export async function getProjectProfile(projectId: string): Promise<ProjectProfile | null> {
   await ensureProjectDomainSchema()
   const db = await getDB()
-  const row = await db.getFirstAsync<any>('SELECT * FROM project_profiles WHERE project_id = ?', [projectId])
+  const resolvedProjectId = await resolveProjectRef(projectId)
+  const row = await db.getFirstAsync<any>('SELECT * FROM project_profiles WHERE project_id = ?', [resolvedProjectId])
   if (!row) return null
   return { ...row, metadata: JSON.parse(row.metadata || '{}') }
 }
@@ -714,8 +719,9 @@ export async function getProjectProfile(projectId: string): Promise<ProjectProfi
 export async function listProjectNodes(projectId: string, options: { parentId?: string; kind?: ProjectNodeKind; search?: string; limit?: number } = {}): Promise<ProjectNode[]> {
   await ensureProjectDomainSchema()
   const db = await getDB()
+  const resolvedProjectId = await resolveProjectRef(projectId)
   const conditions = ['project_id = ?']
-  const params: any[] = [projectId]
+  const params: any[] = [resolvedProjectId]
   if (options.parentId) { conditions.push('parent_id = ?'); params.push(options.parentId) }
   if (options.kind) { conditions.push('kind = ?'); params.push(options.kind) }
   if (options.search?.trim()) { conditions.push('(code LIKE ? OR name LIKE ? OR buyer_name LIKE ?)'); const q = `%${options.search.trim()}%`; params.push(q, q, q) }

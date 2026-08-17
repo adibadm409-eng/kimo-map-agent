@@ -130,7 +130,101 @@ export interface ExcelFileSpec {
   sheets?: ExcelSheetSpec[]
 }
 
+function xmlEscape(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+}
+
+function excelColumnRef(index: number): string {
+  let n = index + 1
+  let ref = ''
+  while (n > 0) {
+    const remainder = (n - 1) % 26
+    ref = String.fromCharCode(65 + remainder) + ref
+    n = Math.floor((n - 1) / 26)
+  }
+  return ref
+}
+
+function safeSheetName(name: string, index: number, used: Set<string>): string {
+  const base = (name || `ورقة ${index + 1}`)
+    .replace(/[\\/:?*\[\]]/g, '_')
+    .slice(0, 31)
+    .trim() || `ورقة ${index + 1}`
+  let result = base
+  let suffix = 2
+  while (used.has(result)) result = `${base.slice(0, Math.max(1, 31 - String(suffix).length - 1))}_${suffix++}`
+  used.add(result)
+  return result
+}
+
+function xlsxCell(value: unknown, ref: string, style = ''): string {
+  if (value === null || value === undefined || value === '') return ''
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return `<c r="${ref}"${style ? ` s="${style}"` : ''}><v>${value}</v></c>`
+  }
+  const text = xmlEscape(value)
+  return `<c r="${ref}" t="inlineStr"${style ? ` s="${style}"` : ''}><is><t xml:space="preserve">${text}</t></is></c>`
+}
+
+function xlsxSheetXml(spec: ExcelSheetSpec, title: string | undefined): string {
+  const rows: string[][] = []
+  if (title) rows.push([title])
+  if (spec.columns?.length) rows.push(spec.columns)
+  for (const row of spec.rows ?? []) rows.push(row.map((value) => String(value ?? '')))
+  const rowXml = rows.map((row, rowIndex) => {
+    const style = title && rowIndex === 0 ? '2' : title && rowIndex === 1 && spec.columns?.length ? '1' : !title && rowIndex === 0 && spec.columns?.length ? '1' : ''
+    const cells = row.map((value, colIndex) => xlsxCell(value, `${excelColumnRef(colIndex)}${rowIndex + 1}`, style)).join('')
+    return `<row r="${rowIndex + 1}">${cells}</row>`
+  }).join('')
+  const cols = spec.columnWidths?.length
+    ? `<cols>${spec.columnWidths.map((width, index) => `<col min="${index + 1}" max="${index + 1}" width="${Math.max(4, Number(width) || 12)}" customWidth="1"/>`).join('')}</cols>`
+    : ''
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0" rightToLeft="1"/></sheetViews>${cols}<sheetData>${rowXml || '<row r="1"/>'}</sheetData><pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/></worksheet>`
+}
+
+function xlsxStylesXml(): string {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="0"/><fonts count="3"><font><sz val="11"/><name val="Arial"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Arial"/></font><font><b/><sz val="15"/><name val="Arial"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF1E3A8A"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" applyFont="1" applyFill="1"/><xf numFmtId="0" fontId="2" fillId="0" borderId="0" applyFont="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`
+}
+
+async function generateExcelFileWeb(spec: ExcelFileSpec, filename: string): Promise<{ uri: string; name: string }> {
+  const module = await import('jszip')
+  const JSZip = (module as any).default ?? module
+  const zip = new JSZip()
+  const sheets = spec.sheets?.length ? spec.sheets : [{ rows: [[]] }]
+  const usedNames = new Set<string>()
+  const names = sheets.map((sheet, index) => safeSheetName(sheet.name ?? '', index, usedNames))
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((_, index) => `<Override PartName="/xl/worksheets/sheet${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>`
+  const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView/></bookViews><sheets>${names.map((name, index) => `<sheet name="${xmlEscape(name)}" sheetId="${index + 1}" r:id="rId${index + 1}"/>`).join('')}</sheets></workbook>`
+  const workbookRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, index) => `<Relationship Id="rId${index + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${index + 1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`
+  zip.file('[Content_Types].xml', contentTypes)
+  zip.file('_rels/.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>`)
+  zip.file('xl/workbook.xml', workbook)
+  zip.file('xl/_rels/workbook.xml.rels', workbookRels)
+  zip.file('xl/styles.xml', xlsxStylesXml())
+  sheets.forEach((sheet, index) => zip.file(`xl/worksheets/sheet${index + 1}.xml`, xlsxSheetXml(sheet, spec.title)))
+  const now = new Date().toISOString()
+  zip.file('docProps/core.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>${xmlEscape(spec.title ?? filename)}</dc:title><dc:creator>Kimo</dc:creator><dcterms:created xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="dcterms:W3CDTF">${now}</dcterms:created></cp:coreProperties>`)
+  zip.file('docProps/app.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Application>Kimo</Application><AppVersion>1.0</AppVersion></Properties>`)
+  const base64 = await zip.generateAsync({ type: 'base64', compression: 'DEFLATE' })
+  return writeBase64(filename.endsWith('.xlsx') ? filename : `${sanitizeFilename(filename)}.xlsx`, base64)
+}
+
 export async function generateExcelFile(spec: ExcelFileSpec, filename: string): Promise<{ uri: string; name: string }> {
+  // ExcelJS evaluates a large CommonJS bundle in the browser and can leave the
+  // ReAct task pending indefinitely. Use a deterministic, local XLSX writer on
+  // Web; keep ExcelJS for native where the file-system path is available.
+  if (Platform.OS === 'web') return generateExcelFileWeb(spec, filename)
+
   const { Workbook } = await import('exceljs/dist/exceljs.bare.js')
   const wb = new Workbook()
   const sheets = spec.sheets?.length ? spec.sheets : [{ rows: [[]] }]

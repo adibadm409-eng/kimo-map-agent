@@ -18,11 +18,17 @@ describe('false progress and terminal outcome invariants', () => {
 
   it('does not leave an unconditional successful done event in the executor', () => {
     const executor = readFileSync(resolve(process.cwd(), 'src/assistant/executor.ts'), 'utf8')
-    expect(executor).toContain("emit({ type: 'done', outcome })")
+    expect(executor).toContain("emitForSession(sessionId, { type: 'done', outcome })")
     expect(executor).not.toContain("emit({ type: 'done' })")
     expect(executor).toContain('deriveAgentOutcome(task.status)')
     expect(executor).toContain('noEvidenceRecoveryAttempts')
     expect(executor).toContain("strategy: 'retry'")
+  })
+
+  it('keeps audit-log requests evidence-gated without misclassifying payment recording', () => {
+    const executor = readFileSync(resolve(process.cwd(), 'src/assistant/executor.ts'), 'utf8')
+    expect(executor).toContain('سجل\\s+(?:دفعة|دفع|مبلغ|قسط|إيصال|تحويل)')
+    expect(executor).not.toContain('|سجل|')
   })
 
   it('does not inject a fixed preflight dialogue before the model response', () => {

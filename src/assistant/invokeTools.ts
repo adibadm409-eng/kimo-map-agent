@@ -18,7 +18,7 @@ import { getPending, setPending, peekUndo, removeUndo, pushUndo, searchSessions 
 import { adaptToolArgs, runToolWithFeedback } from './toolSchemas'
 import { persistPair, persistAssistantText } from './persist'
 import { captureBefore, captureToolUndoBefore, recordUndo, performUndo } from './undo'
-import { emit } from './agentRun'
+import { emitForSession } from './agentRun'
 import { WRITE_TOOLS, DELETE_CONFIRM_TOOLS } from './prompts'
 import type { ToolCall } from './llm'
 import { parseToolArgumentsStrict } from './toolValidation'
@@ -34,7 +34,7 @@ export type OpenLink = { kind: 'workspace' | 'project' | 'block' | 'plot' | 'cli
 export async function persistOpenLink(sessionId: string, link: OpenLink): Promise<void> {
   try {
     await persistAssistantText(sessionId, '', 'link', link as any)
-    emit({ type: 'link', ...link })
+    emitForSession(sessionId, { type: 'link', ...link })
   } catch {}
 }
 
@@ -116,59 +116,59 @@ export async function runRegistryTool(
   if (tool === 'mutate_record' && !mutationInnerTool) {
     const obs = '[فشل] بوابة البيانات الموحدة تحتاج operation يساوي create أو update أو delete.'
     await persistPair(sessionId, call, obs, undefined, { name: tool, args, result: 'invalid_mutation_operation', ok: false })
-    if (emitEvents) emit({ type: 'tool', name: tool, args, result: 'invalid_mutation_operation' })
+    if (emitEvents) emitForSession(sessionId, { type: 'tool', name: tool, args, result: 'invalid_mutation_operation' })
     return true
   }
   if (tool === 'mutate_record' && mutationInnerTool !== 'delete' && mutationInnerTool === 'create' && !args.data) {
     const obs = '[فشل] operation=create تحتاج data تحتوي حقول السجل.'
     await persistPair(sessionId, call, obs, undefined, { name: tool, args, result: 'missing_mutation_data', ok: false })
-    if (emitEvents) emit({ type: 'tool', name: tool, args, result: 'missing_mutation_data' })
+    if (emitEvents) emitForSession(sessionId, { type: 'tool', name: tool, args, result: 'missing_mutation_data' })
     return true
   }
   if (tool === 'mutate_record' && mutationInnerTool !== 'create' && !args.id) {
     const obs = `[فشل] operation=${mutationInnerTool} تحتاج id صالحاً للسجل.`
     await persistPair(sessionId, call, obs, undefined, { name: tool, args, result: 'missing_mutation_id', ok: false })
-    if (emitEvents) emit({ type: 'tool', name: tool, args, result: 'missing_mutation_id' })
+    if (emitEvents) emitForSession(sessionId, { type: 'tool', name: tool, args, result: 'missing_mutation_id' })
     return true
   }
 
   if (tool === 'update' && String(args.entity ?? '') === 'plots' && args.data && (Object.prototype.hasOwnProperty.call(args.data, 'paid_amount') || Object.prototype.hasOwnProperty.call(args.data, 'remaining_amount'))) {
     const obs = '[فشل] لا تعدل paid_amount أو remaining_amount مباشرة؛ استخدم مسار دفتر النقد لتسجيل دفعة أو عكسها حتى تبقى الأرقام قابلة للمراجعة.'
     await persistPair(sessionId, call, obs, undefined, { name: tool, args, result: 'financial_columns_protected', ok: false })
-    if (emitEvents) emit({ type: 'tool', name: tool, args, result: 'financial_columns_protected' })
+    if (emitEvents) emitForSession(sessionId, { type: 'tool', name: tool, args, result: 'financial_columns_protected' })
     return true
   }
   if (tool === 'create' && String(args.entity ?? '') === 'plot_payments') {
     const obs = '[فشل] تسجيل الأقساط لا يتم عبر إنشاء سجل خام؛ استخدم دفتر النقد الموحّد مع المشروع والأصل والتاريخ والمبلغ.'
     await persistPair(sessionId, call, obs, undefined, { name: tool, args, result: 'ledger_required', ok: false })
-    if (emitEvents) emit({ type: 'tool', name: tool, args, result: 'ledger_required' })
+    if (emitEvents) emitForSession(sessionId, { type: 'tool', name: tool, args, result: 'ledger_required' })
     return true
   }
   if (tool === 'project_import_commit') {
     if (!Array.isArray(args.rows) || args.rows.length === 0) {
       const obs = '[فشل] اعتماد المشروع يتطلب صفوفاً بعد المعاينة؛ لا أستطيع إنشاء مشروع فارغ من هذا المسار.'
       await persistPair(sessionId, call, obs, undefined, { name: tool, args, result: 'rows_required', ok: false })
-      if (emitEvents) emit({ type: 'tool', name: tool, args, result: 'rows_required' })
+      if (emitEvents) emitForSession(sessionId, { type: 'tool', name: tool, args, result: 'rows_required' })
       return true
     }
     if (args.rows.length > 10000) {
       const obs = '[فشل] الدفعة أكبر من الحد المحلي 10000 صف؛ قسّمها إلى دفعات بعد التأكد من مفاتيح التكرار.'
       await persistPair(sessionId, call, obs, undefined, { name: tool, args: { ...args, rows: `[${args.rows.length} صف]` }, result: 'batch_too_large', ok: false })
-      if (emitEvents) emit({ type: 'tool', name: tool, args, result: 'batch_too_large' })
+      if (emitEvents) emitForSession(sessionId, { type: 'tool', name: tool, args, result: 'batch_too_large' })
       return true
     }
   }
   if (tool === 'ledger_record_payment' && (!(Number(args.amount) > 0) || !args.project_id || (!args.node_id && !args.plot_id) || (args.node_id && args.plot_id))) {
     const obs = '[فشل] الدفعة تحتاج مشروعاً وأصلاً واحداً ومبلغاً موجباً وتاريخاً واضحاً؛ اختر node_id أو plot_id وليس الاثنين.'
     await persistPair(sessionId, call, obs, undefined, { name: tool, args, result: 'payment_contract_invalid', ok: false })
-    if (emitEvents) emit({ type: 'tool', name: tool, args, result: 'payment_contract_invalid' })
+    if (emitEvents) emitForSession(sessionId, { type: 'tool', name: tool, args, result: 'payment_contract_invalid' })
     return true
   }
 
   if (WRITE_TOOLS.has(tool) && s.mode === 'read') {
     const obs = '[فشل] العملية تتطلب وضع التعديل، والوضع الحالي للقراءة فقط. فعّل وضع التعديل من إعدادات المساعد ثم أعد المحاولة.'
     await persistPair(sessionId, call, obs, undefined, { name: tool, args, result: 'محظور في وضع القراءة فقط', ok: false })
-    if (emitEvents) emit({ type: 'tool', name: tool, args, result: 'محظور في وضع القراءة فقط' })
+    if (emitEvents) emitForSession(sessionId, { type: 'tool', name: tool, args, result: 'محظور في وضع القراءة فقط' })
     return true
   }
 
@@ -177,7 +177,7 @@ export async function runRegistryTool(
     if (!delId) {
       const msg = 'خطأ: العملية تتطلب معرّف عنصر صالحاً للحذف'
       await persistPair(sessionId, call, msg, undefined, { name: tool, args })
-      if (emitEvents) emit({ type: 'tool', name: tool, args, result: msg })
+      if (emitEvents) emitForSession(sessionId, { type: 'tool', name: tool, args, result: msg })
       return true
     }
     // معاينة بشرية للمحتوى المراد حذفه (بلا معرفات ولا رموز تقنية)
@@ -215,7 +215,7 @@ export async function runRegistryTool(
       observation: pendingObservation,
       ok: false,
     })
-    if (emitEvents) emit({ type: 'confirmation', title, message, items })
+    if (emitEvents) emitForSession(sessionId, { type: 'confirmation', title, message, items })
     // توقف دورة ReAct فعلياً حتى تصبح الموافقة متاحة في الواجهة. إبقاء true
     // كان يسمح للموديل بمتابعة السرد والاستعلام ثم إعلان حذف غير منفّذ.
     return false
@@ -224,12 +224,17 @@ export async function runRegistryTool(
   const effectiveTool = tool === 'mutate_record' ? mutationInnerTool : tool
   const effectiveArgs = tool === 'mutate_record' ? mutationInnerArgs : args
   const undoBefore = await captureToolUndoBefore(effectiveTool, effectiveArgs)
+  // لا ينبغي للمستخدم أو النموذج كتابة معرف جلسة تقني في طلب تدقيقي طبيعي.
+  // نضيفه داخلياً فقط عندما تكون النية هي مراجعة هذه الجلسة ولم يحدد المستخدم نطاقاً آخر.
+  const executionArgs = tool === 'audit_log_query' && args.current_session === true && !args.session_id
+    ? { ...args, session_id: sessionId }
+    : args
   const { ok, observation, result } = await withAuditCtx({ actor: 'agent', sessionId, tool }, () =>
-    runToolWithFeedback(tool, args)
+    runToolWithFeedback(tool, executionArgs)
   )
   // الملاحظة التي تعود للموديل: نص عربي واضح الحالة [نجاح]/[فشل] + سطر [تحقق]
   await persistPair(sessionId, call, observation, undefined, { name: tool, args, result, observation, ok })
-  if (emitEvents) emit({ type: 'tool', name: tool, args, result: ok ? result : result })
+  if (emitEvents) emitForSession(sessionId, { type: 'tool', name: tool, args, result: ok ? result : result })
 
   if (ok) {
     await recordUndo(sessionId, effectiveTool, effectiveArgs, result, undoBefore)
@@ -294,7 +299,7 @@ async function handleRequestConfirmation(sessionId: string, args: Record<string,
       ok: false,
     })
   }
-  if (emitEvents) emit({ type: 'confirmation', title, message, details })
+  if (emitEvents) emitForSession(sessionId, { type: 'confirmation', title, message, details })
   return false
 }
 
@@ -309,14 +314,14 @@ export async function handleToolCall(
   if (!parsed.ok) {
     const message = `[فشل التحقق قبل التنفيذ] ${parsed.message}`
     await persistPair(sessionId, call, message, undefined, { name, ok: false, result: 'invalid_tool_arguments', observation: message })
-    if (emitEvents) emit({ type: 'tool', name, args: {}, result: 'invalid_tool_arguments' })
+    if (emitEvents) emitForSession(sessionId, { type: 'tool', name, args: {}, result: 'invalid_tool_arguments' })
     return true
   }
   const args = parsed.value
 
   if (s.mode === 'read' && name === 'undo_last') {
     await persistPair(sessionId, call, 'محظور: الوضع الحالي للقراءة فقط — التراجع يتطلب وضع التعديل')
-    if (emitEvents) emit({ type: 'tool', name, args, result: 'محظور في وضع القراءة فقط' })
+    if (emitEvents) emitForSession(sessionId, { type: 'tool', name, args, result: 'محظور في وضع القراءة فقط' })
     return true
   }
 
@@ -326,7 +331,7 @@ export async function handleToolCall(
     const allowFreeText = args.allow_free_text !== false
     await setPending({ sessionId, kind: 'ask_user', question, choices, allowFreeText })
     await persistAssistantText(sessionId, question, 'ask_user', { question, choices, allowFreeText })
-    if (emitEvents) emit({ type: 'ask_user', question, choices, allowFreeText })
+    if (emitEvents) emitForSession(sessionId, { type: 'ask_user', question, choices, allowFreeText })
     return false
   }
 
@@ -339,7 +344,7 @@ export async function handleToolCall(
     if (!tool || !args.args || typeof args.args !== 'object' || Array.isArray(args.args)) {
       const message = '[فشل التحقق قبل التنفيذ] execute يحتاج tool وargs ككائن JSON.'
       await persistPair(sessionId, call, message, undefined, { name, ok: false, result: 'invalid_execute_envelope', observation: message })
-      if (emitEvents) emit({ type: 'tool', name, args, result: 'invalid_execute_envelope' })
+      if (emitEvents) emitForSession(sessionId, { type: 'tool', name, args, result: 'invalid_execute_envelope' })
       return true
     }
     return await runRegistryTool(sessionId, s, call, tool, args.args as Record<string, any>, emitEvents)
@@ -364,7 +369,7 @@ export async function handleToolCall(
       }
     }
     await persistPair(sessionId, call, result)
-    if (emitEvents) emit({ type: 'tool', name: 'undo_last', args, result })
+    if (emitEvents) emitForSession(sessionId, { type: 'tool', name: 'undo_last', args, result })
     return true
   }
 
@@ -375,7 +380,7 @@ export async function handleToolCall(
       ? found.map((f) => `• [${f.session.title}] ${f.snippet || 'بدون مقتطف'}`).slice(0, 10).join('\n')
       : 'لا توجد نتائج مطابقة'
     await persistPair(sessionId, call, result)
-    if (emitEvents) emit({ type: 'tool', name: 'search_sessions', args: { query: q }, result })
+    if (emitEvents) emitForSession(sessionId, { type: 'tool', name: 'search_sessions', args: { query: q }, result })
     return true
   }
 
@@ -392,11 +397,11 @@ export async function handleToolCall(
         uri: file.uri,
         format,
       })
-      if (emitEvents) emit({ type: 'file', uri: file.uri, name: file.name, format })
+      if (emitEvents) emitForSession(sessionId, { type: 'file', uri: file.uri, name: file.name, format })
     } else {
       const msg = `فشل توليد الملف: ${file.error}`
       await persistPair(sessionId, call, msg)
-      if (emitEvents) emit({ type: 'error', message: msg })
+      if (emitEvents) emitForSession(sessionId, { type: 'error', message: msg })
     }
     return true
   }
@@ -407,7 +412,7 @@ export async function handleToolCall(
       ? `الملفات المولّدة (${files.length}):\n` + files.map((f) => `- ${f.name} (${f.format}) — ${(f.size / 1024).toFixed(1)} كيلوبايت، ${new Date(f.createdAt).toLocaleTimeString('ar')}`).join('\n')
       : 'لا توجد ملفات مولّدة بعد. استخدم generate_file لإنشاء ملف ثم راجِعه بـ review_generated_file.'
     await persistPair(sessionId, call, result)
-    if (emitEvents) emit({ type: 'tool', name: 'list_generated_files', args, result })
+    if (emitEvents) emitForSession(sessionId, { type: 'tool', name: 'list_generated_files', args, result })
     return true
   }
 
@@ -418,7 +423,7 @@ export async function handleToolCall(
       : { ok: false, contentType: 'missing', text: 'يلزم اسم الملف (name) للمراجعة.' }
     const text = result.ok ? result.text : `[فشل التحقق] ${result.text}`
     await persistPair(sessionId, call, text)
-    if (emitEvents) emit({ type: 'tool', name: 'review_generated_file', args: { name: fileName }, result })
+    if (emitEvents) emitForSession(sessionId, { type: 'tool', name: 'review_generated_file', args: { name: fileName }, result })
     return true
   }
 
@@ -429,7 +434,7 @@ export async function handleToolCall(
       ? ((await addProjectMemory(wsId, 'note', note)), 'حُفظت في ذاكرة المشروع الخفيّة')
       : 'فشل الحفظ: يلزم workspace_id و note'
     await persistPair(sessionId, call, result)
-    if (emitEvents) emit({ type: 'tool', name: 'project_memory_save', args, result })
+    if (emitEvents) emitForSession(sessionId, { type: 'tool', name: 'project_memory_save', args, result })
     return true
   }
 
@@ -439,12 +444,12 @@ export async function handleToolCall(
       ? (await projectMemorySummary(wsId)) || 'لا توجد ذاكرة محفوظة لهذا المشروع بعد'
       : 'فشل القراءة: يلزم workspace_id'
     await persistPair(sessionId, call, result)
-    if (emitEvents) emit({ type: 'tool', name: 'project_memory_read', args, result })
+    if (emitEvents) emitForSession(sessionId, { type: 'tool', name: 'project_memory_read', args, result })
     return true
   }
 
   await persistPair(sessionId, call, `أداة غير معروفة: ${name}. المتاح: execute، ask_user، request_confirmation، generate_file، list_generated_files، review_generated_file، search_sessions، undo_last، project_memory_save، project_memory_read`)
-  if (emitEvents) emit({ type: 'tool', name, args, result: 'أداة غير معروفة' })
+  if (emitEvents) emitForSession(sessionId, { type: 'tool', name, args, result: 'أداة غير معروفة' })
   return true
 }
 
@@ -586,7 +591,7 @@ export async function deleteApproved(sessionId: string, pending: PendingState): 
     arguments: JSON.stringify({ tool, args: { ...(action.args ?? {}), id } }),
   }
   await persistPair(sessionId, call, outcome)
-  emit({ type: 'tool', name: tool, args: { ...(action.args ?? {}), id }, result: outcome })
+  emitForSession(sessionId, { type: 'tool', name: tool, args: { ...(action.args ?? {}), id }, result: outcome })
 }
 
 export async function deleteRefused(sessionId: string): Promise<void> {

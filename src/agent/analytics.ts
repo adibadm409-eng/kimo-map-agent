@@ -3,6 +3,7 @@ import * as SQLite from 'expo-sqlite'
 import { getEntityDef, fieldOptions } from './catalog'
 import type { QuerySpec, FilterCond } from './query'
 import { queryEntities, queryEntityById } from './query'
+import { resolvePlotRef, resolveProjectRef } from '../domain/projectRef'
 
 export interface PlotFinancials {
   plot_id: string
@@ -17,7 +18,8 @@ export interface PlotFinancials {
   difference: number
 }
 
-export async function projectTree(projectId: string): Promise<Record<string, any>> {
+export async function projectTree(projectRef: string): Promise<Record<string, any>> {
+  const projectId = await resolveProjectRef(projectRef)
   const projectRow = await queryEntityById('projects', projectId)
   if (!projectRow) throw new Error(`Project not found: ${projectId}`)
 
@@ -157,13 +159,26 @@ export async function projectFinancials(
   }
 }
 
-export async function installmentSchedule(plotId: string): Promise<Record<string, any> | null> {
+export async function installmentSchedule(plotRef: string, projectRef?: string): Promise<Record<string, any> | null> {
+  const plotId = await resolvePlotRef(plotRef, projectRef)
   const row = await queryEntityById('plots', plotId)
   if (!row) return null
-  if (row.status !== 'installment' || !row.installment_type) {
+  if (row.status !== 'installment') {
     return {
       plot_no: row.plot_no,
+      status: row.status,
       note: 'القطعة ليست قيد التقسيط — لا توجد جدولة',
+      schedule: [],
+    }
+  }
+  if (!row.installment_type) {
+    return {
+      plot_no: row.plot_no,
+      status: row.status,
+      value: num(row.value),
+      paid_amount: num(row.paid_amount),
+      remaining_amount: num(row.remaining_amount),
+      note: 'القطعة قيد التقسيط، لكن نوع التقسيط مفقود؛ لا يمكن حساب الدفعة التالية أو إنشاء جدول دقيق قبل تحديده.',
       schedule: [],
     }
   }
@@ -205,21 +220,33 @@ function buildScheduleArray(row: Record<string, any>): Record<string, any>[] {
 }
 
 export async function buyerSummary(
-  buyer_query?: string
+  buyer_query?: string,
+  project_ref?: string,
 ): Promise<{ rows: Record<string, any>[]; totals: Record<string, any> }> {
-  const filters: FilterCond[] = [
-    { field: 'status', op: 'neq', value: 'available' },
+  const db = await getDB()
+  const conditions = [
+    `p.status != 'available'`,
+    `TRIM(COALESCE(p.buyer_name, '')) <> ''`,
   ]
-  if (buyer_query && buyer_query.trim()) {
-    filters.push({ field: 'buyer_name', op: 'contains', value: buyer_query.trim() })
+  const params: SQLite.SQLiteBindValue[] = []
+  if (project_ref && project_ref.trim()) {
+    conditions.push('b.project_id = ?')
+    params.push(await resolveProjectRef(project_ref.trim()))
   }
-  const plots = await queryEntities({
-    entity: 'plots',
-    filters,
-    limit: 10000,
-    withCustomValues: true,
-  })
-  const allRelevant = plots.rows.filter((p) => p.buyer_name && p.buyer_name.trim())
+  if (buyer_query && buyer_query.trim()) {
+    conditions.push('p.buyer_name LIKE ?')
+    params.push(`%${buyer_query.trim()}%`)
+  }
+  const allRelevant = await db.getAllAsync<Record<string, any>>(
+    `SELECT p.*, b.name AS block_name, b.project_id, pr.name AS project_name
+       FROM plots p
+       LEFT JOIN blocks b ON b.id = p.block_id
+       LEFT JOIN projects pr ON pr.id = b.project_id
+      WHERE ${conditions.join(' AND ')}
+      ORDER BY p.buyer_name ASC, p.plot_no ASC
+      LIMIT 10000`,
+    params,
+  )
   const byBuyer = new Map<string, { value: number; paid: number; remaining: number; count: number; plots: string[] }>()
   for (const p of allRelevant) {
     const key = String(p.buyer_name)
@@ -261,26 +288,74 @@ export async function paymentLedger(f: {
   to_date?: string
   limit?: number
 }): Promise<Record<string, any>[]> {
-  if (f.project_id || f.block_id) {
-    return enrichLedger(await paymentLedgerScoped(f))
+  const resolvedProjectId = f.project_id ? await resolveProjectRef(f.project_id) : undefined
+  const resolvedPlotId = f.plot_id ? await resolvePlotRef(f.plot_id, resolvedProjectId) : undefined
+  const resolved = { ...f, project_id: resolvedProjectId, plot_id: resolvedPlotId }
+  const [canonical, legacy] = await Promise.all([
+    cashLedgerScoped(resolved),
+    paymentLedgerScoped(resolved),
+  ])
+  return enrichLedger(mergeLedgerRows(canonical, legacy, f.limit))
+}
+
+/** المصدر المالي الحديث هو cash_ledger_entries؛ plot_payments بقي للتوافق مع السجلات القديمة. */
+async function cashLedgerScoped(f: {
+  project_id?: string
+  block_id?: string
+  plot_id?: string
+  method?: string
+  from_date?: string
+  to_date?: string
+  limit?: number
+}): Promise<Record<string, any>[]> {
+  const db = await getDB()
+  const conds: string[] = []
+  const params: SQLite.SQLiteBindValue[] = []
+  if (f.project_id) {
+    conds.push('l.project_id = ?')
+    params.push(f.project_id)
   }
-  const filters: FilterCond[] = []
-  if (f.plot_id) filters.push({ field: 'plot_id', op: 'eq', value: f.plot_id })
-  if (f.method) filters.push({ field: 'method', op: 'eq', value: f.method })
-  if (f.from_date) filters.push({ field: 'pay_date', op: 'gte', value: f.from_date })
-  if (f.to_date) filters.push({ field: 'pay_date', op: 'lte', value: f.to_date })
-  const ledger = await queryEntities({
-    entity: 'plot_payments',
-    filters,
-    sort: { field: 'pay_date', dir: 'desc' },
-    limit: f.limit && f.limit > 0 ? f.limit : 2000,
-  })
-  return enrichLedger(ledger.rows)
+  if (f.block_id) {
+    conds.push('(pl.block_id = ? OR pn.parent_id = ?)')
+    params.push(f.block_id, f.block_id)
+  }
+  if (f.plot_id) {
+    conds.push('l.plot_id = ?')
+    params.push(f.plot_id)
+  }
+  if (f.method) {
+    conds.push('l.method = ?')
+    params.push(f.method)
+  }
+  if (f.from_date) {
+    conds.push('l.pay_date >= ?')
+    params.push(f.from_date)
+  }
+  if (f.to_date) {
+    conds.push('l.pay_date <= ?')
+    params.push(f.to_date)
+  }
+  const where = conds.length ? `WHERE ${conds.join(' AND ')}` : ''
+  return await db.getAllAsync<any>(
+    `SELECT l.*, pl.plot_no, pl.block_id, b.name AS block_name, b.project_id, prj.name AS project_name,
+            pl.value AS plot_value, pl.paid_amount AS plot_paid, pl.remaining_amount AS plot_remaining,
+            pn.code AS node_code, pn.name AS node_name, pn.remaining_amount AS node_remaining
+       FROM cash_ledger_entries l
+       LEFT JOIN plots pl ON l.plot_id = pl.id
+       LEFT JOIN blocks b ON pl.block_id = b.id
+       LEFT JOIN projects prj ON l.project_id = prj.id
+       LEFT JOIN project_nodes pn ON l.node_id = pn.id
+       ${where}
+      ORDER BY l.pay_date DESC, l.created_at DESC
+      LIMIT ?`,
+    [...params, f.limit && f.limit > 0 ? f.limit : 2000],
+  )
 }
 
 async function paymentLedgerScoped(f: {
   project_id?: string
   block_id?: string
+  plot_id?: string
   method?: string
   from_date?: string
   to_date?: string
@@ -297,6 +372,10 @@ async function paymentLedgerScoped(f: {
     conds.push('pl.block_id = ?')
     params.push(f.block_id)
   }
+  if (f.plot_id) {
+    conds.push('pm.plot_id = ?')
+    params.push(f.plot_id)
+  }
   if (f.method) {
     conds.push('pm.method = ?')
     params.push(f.method)
@@ -310,7 +389,7 @@ async function paymentLedgerScoped(f: {
     params.push(f.to_date)
   }
   const where = conds.length ? `WHERE ${conds.join(' AND ')}` : ''
-  const rows = await db.getAllAsync<any>(
+  return await db.getAllAsync<any>(
     `SELECT pm.*, pl.plot_no, pl.block_id, b.name as block_name, b.project_id, prj.name as project_name,
             pl.value as plot_value, pl.paid_amount as plot_paid, pl.remaining_amount as plot_remaining
      FROM plot_payments pm
@@ -322,7 +401,17 @@ async function paymentLedgerScoped(f: {
      LIMIT ?`,
     [...params, f.limit && f.limit > 0 ? f.limit : 2000]
   )
-  return rows
+}
+
+function mergeLedgerRows(canonical: Record<string, any>[], legacy: Record<string, any>[], limit?: number): Record<string, any>[] {
+  const merged = new Map<string, Record<string, any>>()
+  for (const row of [...legacy, ...canonical]) {
+    const id = String(row.id ?? `${row.plot_id ?? row.node_id ?? ''}:${row.pay_date ?? ''}:${row.amount ?? ''}:${row.reference ?? row.cash_receipt_no ?? ''}`)
+    merged.set(id, { ...merged.get(id), ...row })
+  }
+  return [...merged.values()]
+    .sort((a, b) => String(b.pay_date ?? '').localeCompare(String(a.pay_date ?? '')) || String(b.created_at ?? '').localeCompare(String(a.created_at ?? '')))
+    .slice(0, limit && limit > 0 ? limit : 2000)
 }
 
 function enrichLedger(rows: Record<string, any>[]): Record<string, any>[] {

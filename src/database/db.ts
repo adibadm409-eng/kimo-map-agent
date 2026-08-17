@@ -75,6 +75,41 @@ async function safeMigrate(database: SQLite.SQLiteDatabase) {
       WHERE NOT EXISTS (SELECT 1 FROM reminders existing WHERE existing.id = r.id);
   `)
   await ensureOfferPropertyOptional(database)
+  await ensureOfferClientOptional(database)
+}
+
+async function ensureOfferClientOptional(database: SQLite.SQLiteDatabase): Promise<void> {
+  const table = await database.getFirstAsync<{ sql: string }>("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'offers'")
+  if (!table?.sql) return
+  const needsMigration = /client_id\s+TEXT\s+NOT\s+NULL/i.test(table.sql)
+    || /FOREIGN\s+KEY\s*\(\s*client_id\s*\).*ON\s+DELETE\s+CASCADE/i.test(table.sql)
+  if (!needsMigration) return
+  await database.execAsync(`
+    PRAGMA foreign_keys = OFF;
+    CREATE TABLE offers_client_migrated (
+      id TEXT PRIMARY KEY,
+      property_id TEXT,
+      client_id TEXT,
+      type TEXT DEFAULT 'buy_offer',
+      amount REAL DEFAULT 0,
+      status TEXT DEFAULT 'pending',
+      date TEXT DEFAULT '',
+      notes TEXT DEFAULT '',
+      reminder_at TEXT DEFAULT '',
+      reminder_notification_id TEXT DEFAULT '',
+      media TEXT DEFAULT '[]',
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (property_id) REFERENCES properties (id) ON DELETE SET NULL,
+      FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE SET NULL
+    );
+    INSERT INTO offers_client_migrated (id, property_id, client_id, type, amount, status, date, notes, reminder_at, reminder_notification_id, media, created_at)
+      SELECT id, NULLIF(property_id, ''), NULLIF(client_id, ''), type, amount, status, date, notes, COALESCE(reminder_at, ''), COALESCE(reminder_notification_id, ''), COALESCE(media, '[]'), created_at FROM offers;
+    DROP TABLE offers;
+    ALTER TABLE offers_client_migrated RENAME TO offers;
+    CREATE INDEX IF NOT EXISTS idx_offers_property ON offers (property_id);
+    CREATE INDEX IF NOT EXISTS idx_offers_client ON offers (client_id);
+    PRAGMA foreign_keys = ON;
+  `)
 }
 
 async function ensureOfferPropertyOptional(database: SQLite.SQLiteDatabase): Promise<void> {
@@ -149,7 +184,7 @@ async function initSchema(database: SQLite.SQLiteDatabase) {
     CREATE TABLE IF NOT EXISTS offers (
       id TEXT PRIMARY KEY,
       property_id TEXT,
-      client_id TEXT NOT NULL,
+      client_id TEXT,
       type TEXT DEFAULT 'buy_offer',
       amount REAL DEFAULT 0,
       status TEXT DEFAULT 'pending',
@@ -159,7 +194,7 @@ async function initSchema(database: SQLite.SQLiteDatabase) {
       reminder_notification_id TEXT DEFAULT '',
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (property_id) REFERENCES properties (id) ON DELETE SET NULL,
-      FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE
+      FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE SET NULL
     );
 
     CREATE TABLE IF NOT EXISTS entity_media (
@@ -481,7 +516,7 @@ export async function createOffer(o: Partial<Offer>): Promise<string> {
   const id = genId()
   await db.runAsync(
     'INSERT INTO offers (id,property_id,client_id,type,amount,status,date,notes,media) VALUES (?,?,?,?,?,?,?,?,?)',
-    [id, o.property_id ? String(o.property_id) : null, o.client_id || '', o.type || 'buy_offer', o.amount || 0, o.status || 'pending', o.date || '', o.notes || '', (o as any).media || '[]']
+    [id, o.property_id ? String(o.property_id) : null, o.client_id ? String(o.client_id) : null, o.type || 'buy_offer', o.amount || 0, o.status || 'pending', o.date || '', o.notes || '', (o as any).media || '[]']
   )
   await logChange({ action: 'create', scope: 'offers', scopeId: id, after: o, summary: 'إنشاء عرض' })
   return id

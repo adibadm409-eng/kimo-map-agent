@@ -110,7 +110,7 @@ export default function Offers() {
             </View>
             <View style={styles.cardInfo}>
               <Text style={[styles.propertyName, { color: colors.textPrimary }]} numberOfLines={1}>{o.property_name || 'طلب شراء غير مرتبط بعقار'}</Text>
-              <Text style={[styles.clientName, { color: colors.textSecondary }]} numberOfLines={1}>{o.client_name}</Text>
+              <Text style={[styles.clientName, { color: colors.textSecondary }]} numberOfLines={1}>{o.client_name || 'بدون عميل — العميل محذوف'}</Text>
             </View>
             <StatusBadge label={STATUS_LABELS[o.status] || o.status} value={o.status} />
           </View>
@@ -211,7 +211,7 @@ export default function Offers() {
       <OfferReminderModal
         visible={Boolean(reminderOffer)}
         initialAt={reminderOffer?.reminder_at}
-        title={reminderOffer ? `${reminderOffer.property_name || 'طلب شراء غير مرتبط بعقار'} — ${reminderOffer.client_name || 'بدون عميل'}` : 'العرض'}
+        title={reminderOffer ? `${reminderOffer.property_name || 'طلب شراء غير مرتبط بعقار'} — ${reminderOffer.client_name || 'بدون عميل — العميل محذوف'}` : 'العرض'}
         onClose={() => setReminderOffer(null)}
         onSave={saveReminder}
       />

@@ -47,7 +47,7 @@ export interface OfferReminder {
 export interface Offer {
   id: string
   property_id: string | null
-  client_id: string
+  client_id: string | null
   type: 'buy_offer' | 'sell_offer'
   amount: number
   status: 'pending' | 'accepted' | 'rejected' | 'countered'

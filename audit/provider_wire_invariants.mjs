@@ -8,7 +8,7 @@ import {
   LlmError,
 } from '../src/assistant/llm.ts'
 import { defaultProvider, providerCapabilities } from '../src/assistant/providers.ts'
-import { providerWireFamily, providerWireRequestExtras, normalizeMistralToolCallId } from '../src/assistant/providerWire.ts'
+import { providerWireFamily, providerWireRequestExtras, normalizeMistralToolCallId, normalizeProviderToolName } from '../src/assistant/providerWire.ts'
 
 const gemini = defaultProvider('gemini')
 const mistral = defaultProvider('mistral')
@@ -40,6 +40,10 @@ const mistralInvalidId = 'call_2308251'
 const normalizedMistralId = normalizeMistralToolCallId(mistralInvalidId)
 assert.match(normalizedMistralId, /^[A-Za-z0-9]{9}$/)
 assert.equal(normalizeMistralToolCallId(mistralInvalidId), normalizedMistralId)
+assert.equal(normalizeProviderToolName('current_local_time'), 'current_local_time')
+assert.equal(normalizeProviderToolName('{}.execute'), 'execute')
+assert.equal(normalizeProviderToolName('\u200f{}.execute'), 'execute')
+assert.equal(normalizeProviderToolName('namespace.current_local_time'), 'current_local_time')
 
 const wireMessages = serializeChatMessages(gemini, 'gemini-3.5-flash-lite', [
   { role: 'user', content: 'ما الوقت؟' },
@@ -56,6 +60,10 @@ assert.equal(wireMessages[2].tool_call_id, 'call_gemini_01')
 const mistralMessages = serializeChatMessages(mistral, 'mistral-medium-2505', [
   { role: 'assistant', content: null, tool_calls: [preserved] },
 ])
+const normalizedWeirdName = serializeChatMessages(mistral, 'mistral-medium-2505', [
+  { role: 'assistant', content: null, tool_calls: [{ id: 'weird-name', type: 'function', function: { name: '{}.execute', arguments: '{}' } }] },
+])
+assert.equal(normalizedWeirdName[0].tool_calls[0].function.name, 'execute')
 assert.equal(mistralMessages[0].tool_calls[0].extra_content, undefined)
 assert.deepEqual(mistralMessages[0].tool_calls[0].function, { name: 'current_local_time', arguments: '{"timezone":"Asia/Riyadh"}' })
 const mistralIdMessages = serializeChatMessages(mistral, 'mistral-medium-2505', [

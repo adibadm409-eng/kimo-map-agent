@@ -43,6 +43,38 @@ import { DOMAIN_TOOLS } from './domainTools'
 import { getScreenCatalog } from './screenCatalog'
 import type { EntityKey } from './catalog'
 
+type QueryFilterInput = { field?: string; op?: string; value?: any; value2?: any }
+
+async function resolveOfferRelationFilters(filters: QueryFilterInput[] | undefined): Promise<QueryFilterInput[] | undefined> {
+  if (!Array.isArray(filters) || !filters.length) return filters
+  const db = await getDB()
+  const relationTables: Record<string, string> = { property_id: 'properties', client_id: 'clients' }
+  const resolved: QueryFilterInput[] = []
+  for (const filter of filters) {
+    const field = String(filter?.field ?? '')
+    const table = relationTables[field]
+    const op = String(filter?.op ?? 'eq')
+    const value = filter?.value
+    if (!table || (op !== 'eq' && op !== 'contains' && op !== 'starts_with') || value === undefined || value === null || Array.isArray(value)) {
+      resolved.push(filter)
+      continue
+    }
+    const needle = String(value).trim()
+    if (!needle) {
+      resolved.push(filter)
+      continue
+    }
+    const like = op === 'starts_with' ? `${needle}%` : `%${needle}%`
+    const rows = await db.getAllAsync<{ id: string }>(
+      `SELECT id FROM ${table} WHERE id = ? OR name = ? OR name LIKE ? LIMIT 200`,
+      [needle, needle, like],
+    )
+    const ids = rows.map((row) => String(row.id)).filter(Boolean)
+    resolved.push(ids.length ? { ...filter, op: 'in', value: ids } : filter)
+  }
+  return resolved
+}
+
 export interface ToolArg {
   name: string
   type: 'string' | 'number' | 'boolean' | 'object' | 'array'
@@ -201,7 +233,7 @@ export const TOOLS: ToolDef[] = [
       const spec = {
         entity: String(args.entity ?? ''),
         search: args.search ? String(args.search) : undefined,
-        filters: args.filters as any,
+        filters: await resolveOfferRelationFilters(args.filters as QueryFilterInput[] | undefined),
         sort: args.sort as any,
         limit: args.limit ? Number(args.limit) : undefined,
         offset: args.offset ? Number(args.offset) : undefined,
@@ -314,10 +346,11 @@ export const TOOLS: ToolDef[] = [
     name: 'installment_schedule',
     description: 'جدولة التقسيط لقطعة: دفعات متبقية مقسمة على نوع التقسيط (شهري/ربع سنوي/نصف سنوي/سنوي) مع مبلغ الدفعة التالية',
     args: [
-      { name: 'plot_id', type: 'string', required: true, description: 'معرف القطعة' },
+      { name: 'plot_id', type: 'string', required: true, description: 'معرف القطعة أو رقمها الظاهر للمستخدم مثل A-01' },
+      { name: 'project_id', type: 'string', description: 'اسم المشروع أو معرفه لتضييق البحث عند تكرار رقم القطعة' },
     ],
     handler: async (args) => {
-      return await installmentSchedule(String(args.plot_id))
+      return await installmentSchedule(String(args.plot_id), args.project_id ? String(args.project_id) : undefined)
     },
   },
   {
@@ -338,12 +371,16 @@ export const TOOLS: ToolDef[] = [
   },
   {
     name: 'buyer_summary',
-    description: 'ملخص لكل مشتري عبر كل المشاريع: عدد القطع، إجمالي القيمة، المدفوع، المتبقي — مرتبة بالأكثر متبقياً',
+    description: 'ملخص لكل مشتري: عدد القطع، إجمالي القيمة، المدفوع، المتبقي — يمكن تضييقه باسم المشروع أو جزء من اسم المشتري، ويقرأ بيانات القطع المحلية مباشرة',
     args: [
+      { name: 'project_id', type: 'string', description: 'اختياري: اسم المشروع أو معرفه للتصفية' },
       { name: 'buyer_query', type: 'string', description: 'اختياري: جزء من اسم المشتري للتصفية' },
     ],
     handler: async (args) => {
-      return await buyerSummary(args.buyer_query ? String(args.buyer_query) : undefined)
+      return await buyerSummary(
+        args.buyer_query ? String(args.buyer_query) : undefined,
+        args.project_id ? String(args.project_id) : undefined,
+      )
     },
   },
   {
@@ -378,7 +415,8 @@ export const TOOLS: ToolDef[] = [
       { name: 'scope', type: 'string', description: 'نطاق العملية: entity name (مثل projects/plots) أو workspace/workspace_table/workspace_row/attachment/custom_field_value' },
       { name: 'scope_id', type: 'string', description: 'معرف العنصر المتأثر' },
       { name: 'actor', type: 'string', description: 'من نفّذ: agent|user|system|undo' },
-      { name: 'session_id', type: 'string', description: 'جلسة الوكيل' },
+      { name: 'session_id', type: 'string', description: 'جلسة الوكيل — لا تطلب من المستخدم؛ استخدم current_session بدلاً منها في الطلب الطبيعي' },
+      { name: 'current_session', type: 'boolean', description: 'اجعلها true عندما يطلب المستخدم عمليات «هذه الجلسة»؛ يحقن التطبيق معرف الجلسة محلياً' },
       { name: 'tool', type: 'string', description: 'الأداة المنفّذة (create/update/workspace_import_rows...)' },
       { name: 'from_date', type: 'number', description: 'من زمن (ميللي ثانية)' },
       { name: 'to_date', type: 'number', description: 'إلى زمن (ميللي ثانية)' },

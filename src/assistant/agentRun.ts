@@ -28,22 +28,31 @@ export type AgentEvent =
   | { type: 'done'; outcome?: AgentOutcome }
   | VisibleAgentEvent
 
-export type Listener = (e: AgentEvent) => void
+export type SessionAgentEvent = AgentEvent & { sessionId: string }
+export type Listener = (e: SessionAgentEvent) => void
 
-const listeners = new Set<Listener>()
+type Subscription = { fn: Listener; sessionId?: string }
+const listeners = new Set<Subscription>()
 
-export function emit(e: AgentEvent): void {
-  listeners.forEach((fn) => {
+/**
+ * بث حدث مرتبط بجلسة واحدة فقط. لا نستخدم ناقلاً عالمياً بلا سياق؛ لأن مهمة
+ * قديمة أو جلسة أخرى يمكن أن تبقى قيد التشغيل محلياً بعد إغلاق المتصفح.
+ */
+export function emitForSession(sessionId: string, event: AgentEvent): void {
+  const scopedEvent = { ...event, sessionId } as SessionAgentEvent
+  listeners.forEach(({ fn, sessionId: targetSessionId }) => {
+    if (targetSessionId && targetSessionId !== sessionId) return
     try {
-      fn(e)
+      fn(scopedEvent)
     } catch {}
   })
 }
 
-export function subscribeAgent(fn: Listener): () => void {
-  listeners.add(fn)
+export function subscribeAgent(fn: Listener, sessionId?: string): () => void {
+  const subscription: Subscription = { fn, sessionId }
+  listeners.add(subscription)
   return () => {
-    listeners.delete(fn)
+    listeners.delete(subscription)
   }
 }
 

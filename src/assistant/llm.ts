@@ -1,6 +1,6 @@
 import type { ProviderDef } from './providers'
 import { normalizeBaseUrl } from './providers'
-import { providerRequestIssues, providerWireFamily, providerWireRequestExtras, serializeProviderMessages } from './providerWire'
+import { normalizeProviderToolName, providerRequestIssues, providerWireFamily, providerWireRequestExtras, serializeProviderMessages } from './providerWire'
 import { buildAnthropicRequest, parseAnthropicResponse } from './anthropicWire'
 import { profileAllowsParam, resolveModelProfile } from './modelProfiles'
 import { parseToolArgumentsStrict } from './toolValidation'
@@ -66,7 +66,7 @@ export interface ChatResult {
 export function toWireToolCall(call: ToolCall, options: { includeProviderMetadata?: boolean } = {}): Record<string, any> {
   const extra = call.extra ?? {}
   const raw = (extra.raw ?? {}) as Record<string, any>
-  const name = call.name || raw.function?.name || ''
+  const name = normalizeProviderToolName(call.name || raw.function?.name || '')
   const args =
     typeof call.arguments === 'string'
       ? call.arguments
@@ -515,7 +515,7 @@ async function postChatStream(opts: ChatOpts, signal: AbortSignal): Promise<Chat
             const idx = String(tc.index ?? 0)
             const acc = tcAcc[idx] ?? { id: '', name: '', args: '', extra: {} }
             if (tc.id) acc.id = tc.id
-            if (tc.function?.name && !acc.name) acc.name = tc.function.name
+            if (tc.function?.name && !acc.name) acc.name = normalizeProviderToolName(tc.function.name)
             if (typeof tc.function?.arguments === 'string') acc.args += tc.function.arguments
             // نحافظ على كائن النداء الأصلي كاملاً (thought_signature وغيرها) — تُعاد
             // الصيغة الحرفية عند إعادة بثّ tool_calls في الجولات اللاحقة.
@@ -663,7 +663,7 @@ const msg = choice.message ?? {}
     }
     return {
       id: normalizeToolCallId(tc.id),
-      name: tc.function?.name ?? '',
+      name: normalizeProviderToolName(tc.function?.name ?? ''),
       // بعض المزودين يرسل الوسائط ككائن وليس نص JSON — نطبّعه دائماً
       arguments: typeof tc.function?.arguments === 'string' ? tc.function.arguments : tc.function?.arguments != null ? JSON.stringify(tc.function.arguments) : '{}',
       extra,

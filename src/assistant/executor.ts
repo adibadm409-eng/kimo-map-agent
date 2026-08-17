@@ -8,7 +8,7 @@ import { resolveModelProfile } from './modelProfiles'
 import { validateToolCallAgainstDefinitions, validateToolCallBatch } from './toolValidation'
 import { analyzeIntent, buildContextSummary } from './intent'
 import { persistUser, persistAssistantText, persistAssistantToolCalls, persistToolResult, mimeOf } from './persist'
-import { buildSystemPrompt, getAgentFunctions } from './prompts'
+import { buildSystemPrompt, getAgentFunctions, UNIVERSAL_TOOLS } from './prompts'
 import { assessSkill, getSkillById, planForSkill } from './skills'
 import { completePlanStep, type AgentPlan, type AgentSkill } from './agentContract'
 import { publishRuntimeEvent } from './runtimeEvents'
@@ -16,7 +16,7 @@ import { readModelHistory, messagesToLlm, collapseParallelToolRounds } from './h
 import { handleToolCall, deleteOne, deleteApproved, deleteRefused } from './invokeTools'
 import { performUndo, toolSig } from './undo'
 import { appendTaskEvidence, createTaskRun, getLatestTaskRun, transitionTaskRun } from './store'
-import { emit, subscribeAgent, isAgentBusy, cancelAgent, markRunning, clearRunning, isCancelled, setAborter, clearAborter, deriveAgentOutcome, type AgentEvent, type AgentOutcome } from './agentRun'
+import { emitForSession, subscribeAgent, isAgentBusy, cancelAgent, markRunning, clearRunning, isCancelled, setAborter, clearAborter, deriveAgentOutcome, type AgentEvent, type AgentOutcome } from './agentRun'
 import { MAX_AGENT_RUNTIME_MS, MAX_REPEATED_TOOL_CALLS, MAX_TOOL_CALLS, MAX_TOOL_ROUNDS } from './constants'
 import * as FileSystem from 'expo-file-system/legacy'
 
@@ -57,6 +57,15 @@ async function runLoop(
     let totalCalls = 0
     const lastObsHashForSig = new Map<string, string>()
     const lastUserMsg = (await getMessages(sessionId)).filter((m) => m.role === 'user').pop()
+    const lastUserText = String(lastUserMsg?.content ?? '').trim()
+    // القراءة التي تطلب أرقاماً أو حالة محلية لا يجوز أن تنتهي بنص النموذج وحده.
+    // هذا الحارس لا يقرر تشغيل الأدوات مسبقاً؛ لا يعمل إلا بعد أن يعيد المزود
+    // رداً نهائياً بلا tool_calls، فيعيد الجولة إلى الوكيل أو يسجل فشلاً صريحاً.
+    const readIntentRequiresEvidence = Boolean(
+      lastUserMsg
+      && /(?:اعرض|أظهر|اظهر|اقرأ|استكشف|ابحث|اعثر|كم|عدد|إجمالي|ملخص|جدول|شجرة|المؤشرات|التدفقات|الأقساط|المشروع|الوقت المحلي|تاريخ اليوم|البيانات المحلية|التنبيهات|التدقيق|من غيّر)/.test(lastUserText)
+      && !/(?:أنشئ|انشئ|أضف|اضف|عدّل|عدل|حدّث|حدث|احذف|حذف|سجّل|سجل\s+(?:دفعة|دفع|مبلغ|قسط|إيصال|تحويل)|استورد|استيراد|ذكرني|تذكير)/.test(lastUserText),
+    )
     const previousTask = await getLatestTaskRun(sessionId).catch(() => null)
     let runtimePlan: AgentPlan | null = null
     let runtimeSkill: AgentSkill | null = null
@@ -76,7 +85,13 @@ async function runLoop(
       const resumed = Boolean(previousTask && continuationMessage && ['proposed', 'awaiting_user', 'running', 'verifying'].includes(previousTask.status))
       if (resumed && previousTask) {
         runtimeTaskId = previousTask.id
-        runtimeSkill = getSkillById(previousTask.skillId ?? '') ?? match.skill
+        const storedSkill = getSkillById(previousTask.skillId ?? '')
+        // لا نُبقي مهمة مستأنفة على general_assistant إذا كشفت رسالة المتابعة
+        // مساراً تنفيذياً محدداً؛ marker الموافقة على حذف العملاء يجب أن يعيد
+        // اختيار client_relationship حتى تمر قراءة ما بعد الحذف بأدواته الآمنة.
+        runtimeSkill = storedSkill?.id === 'general_assistant' && match.skill.id !== 'general_assistant'
+          ? match.skill
+          : storedSkill ?? match.skill
         runtimePlan = (previousTask.plan as AgentPlan | undefined) ?? planForSkill(runtimeSkill, goal)
         await transitionTaskRun(runtimeTaskId, 'running', { plan: runtimePlan })
       } else {
@@ -151,7 +166,7 @@ async function runLoop(
             ) + runtimeCorrection,
 
         }
-        if (emitEvents) emit({ type: 'thinking' })
+        if (emitEvents) emitForSession(sessionId, { type: 'thinking' })
 
         const agentFunctions = getAgentFunctions(runtimeSkill)
         let result
@@ -168,13 +183,17 @@ async function runLoop(
               maxTokens: 4000,
               onDelta: (d) => {
                 liveText = d.content || liveText
-                if (emitEvents && liveText && (!d.toolCalls || !d.toolCalls.length)) {
-                  emit({ type: 'stream', content: liveText })
+                // في طلبات القراءة التي تتطلب دليلاً، لا نبث نص النموذج قبل
+                // اعتماد نتيجة أداة ناجحة؛ وإلا قد يرى المستخدم أرقاماً هلوسية
+                // أثناء البث ثم تُرفض لاحقاً. الرد النهائي سيُبث دفعة واحدة
+                // بعد اجتياز بوابة الإثبات.
+                if (emitEvents && !readIntentRequiresEvidence && liveText && (!d.toolCalls || !d.toolCalls.length)) {
+                  emitForSession(sessionId, { type: 'stream', content: liveText })
                 }
               },
             },
             (attempt, delayMs) => {
-              emit({
+              emitForSession(sessionId, {
                 type: 'error',
                 message: `تعذر الوصول للمزود (محاولة ${attempt + 1}) — إعادة المحاولة خلال ${Math.round(delayMs / 1000)} ثانية...`,
               })
@@ -185,7 +204,7 @@ async function runLoop(
           if (isCancelled(sessionId)) {
             if (runtimeTaskId) await transitionTaskRun(runtimeTaskId, 'cancelled', { lastError: 'أوقف المستخدم التنفيذ' })
             await persistAssistantText(sessionId, 'تم إيقاف الطلب.', 'system')
-            if (emitEvents) emit({ type: 'text', content: 'تم إيقاف الطلب.' })
+            if (emitEvents) emitForSession(sessionId, { type: 'text', content: 'تم إيقاف الطلب.' })
             return
           }
           // تثبيت الخطأ في السجل حتى يراه المستخدم ويعرف السبب — لا صمت ولا إخفاء
@@ -200,7 +219,7 @@ async function runLoop(
                 : `تعذّر إكمال الرد: ${errMsg}`
           if (runtimeTaskId) await transitionTaskRun(runtimeTaskId, 'failed', { lastError: finalMsg })
           await persistAssistantText(sessionId, finalMsg, 'error').catch(() => {})
-          if (emitEvents) emit({ type: 'error', message: finalMsg })
+          if (emitEvents) emitForSession(sessionId, { type: 'error', message: finalMsg })
           return
         }
 
@@ -214,7 +233,7 @@ async function runLoop(
             result.toolCalls = result.toolCalls.slice(0, 1)
             const detail = `الموديل الحالي لا يثبت تنفيذ الأدوات بالتوازي؛ سأتابع ${deferredNonParallelCalls} نداءً مؤجلاً في جولات متتابعة بعد التحقق من نتيجة النداء الحالي.`
             await persistAssistantText(sessionId, detail, 'progress').catch(() => {})
-            if (emitEvents) emit({ type: 'progress', text: detail })
+            if (emitEvents) emitForSession(sessionId, { type: 'progress', text: detail })
           }
           // احفظ فقط النداءات التي ستنفذ في هذه الجولة؛ لا نسجل النداءات المؤجلة
           // داخل assistant واحدة لأن ذلك يخالف عقد الموديلات ذات التنفيذ التسلسلي.
@@ -226,15 +245,17 @@ async function runLoop(
           result.toolCalls = persistedCalls
         }
 
-        if (result.content && result.toolCalls.length) {
-          // نص مصاحب لنداء أداة = نشاط الوكيل أثناء التنفيذ (تفكير/تخطيط/شرح ما يفعله) —
-          // يُخزَّن كنوع progress منفصل عن الرد النهائي، ويُبث live للشاشة
-          const tail = String(result.content).trim()
-          if (tail) {
-            await persistAssistantText(sessionId, tail, 'progress')
-            if (emitEvents) emit({ type: 'progress', text: tail })
-          }
-          thread.push({ role: 'assistant', content: result.content, tool_calls: result.toolCalls.map((call) => toWireToolCall(call, { includeProviderMetadata: resolveModelProfile(providerProxy(conn), conn.model).wireFamily === 'gemini-openai' })) })
+                  if (result.content && result.toolCalls.length) {
+            // في طلبات القراءة لا نعرض محتوى مصاحباً إذا كان قد يحتوي أرقاماً
+            // قبل الملاحظة؛ نحتفظ به داخلياً فقط، وتبقى بطاقة المرحلة هي الإشارة
+            // المرئية حتى تصل نتيجة الأداة المنظمة.
+            const tail = String(result.content).trim()
+            if (tail && !readIntentRequiresEvidence) {
+              await persistAssistantText(sessionId, tail, 'progress')
+              if (emitEvents) emitForSession(sessionId, { type: 'progress', text: tail })
+            }
+            thread.push({ role: 'assistant', content: result.content, tool_calls: result.toolCalls.map((call) => toWireToolCall(call, { includeProviderMetadata: resolveModelProfile(providerProxy(conn), conn.model).wireFamily === 'gemini-openai' })) })
+
         } else if (result.toolCalls.length) {
           thread.push({ role: 'assistant', content: null, tool_calls: result.toolCalls.map((call) => toWireToolCall(call, { includeProviderMetadata: resolveModelProfile(providerProxy(conn), conn.model).wireFamily === 'gemini-openai' })) })
         }
@@ -262,30 +283,42 @@ async function runLoop(
         if (!result.toolCalls.length) {
           const finalText = result.content ? String(result.content).trim() : ''
           const taskHasEvidence = !runtimeTaskId || (runtimeEvidenceCount > 0 && runtimeSuccessfulEvidenceCount > 0 && runtimeLastEvidenceOk)
-          if (runtimeTaskId && !taskHasEvidence) {
+          const readEvidenceMissing = readIntentRequiresEvidence && !(runtimeEvidenceCount > 0 && runtimeSuccessfulEvidenceCount > 0 && runtimeLastEvidenceOk)
+          if ((runtimeTaskId && !taskHasEvidence) || readEvidenceMissing) {
             // نص نية التنفيذ ليس نتيجة تنفيذ. احتفظ به كمسودة تقدم غير نهائية،
             // ثم امنح الوكيل جولة واحدة ليحوّل النية إلى أداة أو سؤال ضروري.
             if (finalText) {
-              await persistAssistantText(sessionId, finalText, 'progress').catch(() => {})
-              if (emitEvents) emit({ type: 'progress', text: finalText })
+              // النص غير الموثق يبقى في الخيط الداخلي فقط لإتاحة جولة تصحيح؛
+              // لا نحفظه في المحادثة ولا نبثه للمستخدم كأنه نتيجة.
+              if (!readIntentRequiresEvidence) {
+                await persistAssistantText(sessionId, finalText, 'progress').catch(() => {})
+                if (emitEvents) emitForSession(sessionId, { type: 'progress', text: finalText })
+              }
               thread.push({ role: 'assistant', content: finalText })
             }
             if (noEvidenceRecoveryAttempts < 1) {
               noEvidenceRecoveryAttempts += 1
-                            runtimeCorrection = '\\nتعليمات داخلية: ردك السابق عبّر عن نية التنفيذ دون نتيجة موثقة. لا تكتفِ بالقول إنك ستنفذ؛ نفّذ الخطوة المناسبة الآن أو اسأل عن معلومة جوهرية ناقصة. لا تعلن اكتمال المهمة دون ملاحظة تنفيذ قابلة للتحقق.'
+                            runtimeCorrection = '\\nتعليمات داخلية: ردك السابق قدّم بيانات أو أرقاماً محلية دون ملاحظة أداة ناجحة. لا تجب من الذاكرة ولا تخمّن. استخدم أداة القراءة المناسبة لهذا الطلب الآن، ثم اعتمد على النتيجة المنظمة فقط؛ إذا كانت هوية الهدف ناقصة فاسأل سؤالاً واحداً واضحاً.'
               if (emitEvents) publishRuntimeEvent(sessionId, { type: 'recovery', title: 'أراجع الجولة قبل إغلاقها', detail: 'لم تصل نتيجة تنفيذ قابلة للتحقق بعد؛ سأمنح الوكيل فرصة تصحيح داخلية.', strategy: 'retry' })
               continue
             }
-            const noEvidence = 'لم تصل نتيجة تنفيذ قابلة للتحقق، لذلك أوقفت المهمة دون اعتبارها مكتملة.'
-            await transitionTaskRun(runtimeTaskId, 'failed', { lastError: noEvidence })
-            if (emitEvents) publishRuntimeEvent(sessionId, { type: 'phase', phase: 'error', label: 'تحتاج المهمة إلى معالجة', detail: noEvidence })
+            const noEvidence = readIntentRequiresEvidence
+              ? 'لم تصل قراءة موثوقة من قاعدة البيانات، لذلك لن أعرض أرقاماً أو حالة غير مثبتة.'
+              : 'لم تصل نتيجة تنفيذ قابلة للتحقق، لذلك أوقفت المهمة دون اعتبارها مكتملة.'
+            if (runtimeTaskId) await transitionTaskRun(runtimeTaskId, 'failed', { lastError: noEvidence })
+            await persistAssistantText(sessionId, noEvidence, 'error').catch(() => {})
+            if (emitEvents) {
+              publishRuntimeEvent(sessionId, { type: 'phase', phase: 'error', label: 'تحتاج المهمة إلى معالجة', detail: noEvidence })
+              emitForSession(sessionId, { type: 'error', message: noEvidence })
+              emitForSession(sessionId, { type: 'text', content: noEvidence })
+            }
           } else {
             if (finalText) {
               await persistAssistantText(sessionId, finalText, 'text')
               if (emitEvents) {
-                emit({ type: 'stream', content: finalText })
-                emit({ type: 'stream', content: '', done: true })
-                emit({ type: 'text', content: finalText })
+                emitForSession(sessionId, { type: 'stream', content: finalText })
+                emitForSession(sessionId, { type: 'stream', content: '', done: true })
+                emitForSession(sessionId, { type: 'text', content: finalText })
               }
             }
             if (runtimeTaskId) await transitionTaskRun(runtimeTaskId, 'verifying', { plan: runtimePlan ?? undefined })
@@ -308,7 +341,7 @@ async function runLoop(
           if (totalCalls > MAX_TOOL_CALLS) {
             const limitMsg = `أوقفت التنفيذ الوقائي بعد ${MAX_TOOL_CALLS} استدعاء أداة في مهمة واحدة. راجع النتيجة الحالية ثم أكملها بطلب منفصل.`
             await persistAssistantText(sessionId, limitMsg, 'system').catch(() => {})
-            if (emitEvents) emit({ type: 'text', content: limitMsg })
+            if (emitEvents) emitForSession(sessionId, { type: 'text', content: limitMsg })
             return
           }
           const nextCount = (callCounts.get(sig) ?? 0) + 1
@@ -316,7 +349,7 @@ async function runLoop(
 
           const callArgs0 = parseToolArgs(call.arguments)
           const innerTool = call.name === 'execute' ? String(callArgs0.tool ?? 'execute') : call.name
-          const universalTools = new Set(['ask_user', 'request_confirmation', 'catalog', 'schema_inspect', 'app_screen_catalog', 'list_entities', 'query', 'get', 'search_everything', 'data_snapshot', 'audit_log_query', 'review_my_work', 'generate_file', 'preview_update', 'undo_last', 'project_memory_save', 'project_memory_read', 'list_generated_files', 'review_generated_file', 'current_local_time', 'list_workspaces', 'workspace_get'])
+          const universalTools = UNIVERSAL_TOOLS
           const skillAllowsTool = !runtimeSkill || universalTools.has(innerTool) || runtimeSkill.readTools.includes(innerTool) || runtimeSkill.writeTools.includes(innerTool) || runtimeSkill.preferredTools.includes(innerTool)
           if (!skillAllowsTool) {
             const denied = `[فشل] المهارة «${runtimeSkill?.label ?? 'الحالية'}» لا تستخدم الأداة «${innerTool}» في هذا المسار. سأعود إلى أدوات القراءة أو أسأل عن تغيير الهدف بدلاً من تنفيذ مسار غير مناسب.`
@@ -360,11 +393,11 @@ async function runLoop(
             ? `[ملاحظة] نُفِّذ «${innerTool}» بـ ${nextCount} مرة متتالية بنفس الوسائط، وآخر نتيجة: ${truncate(lastObsForSig ?? '', 400)}. ` +
               `الأمر لك وحدك: إن كانت المهمة قد اكتملت بهذه النتيجة فانتقل للإجابة على المستخدم مباشرة دون أدوات إضافية، وإن كانت تحتاج مواصلة أو أسوأ من ذلك (فشل) فاحكم بنفسك — كرر إن كان مبرراً، أو غيّر الوسائط/الأداة/المنهج، أو اسأل المستخدم. لا قيد عليك في الاستمرار طالما ترى تقدماً أو حاجة حقيقية.`
             : null
-          if (repeatedSameResult && emitEvents) emit({ type: 'thinking' })
+          if (repeatedSameResult && emitEvents) emitForSession(sessionId, { type: 'thinking' })
           if (repeatedSameResult && nextCount > MAX_REPEATED_TOOL_CALLS) {
             const stopMsg = `أوقفت تكرار «${innerTool}» بعد ${MAX_REPEATED_TOOL_CALLS} محاولات متطابقة بلا تقدم. سأحافظ على البيانات كما هي.`
             await persistAssistantText(sessionId, stopMsg, 'system').catch(() => {})
-            if (emitEvents) emit({ type: 'text', content: stopMsg })
+            if (emitEvents) emitForSession(sessionId, { type: 'text', content: stopMsg })
             return
           }
 
@@ -458,7 +491,7 @@ async function runLoop(
           'أنجزت ما أمكن تنفيذه ضمن هذه الجولة من الأدوات. أخبرني ما تريد إكماله أو تعديله وسأكمل من حيث توقفت.',
           'system'
         )
-        if (emitEvents) emit({ type: 'text', content: 'أنجزت ما أمكن تنفيذه ضمن هذه الجولة. أرسل رسالة للمتابعة.' })
+        if (emitEvents) emitForSession(sessionId, { type: 'text', content: 'أنجزت ما أمكن تنفيذه ضمن هذه الجولة. أرسل رسالة للمتابعة.' })
       }
     } finally {
       await clearBrain(sessionId).catch(() => {})
@@ -530,7 +563,7 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
     conn = await withConfig(async (c) => c)
   } catch (e: any) {
     await persistAssistantText(sessionId, e?.message ?? 'إعداد ناقص', 'error')
-    emit({ type: 'error', message: e?.message ?? 'إعداد ناقص' })
+    emitForSession(sessionId, { type: 'error', message: e?.message ?? 'إعداد ناقص' })
     return
   }
 
@@ -543,7 +576,7 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
       const message = `الموديل ${conn.model} لا يثبت دعماً للإدخال الصوتي عبر ${conn.providerName}. اختر موديل صوتياً معلناً من إعدادات كيمو؛ لم أرسل طلباً غير متوافق.`
       await persistUser(sessionId, `رسالة صوتية: ${voiceLabel}`)
       await persistAssistantText(sessionId, message, 'error')
-      emit({ type: 'error', message })
+      emitForSession(sessionId, { type: 'error', message })
       return
     }
     try {
@@ -566,7 +599,7 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
       const message = error?.message ?? 'تعذر تجهيز التسجيل الصوتي محلياً.'
       await persistUser(sessionId, `رسالة صوتية: ${voiceLabel}`)
       await persistAssistantText(sessionId, message, 'error')
-      emit({ type: 'error', message })
+      emitForSession(sessionId, { type: 'error', message })
       return
     }
   }
@@ -597,7 +630,7 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
   await persistUser(sessionId, content)
   // لا رسائل تقدم ثابتة — المساعد نفسه يخاطب المستخدم بما يقرره هو.
   const outcome = await runGuarded(sessionId, conn, true, initialContent)
-  emit({ type: 'done', outcome })
+  emitForSession(sessionId, { type: 'done', outcome })
 }
 
 /** الرد على سؤال سابق (ask_user) ومواصلة عمل الوكيل. */
@@ -610,13 +643,13 @@ export async function answerAsk(sessionId: string, answer: string): Promise<void
     conn = await withConfig(async (c) => c)
   } catch (e: any) {
     await persistAssistantText(sessionId, e?.message ?? 'إعداد ناقص', 'error')
-    emit({ type: 'error', message: e?.message ?? 'إعداد ناقص' })
+    emitForSession(sessionId, { type: 'error', message: e?.message ?? 'إعداد ناقص' })
     return
   }
   await clearPending(sessionId)
   await persistUser(sessionId, `[إجابة المستخدم على سؤالك] ${answer}`)
   const outcome = await runGuarded(sessionId, conn)
-  emit({ type: 'done', outcome })
+  emitForSession(sessionId, { type: 'done', outcome })
 }
 
 /** الموافقة أو الرفض على طلب تأكيد (حذف...) ومواصلة عمل الوكيل. */
@@ -629,7 +662,7 @@ export async function answerConfirmation(sessionId: string, approve: boolean, se
     conn = await withConfig(async (c) => c)
   } catch (e: any) {
     await persistAssistantText(sessionId, e?.message ?? 'إعداد ناقص', 'error')
-    emit({ type: 'error', message: e?.message ?? 'إعداد ناقص' })
+    emitForSession(sessionId, { type: 'error', message: e?.message ?? 'إعداد ناقص' })
     return
   }
 
@@ -644,7 +677,7 @@ export async function answerConfirmation(sessionId: string, approve: boolean, se
         await persistAssistantText(sessionId, `تمت الموافقة على حذف ${chosen.length} عنصر`, 'system')
         for (const it of chosen) {
           const outcome = await deleteOne(sessionId, it.tool, it.id, it.entity ? { entity: it.entity, id: it.id } : { id: it.id })
-          emit({ type: 'tool', name: it.tool, args: { ...(it.entity ? { entity: it.entity } : {}), id: it.id }, result: outcome })
+          emitForSession(sessionId, { type: 'tool', name: it.tool, args: { ...(it.entity ? { entity: it.entity } : {}), id: it.id }, result: outcome })
         }
       } else {
         await persistUser(sessionId, '[لم يُحدد المستخدم أي عنصر — رفض الحذف]')
@@ -658,7 +691,7 @@ export async function answerConfirmation(sessionId: string, approve: boolean, se
     await deleteRefused(sessionId)
   }
   const outcome = await runGuarded(sessionId, conn)
-  emit({ type: 'done', outcome })
+  emitForSession(sessionId, { type: 'done', outcome })
 }
 
 export { createSession as newSession, listUndo }

@@ -7,8 +7,8 @@ export const AGENT_SKILLS: AgentSkill[] = [
     label: 'إدارة المشروع العقاري',
     description: 'ينشئ وينظم المشاريع الهرمية وبلوكاتها وقطعها ووحداتها ويتابع سلامة الروابط والبيانات المالية.',
     triggers: ['أنشئ مشروع', 'إنشاء مشروع', 'مشروع عقاري', 'أضف بلوك', 'أنشئ بلوك', 'أضف قطعة', 'أنشئ قطعة', 'طابق', 'وحدة سكنية', 'عدّل القطعة', 'تعديل المشروع'],
-    preferredTools: ['project_profile_get', 'project_nodes_list', 'project_tree', 'project_financials', 'project_cashflow', 'project_integrity_check', 'query', 'get', 'mutate_record'],
-    readTools: ['project_profile_get', 'project_nodes_list', 'project_tree', 'project_financials', 'project_cashflow', 'project_integrity_check', 'query', 'get'],
+    preferredTools: ['project_profile_get', 'project_nodes_list', 'project_tree', 'project_financials', 'installment_schedule', 'payment_ledger', 'project_cashflow', 'project_integrity_check', 'query', 'get', 'mutate_record'],
+    readTools: ['project_profile_get', 'project_nodes_list', 'project_tree', 'project_financials', 'installment_schedule', 'payment_ledger', 'project_cashflow', 'project_integrity_check', 'query', 'get'],
     writeTools: ['mutate_record'],
     requiredInputs: ['هوية المشروع عند التعديل؛ واسم المشروع ونوعه عند الإنشاء؛ وهوية الأصل عند التعديل'],
     questionPolicy: 'ask_on_missing',
@@ -118,9 +118,9 @@ export const AGENT_SKILLS: AgentSkill[] = [
     id: 'client_relationship',
     label: 'إدارة العملاء والعلاقات',
     description: 'ينظم العملاء وبيانات الاتصال والارتباطات بالعروض والمشاهدات دون افتراض هوية أو رقم.',
-    triggers: ['أضف عميلاً', 'أضف عميل', 'أنشئ عميلاً', 'أنشئ عميل', 'إنشاء عميل', 'سجّل عميلاً', 'عدّل العميل', 'عدّل عميلاً', 'احذف العميل', 'عميل', 'العميل', 'مشتري', 'بائع', 'هاتف العميل', 'رقم العميل', 'جهة اتصال', 'اتصل بالعميل', 'بيانات العميل'],
-    preferredTools: ['catalog', 'query', 'get', 'mutate_record', 'search_everything'],
-    readTools: ['catalog', 'query', 'get', 'search_everything'],
+    triggers: ['أضف عميلاً', 'أضف عميل', 'أنشئ عميلاً', 'أنشئ عميل', 'إنشاء عميل', 'سجّل عميلاً', 'عدّل العميل', 'عدّل عميلاً', 'احذف العميل', 'حذف العميل', 'احذف العملاء', 'حذف العملاء', 'حذف: العملاء', 'موافقة المستخدم على حذف', 'احذف عميلاً', 'حذف عميلاً', 'احذف عميلا', 'حذف عميلا', 'عميل', 'العميل', 'مشتري', 'بائع', 'هاتف العميل', 'رقم العميل', 'جهة اتصال', 'اتصل بالعميل', 'بيانات العميل'],
+    preferredTools: ['catalog', 'query', 'get', 'list_reminders', 'mutate_record', 'search_everything'],
+    readTools: ['catalog', 'query', 'get', 'list_reminders', 'search_everything'],
     writeTools: ['mutate_record'],
     requiredInputs: ['هوية العميل عند التعديل؛ والاسم أو وسيلة تعريف عند الإنشاء'],
     questionPolicy: 'never_guess',
@@ -184,6 +184,7 @@ export function matchSkill(text: string): SkillMatch {
   const hasPropertyFlow = /عقار|عقارات|بيت|فندق|عمارة|برج سكني|مزرعة|قطعة أرض|هنجر|محل/.test(normalized)
   const hasProjectImportFlow = /استيراد|استورد|جدول|صفوف|بلوكات|قطع|ملف مشروع/.test(normalized)
   const hasPaymentFlow = /دفعة|دفع|قسط|أقساط|تحصيل|متبقي|سند|تدفق نقدي|دفتر نقد/.test(normalized)
+  const hasProjectUpdateFlow = /(?:عدّل|عدل|حدّث|حدث|غيّر|غير|صحّح|صحح)[^.!؟\n]{0,100}(?:المشروع|القطعة|البلوك|الوحدة|التقسيط|القسط|نوع التقسيط)/.test(normalized)
   const ranked = AGENT_SKILLS.map((skill) => {
     const hits = skill.triggers.filter((trigger) => normalized.includes(trigger.toLowerCase()))
     const specificityBonus = skill.id === 'general_assistant' || skill.id === 'data_search' ? 0 : 0.08
@@ -204,7 +205,15 @@ export function matchSkill(text: string): SkillMatch {
       score = Math.max(score, 0.97)
       reasons.push('مسار دفعة/قسط مالي')
     }
-    if (hasProjectImportFlow && !hasOfferFlow && !hasPaymentFlow && skill.id === 'project_import') {
+    if (hasProjectUpdateFlow) {
+      if (skill.id === 'project_operations') {
+        score = Math.max(score, 0.98)
+        reasons.push('مسار تعديل حقل داخل مشروع قائم')
+      } else if (skill.id === 'project_import') {
+        score = Math.min(score, 0.35)
+      }
+    }
+    if (hasProjectImportFlow && !hasProjectUpdateFlow && !hasOfferFlow && !hasPaymentFlow && skill.id === 'project_import') {
       score = Math.max(score, 0.96)
       reasons.push('مسار مشروع/استيراد هرمي')
     }

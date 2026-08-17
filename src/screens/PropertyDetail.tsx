@@ -201,7 +201,7 @@ export default function PropertyDetail() {
             <View key={o.id} style={[styles.offerRow, { borderBottomColor: colors.border }]}>
               <View style={styles.offerLeft}>
                 <Text style={[styles.offerAmount, { color: colors.accent }]}>{formatPrice(o.amount)} ريال يمني</Text>
-                <Text style={[styles.offerClient, { color: colors.textSecondary }]}>{o.client_name}</Text>
+                <Text style={[styles.offerClient, { color: colors.textSecondary }]}>{o.client_name || 'بدون عميل — العميل محذوف'}</Text>
               </View>
               <StatusBadge label={STATUS_LABELS[o.status] || o.status} value={o.status} />
             </View>

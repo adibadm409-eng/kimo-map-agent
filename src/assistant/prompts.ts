@@ -40,6 +40,16 @@ export const WRITE_TOOLS = new Set([
 
 export const DELETE_CONFIRM_TOOLS = new Set(['mutate_record', 'delete', 'workspace_delete', 'workspace_delete_table', 'workspace_delete_row'])
 
+/** أدوات القراءة الآمنة المتاحة لكل مهارة؛ لا تمنح صلاحية كتابة. */
+export const UNIVERSAL_TOOLS = new Set([
+  'ask_user', 'request_confirmation', 'catalog', 'schema_inspect', 'app_screen_catalog', 'list_entities',
+  'query', 'get', 'search_everything', 'data_snapshot', 'audit_log_query', 'audit_log_summary', 'review_my_work',
+  'generate_file', 'preview_update', 'undo_last', 'project_memory_save', 'project_memory_read',
+  'list_generated_files', 'review_generated_file', 'current_local_time', 'project_profile_get', 'project_nodes_list',
+  'project_tree', 'project_financials', 'installment_schedule', 'buyer_summary', 'payment_ledger',
+  'dashboard_kpis', 'project_cashflow', 'project_integrity_check', 'list_workspaces', 'workspace_get',
+])
+
 export function buildSystemPrompt(s: AgentSettings, providerName: string, model: string, extraDirectives: string[] = [], brainOps: BrainOp[] = [], projectMemory = ''): string {
   const modeNote =
     s.mode === 'read'
@@ -71,10 +81,12 @@ ${modeNote}
 - المشاريع القالبية: projects ثم blocks ثم plots (مع plot_payments والحقول المخصصة) — عندما يذكر الطلب مشروعاً أو بلوكاً أو قطعة أو تقسيطاً أو مبيعات مشروع، أو يسأل عن الوضع المالي لمشروع.
 - المالية والتحليلات: buyer_summary (ملخص مشترٍ)، payment_ledger (دفتر الأقساط)، dashboard_kpis (مؤشرات عامة)، project_financials (فروقات القطع)، installment_schedule (جدولة قسط قطعة) — عندما يتعلق السؤال بالأموال والمدفوعات والمتبقيات والتقسيط أو الإحصائيات.
 - قاعدة الأرقام الحقيقية: عندما يسألك المستخدم فعلاً عن أرقام أو إحصاءات أو إجماليات (عدد العقارات/القطع/العملاء، مجموع المبالغ، المتبقي بالكامل...) فاستدعِ data_snapshot قبل الرد لتعتمد على أرقام قاعدة البيانات الفعلية، وبعد أي تعديل تؤثر على الأرقام تحقق بلقطة جديدة أو قراءة. لكن لا تستدعها تلقائياً في بداية كل محادثة أو عند رسائل لا تطلبها (تحية، سؤال عام، كلام عادي) — الأداة تُشغَّل فقط حين تستدعيها حاجة فعلية أنت قررتها بنفسك لهذا الرد.
+- بروتوكول الإثبات قبل الكلام: إذا طلب المستخدم قراءة شجرة مشروع أو أرقاماً مالية أو أقساطاً أو مؤشرات أو حالة محلية محددة، يجب أن تستدعي أداة القراءة المناسبة أولاً (مثل project_tree أو project_nodes_list أو project_financials أو installment_schedule أو project_cashflow أو data_snapshot بحسب النطاق)، ثم تبني الإجابة من الملاحظة الفعلية فقط. لا تكتب جدولاً أو رقماً أو اسماً تفصيلياً من الذاكرة، ولا تستخدم مثالاً تخمينياً على أنه نتيجة التطبيق. إذا لم تُرجع الأداة نتيجة ناجحة، قل إن القراءة لم تكتمل بدلاً من اختلاق بديل.
+- جدول التقسيط تحديداً: عند ذكر «جدول التقسيط» أو «الدفعة القادمة» أو «قسط قطعة»، استخدم أداة installment_schedule بعد تحديد القطعة، وأرسل رقم القطعة الظاهر للمستخدم مثل A-01 في الحقل plot_id واسم المشروع أو مرجعه في الحقل project_id عند توفره. لا تبنِ تواريخ أو مبالغ أو حالات دفع من الذاكرة. إذا أعادت الأداة أن القطعة ليست قيد التقسيط، انقل هذه النتيجة كما هي ولا تستبدلها بجدول افتراضي.
 - مساحات العمل المرنة: workspace_* — المشاريع الحرة بجداول وأعمدة مخصصة (منشأة من الصفر أو مستوردة من ملفات).
 - الملفات المرفوعة: list_attachments ثم read_uploaded_file (معاينة دائماً أولاً) ثم import_project_file إن كان منظماً — عندما يذكر الطلب ملفاً مرفوعاً أو استيراداً.
 - الملفات المولّدة: بعد توليد أي ملف بـ generate_file راجِعه بنفسك للتأكد من سلامته ومحتواه بـ list_generated_files ثم review_generated_file (يقرأ المحتوى الفعلي)، وإذا طلب المستخدم مراجعة تقرير وُلّد سابقاً فاستخدمها فوراً بدل افتراض سلامته.
-- سجل التدقيق: audit_log_query (فلاتر: من نفّذ، الأداة، النطاق، الفترة) و audit_log_summary (إحصائيات) — عندما يسأل المستخدم عن من غيّر ماذا ومتى، أو عمليات جرت في جلسة أو فترة معينة، أو تقييم ما نُفّذ. يمكنك أيضاً التحقق بنفسك من أي عملية سابقة نفّذتها بقراءة سجل التدقيق.
+- سجل التدقيق: audit_log_query (فلاتر: من نفّذ، الأداة، النطاق، الفترة) و audit_log_summary (إحصائيات) — عندما يسأل المستخدم عن من غيّر ماذا ومتى، أو عمليات جرت في جلسة أو فترة معينة، أو تقييم ما نُفّذ. عند عبارة «في هذه الجلسة» أرسل current_session=true ولا تخترع أو تطلب session_id؛ التطبيق يحقن معرف الجلسة محلياً. يمكنك أيضاً التحقق بنفسك من أي عملية سابقة نفّذتها بقراءة سجل التدقيق.
 - البحث الشامل: search_everything — عندما لا يحدد الطلب قسماً واضحاً: ابحث شاملاً أولاً ثم ضيّق بناءً على النتائج.
 - اكتشاف البنية: schema_inspect — عندما تكون بنية SQLite الفعلية أو العلاقات أو أسماء الحقول غير واضحة، اطلب مخطط الكيانات المطلوبة أو المخطط الكامل للقراءة فقط. قارن الأعمدة الفعلية بكتالوج التطبيق، ثم اختر query/get المناسب؛ لا تكتب SQL ولا تستنتج حقلاً غير موجود.
 
@@ -186,7 +198,7 @@ ${projectMemoryBlock}
  * محمياً بحارس مستقل داخل executor حتى لا تكون الصلاحية مجرد تعليمات نصية. */
 export function getAgentFunctions(skill?: AgentSkill | null): FunctionDef[] {
   const schemas = buildToolSchemas()
-  const universal = new Set(['ask_user', 'request_confirmation', 'catalog', 'schema_inspect', 'app_screen_catalog', 'list_entities', 'query', 'get', 'search_everything', 'data_snapshot', 'audit_log_query', 'review_my_work', 'generate_file', 'preview_update', 'undo_last', 'project_memory_save', 'project_memory_read', 'list_generated_files', 'review_generated_file', 'current_local_time', 'list_workspaces', 'workspace_get'])
+  const universal = UNIVERSAL_TOOLS
   const allowed = skill
     ? new Set([...universal, ...skill.readTools, ...skill.writeTools, ...skill.preferredTools])
     : universal

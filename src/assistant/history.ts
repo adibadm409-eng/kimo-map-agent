@@ -2,6 +2,7 @@ import { getMessages, type Message } from './store'
 import type { ChatMessage } from './llm'
 import { sanitizeWireFunction, normalizeToolCallId } from './llm'
 import { summarizeToolResult } from './toolLabels'
+import { normalizeProviderToolName } from './providerWire'
 import { MAX_HISTORY_MESSAGES } from './constants'
 
 export async function readModelHistory(sessionId: string): Promise<Message[]> {
@@ -69,7 +70,9 @@ export function messagesToLlm(msgs: Message[]): ChatMessage[] {
           if (f.arguments == null) f.arguments = rawFn.arguments ?? '{}'
           if (typeof f.arguments !== 'string') f.arguments = JSON.stringify(f.arguments)
           if (typeof f.name !== 'string' || !f.name.trim()) f.name = 'execute'
-          t.function = sanitizeWireFunction(f)
+          const cleanFunction = sanitizeWireFunction(f)
+          cleanFunction.name = normalizeProviderToolName(cleanFunction.name || 'execute') || 'execute'
+          t.function = cleanFunction
           t.id = normalizeToolCallId(t.id ?? tc.id ?? raw.id)
           return t
         })

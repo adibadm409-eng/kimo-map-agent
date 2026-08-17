@@ -60,7 +60,8 @@ export function buildToolSchemas(): Record<string, { type: 'object'; properties:
   for (const name of ['project_tree', 'project_financials']) {
     if (out[name]?.properties.project_id) out[name].properties.project_id.description = 'معرف المشروع (اجلِبه بمنتج query على الكيان projects)'
   }
-  if (out.installment_schedule?.properties.plot_id) out.installment_schedule.properties.plot_id.description = 'معرف القطعة (اجلِبه بمنتج query على الكيان plots)'
+  if (out.installment_schedule?.properties.plot_id) out.installment_schedule.properties.plot_id.description = 'معرف القطعة أو رقمها الظاهر للمستخدم مثل A-01؛ استخدم الرقم الطبيعي ويمكن حلّه داخلياً'
+  if (out.installment_schedule?.properties.project_id) out.installment_schedule.properties.project_id.description = 'اسم المشروع أو معرفه لتضييق البحث عن القطعة عند توفره'
   if (out.payment_ledger) {
     if (out.payment_ledger.properties.project_id) out.payment_ledger.properties.project_id.description = 'معرف المشروع (اختياري إن لم تُرسل block_id/plot_id)'
     if (out.payment_ledger.properties.block_id) out.payment_ledger.properties.block_id.description = 'معرف البلوك (اختياري)'
@@ -153,14 +154,22 @@ export function adaptToolArgs(tool: string, raw: Record<string, any>): Record<st
   const projectEntities = new Set(['projects', 'blocks', 'plots', 'plot_payments'])
   if (args.data && typeof args.data === 'object' && projectEntities.has(String(args.entity ?? ''))) {
     const d = args.data
-    if (!d.project_id) d.project_id = d.project ?? d.projectId ?? d.project_name
-    if (!d.block_id) d.block_id = d.block ?? d.blockId ?? d.block_name ?? d.parent_id ?? d.parentId
-    if (!d.plot_id) d.plot_id = d.plot ?? d.plotId ?? d.plot_name
-    if (!d.plot_no) d.plot_no = d.plot_number ?? d.plot_num ?? d.number ?? d.no
-    if (!d.area_sqm) d.area_sqm = d.area ?? d.size ?? d.area_m2 ?? d.m2
-    if (!d.value) d.value = d.price ?? d.cost ?? d.total_value ?? d.amount
-    if (!d.buyer_name) d.buyer_name = d.buyer ?? d.client_name ?? d.client
-    if (!d.buyer_contact) d.buyer_contact = d.buyer_phone ?? d.phone ?? d.contact ?? d.mobile
+    // لا تضف مفاتيح undefined إلى patch؛ agentUpdate يتحقق من أسماء الحقول
+    // على مستوى Object.keys، وإضافة aliases فارغة كانت تحوّل تعديلاً صحيحاً
+    // مثل installment_type إلى «حقول غير معروفة» وتمنع الكتابة الذرية.
+    const assignIfPresent = (key: string, ...candidates: any[]) => {
+      if (d[key] != null && d[key] !== '') return
+      const value = candidates.find((candidate) => candidate != null && candidate !== '')
+      if (value != null && value !== '') d[key] = value
+    }
+    assignIfPresent('project_id', d.project, d.projectId, d.project_name)
+    assignIfPresent('block_id', d.block, d.blockId, d.block_name, d.parent_id, d.parentId)
+    assignIfPresent('plot_id', d.plot, d.plotId, d.plot_name)
+    assignIfPresent('plot_no', d.plot_number, d.plot_num, d.number, d.no)
+    assignIfPresent('area_sqm', d.area, d.size, d.area_m2, d.m2)
+    assignIfPresent('value', d.price, d.cost, d.total_value, d.amount)
+    assignIfPresent('buyer_name', d.buyer, d.client_name, d.client)
+    assignIfPresent('buyer_contact', d.buyer_phone, d.phone, d.contact, d.mobile)
   }
   if (tool === 'mutate_record') {
     const rawOperation = args.operation ?? args.action ?? args.mode

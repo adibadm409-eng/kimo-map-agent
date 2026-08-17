@@ -342,7 +342,27 @@ export const DOMAIN_TOOLS: DomainToolDef[] = [
       { name: 'target_id', type: 'string', description: 'معرف الكيان عند التضييق' },
     ],
     handler: async (args) => {
-      const reminders = args.target_type && args.target_id ? await getRemindersForTarget(String(args.target_type), String(args.target_id)) : await getAllReminders()
+      const targetType = String(args.target_type ?? '').trim()
+      const requestedId = String(args.target_id ?? '').trim()
+      let reminders: any[]
+      if (targetType && requestedId) {
+        reminders = await getRemindersForTarget(targetType, requestedId)
+        // طلبات المستخدم قد تحدد عقاراً أو اسم عقار بينما التنبيه مخزن على
+        // العرض. عند target_type=offer نحل المعرف المرشح عبر العروض المحلية
+        // قبل إعلان قائمة فارغة؛ لا نغيّر البيانات ولا نوسّع البحث خارج SQLite.
+        if (!reminders.length && targetType === 'offer') {
+          const offers = await getAllOffers()
+          const matchingOfferIds = offers
+            .filter((offer: any) => String(offer.id) === requestedId || String(offer.property_id ?? '') === requestedId || String(offer.property_name ?? '') === requestedId)
+            .map((offer: any) => String(offer.id))
+          if (matchingOfferIds.length) {
+            const resolved = await Promise.all(matchingOfferIds.map((offerId) => getRemindersForTarget('offer', offerId)))
+            reminders = resolved.flat()
+          }
+        }
+      } else {
+        reminders = await getAllReminders()
+      }
       return { reminders: reminders.map((reminder) => ({ id: reminder.id, title: reminder.title, body: reminder.body, remind_at: reminder.remind_at, target_type: reminder.target_type, target_id: reminder.target_id, local_time: new Date(reminder.remind_at).toLocaleString('ar-YE', { dateStyle: 'full', timeStyle: 'short' }), status: reminder.status })) }
     },
   },

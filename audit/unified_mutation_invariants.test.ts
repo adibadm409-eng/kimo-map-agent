@@ -78,6 +78,24 @@ describe('unified mutation contract', () => {
     expect(plot.data).toMatchObject({ project_id: 'project-1', block_id: 'block-1', plot_id: 'plot-1', area_sqm: 600, value: 4200000 })
   })
 
+  it('routes existing-project field updates to project_operations', () => {
+    const match = matchSkill('عدّل نوع التقسيط للقطعة A-01 في مشروع QA-LAND-PROJECT-2026 إلى monthly')
+    expect(match.skill.id).toBe('project_operations')
+  })
+
+  it('does not inject undefined project aliases into a minimal plot patch', () => {
+    const plot = adaptToolArgs('mutate_record', {
+      operation: 'update',
+      entity: 'plots',
+      id: 'plot-1',
+      data: { installment_type: 'monthly' },
+    })
+    expect(plot.data).toEqual({ installment_type: 'monthly' })
+    expect(plot.data).not.toHaveProperty('project_id')
+    expect(plot.data).not.toHaveProperty('plot_id')
+    expect(Object.keys(plot.data)).toEqual(['installment_type'])
+  })
+
   it('routes composite client/property offer requests to the offer skill', () => {
     const match = matchSkill('أنشئ عميلاً واربطه بعقار في عرض شراء مع تنبيهين ومواعيد متابعة')
     expect(match.skill.id).toBe('offer_management')

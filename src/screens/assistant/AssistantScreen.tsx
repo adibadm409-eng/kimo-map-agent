@@ -216,6 +216,7 @@ export default function AssistantScreen({ navigation }: any) {
 
   useEffect(() => {
     const unsub = subscribeAgent((e) => {
+      if (e.sessionId !== sessionId) return
       if (e.type === 'phase') {
         setAgentPhase(e.phase)
         return
@@ -293,7 +294,7 @@ export default function AssistantScreen({ navigation }: any) {
         return
       }
       reload(sessionId).catch(() => {})
-    })
+    }, sessionId)
     return unsub
   }, [sessionId, reload])
 
