@@ -4,6 +4,8 @@ const config = getDefaultConfig(__dirname)
 
 config.resolver = {
   ...config.resolver,
+  // expo-sqlite للويب يحمل محرك wa-sqlite كأصل WASM؛ يجب أن يبقى ضمن assetExts.
+  assetExts: Array.from(new Set([...(config.resolver.assetExts ?? []), 'wasm'])),
   // منع Metro من مراقبة ملفات Android/iOS الأصلية الضخمة والمسارات غير اللازمة.
   // نحتفظ بكل sourceExts وassetExts الافتراضية التي يضيفها Expo.
   blockList: [

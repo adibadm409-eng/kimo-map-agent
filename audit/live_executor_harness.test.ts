@@ -1,5 +1,30 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
+vi.mock('expo', () => ({
+  SharedRef: class SharedRef {},
+  SharedObject: class SharedObject {},
+  requireNativeView: vi.fn(() => 'NativeView'),
+}))
+vi.mock('expo-sqlite', () => ({
+  openDatabaseAsync: vi.fn(async () => ({
+    execAsync: vi.fn(async () => {}),
+    runAsync: vi.fn(async () => ({ changes: 0, lastInsertRowId: 0 })),
+    getFirstAsync: vi.fn(async () => null),
+    getAllAsync: vi.fn(async () => []),
+    getEachAsync: vi.fn(async function* () {}),
+  })),
+}))
+vi.mock('expo-notifications', () => ({
+  AndroidImportance: { DEFAULT: 3, HIGH: 4 },
+  setNotificationHandler: vi.fn(),
+  requestPermissionsAsync: vi.fn(async () => ({ granted: true })),
+  getPermissionsAsync: vi.fn(async () => ({ granted: true })),
+  scheduleNotificationAsync: vi.fn(async () => 'notification-test'),
+  cancelScheduledNotificationAsync: vi.fn(async () => {}),
+  setNotificationChannelAsync: vi.fn(async () => {}),
+}))
+vi.mock('expo-secure-store', () => ({ getItemAsync: vi.fn(async () => null), setItemAsync: vi.fn(async () => {}), deleteItemAsync: vi.fn(async () => {}) }))
+
 const state = vi.hoisted(() => {
   const messages = new Map<string, any[]>()
   const pending = new Map<string, any>()

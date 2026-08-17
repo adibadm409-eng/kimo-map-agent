@@ -189,7 +189,7 @@ ${projectMemoryBlock}
  * محمياً بحارس مستقل داخل executor حتى لا تكون الصلاحية مجرد تعليمات نصية. */
 export function getAgentFunctions(skill?: AgentSkill | null): FunctionDef[] {
   const schemas = buildToolSchemas()
-  const universal = new Set(['ask_user', 'request_confirmation', 'catalog', 'app_screen_catalog', 'list_entities', 'query', 'get', 'search_everything', 'data_snapshot', 'audit_log_query', 'review_my_work', 'generate_file', 'preview_update', 'undo_last', 'project_memory_save', 'project_memory_read', 'list_generated_files', 'review_generated_file', 'current_local_time'])
+  const universal = new Set(['ask_user', 'request_confirmation', 'catalog', 'app_screen_catalog', 'list_entities', 'query', 'get', 'search_everything', 'data_snapshot', 'audit_log_query', 'review_my_work', 'generate_file', 'preview_update', 'undo_last', 'project_memory_save', 'project_memory_read', 'list_generated_files', 'review_generated_file', 'current_local_time', 'list_workspaces', 'workspace_get'])
   const allowed = skill
     ? new Set([...universal, ...skill.readTools, ...skill.writeTools, ...skill.preferredTools])
     : universal
