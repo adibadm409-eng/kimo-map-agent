@@ -20,7 +20,8 @@ import { persistPair, persistAssistantText } from './persist'
 import { captureBefore, captureToolUndoBefore, recordUndo, performUndo } from './undo'
 import { emit } from './agentRun'
 import { WRITE_TOOLS, DELETE_CONFIRM_TOOLS } from './prompts'
-import { parseToolArgs, type ToolCall } from './llm'
+import type { ToolCall } from './llm'
+import { parseToolArgumentsStrict } from './toolValidation'
 import { generateExcelFile, generateWordFile, generatePdfFile, buildHtml, type ExcelFileSpec, type WordFileSpec } from './files'
 
 export type OpenLink = { kind: 'workspace' | 'project' | 'block' | 'plot' | 'client' | 'property'; id: string; label?: string }
@@ -229,8 +230,15 @@ export async function handleToolCall(
   call: ToolCall,
   emitEvents: boolean
 ): Promise<boolean> {
-  const args = parseToolArgs(call.arguments)
+  const parsed = parseToolArgumentsStrict(call.arguments)
   const name = call.name
+  if (!parsed.ok) {
+    const message = `[فشل التحقق قبل التنفيذ] ${parsed.message}`
+    await persistPair(sessionId, call, message, undefined, { name, ok: false, result: 'invalid_tool_arguments', observation: message })
+    if (emitEvents) emit({ type: 'tool', name, args: {}, result: 'invalid_tool_arguments' })
+    return true
+  }
+  const args = parsed.value
 
   if (s.mode === 'read' && name === 'undo_last') {
     await persistPair(sessionId, call, 'محظور: الوضع الحالي للقراءة فقط — التراجع يتطلب وضع التعديل')
@@ -274,8 +282,13 @@ export async function handleToolCall(
 
   if (name === 'execute') {
     const tool = String(args.tool ?? '')
-    const toolArgs = (args.args ?? {}) as Record<string, any>
-    return await runRegistryTool(sessionId, s, call, tool, toolArgs, emitEvents)
+    if (!tool || !args.args || typeof args.args !== 'object' || Array.isArray(args.args)) {
+      const message = '[فشل التحقق قبل التنفيذ] execute يحتاج tool وargs ككائن JSON.'
+      await persistPair(sessionId, call, message, undefined, { name, ok: false, result: 'invalid_execute_envelope', observation: message })
+      if (emitEvents) emit({ type: 'tool', name, args, result: 'invalid_execute_envelope' })
+      return true
+    }
+    return await runRegistryTool(sessionId, s, call, tool, args.args as Record<string, any>, emitEvents)
   }
 
   // الوكيل يدعو الأدوات مباشرة بأسمائها (query/get/create/...) — مخططات صريحة

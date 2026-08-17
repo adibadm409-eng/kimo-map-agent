@@ -25,6 +25,7 @@ export function messagesToLlm(msgs: Message[]): ChatMessage[] {
   // حارس سلامة الأزواج: لا نبدأ النافذة بملاحظة tool يتيمة انفصلت عن نداء أداة
   let start = 0
   while (start < recent.length && recent[start].role === 'tool') start++
+  const replayableToolIds = new Set<string>()
   for (let i = start; i < recent.length; i++) {
     const m = recent[i]
     if (m.role === 'user') {
@@ -48,17 +49,28 @@ export function messagesToLlm(msgs: Message[]): ChatMessage[] {
           t.id = normalizeToolCallId(t.id ?? tc.id ?? raw.id)
           return t
         })
-        // لا نُرسل نداء أداة منفصلة عن ملاحظتها خارج النهاية — وإلا رفض المزود
-        const hasResultAfter = recent.slice(i + 1).some((t) => t.role === 'tool' && t.meta?.tool_call_id)
-        if (hasResultAfter) out.push({ role: 'assistant', content: null, tool_calls: cleanCalls })
+        // لا نرسل نداء أداة إلا إذا وجدت نتيجة لكل معرف في الجولة؛ إعادة نداء واحد
+        // مع نتيجة ناقصة تجعل OpenAI/Gemini/Anthropic يرفضون التاريخ أو يربطون النتيجة خطأً.
+        const resultIdsAfter = new Set(
+          recent.slice(i + 1)
+            .filter((t) => t.role === 'tool' && t.meta?.tool_call_id)
+            .map((t) => normalizeToolCallId(t.meta!.tool_call_id))
+        )
+        const callIds = cleanCalls.map((call) => normalizeToolCallId(call.id))
+        const hasAllResultsAfter = callIds.length > 0 && callIds.every((id) => resultIdsAfter.has(id))
+        if (hasAllResultsAfter) {
+          out.push({ role: 'assistant', content: null, tool_calls: cleanCalls })
+          callIds.forEach((id) => replayableToolIds.add(id))
+        }
       } else if (m.content && m.content.trim()) {
         out.push({ role: 'assistant', content: m.content })
       }
     } else if (m.role === 'tool' && m.meta?.tool_call_id) {
       // ملاحظة النتيجة: نص الحالة الصريحة [نجاح]/[فشل] + [تحقق] — وعي الوكيل بنجاح أدائه
       const obs = m.meta.observation != null ? String(m.meta.observation) : String(m.meta.result ?? '')
-      if (obs.trim()) {
-        out.push({ role: 'tool', tool_call_id: normalizeToolCallId(m.meta.tool_call_id), name: String(m.meta.name ?? 'execute'), content: obs })
+      const toolCallId = normalizeToolCallId(m.meta.tool_call_id)
+      if (obs.trim() && replayableToolIds.has(toolCallId)) {
+        out.push({ role: 'tool', tool_call_id: toolCallId, name: String(m.meta.name ?? 'execute'), content: obs, tool_error: m.meta.ok === false })
       }
     }
   }

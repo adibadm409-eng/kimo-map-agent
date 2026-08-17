@@ -2,7 +2,8 @@ import { getMessages, getSettings, createSession, listUndo, activeConfig, update
 import { saveAttachment } from '../database/workspace'
 import { readAudioInput } from './files'
 import { chatWithRetry, parseToolArgs, toWireToolCall, type ChatContentPart, type ChatMessage, type ToolCall } from './llm'
-import { defaultProvider, providerCapabilities, type ProviderDef, type ProviderId } from './providers'
+import { parseToolArgumentsStrict } from './toolValidation'
+import { defaultProvider, type ProviderDef, type ProviderId } from './providers'
 import { resolveModelProfile } from './modelProfiles'
 import { validateToolCallAgainstDefinitions, validateToolCallBatch } from './toolValidation'
 import { analyzeIntent, buildContextSummary } from './intent'
@@ -207,9 +208,9 @@ async function runLoop(
             await persistAssistantText(sessionId, tail, 'progress')
             if (emitEvents) emit({ type: 'progress', text: tail })
           }
-          thread.push({ role: 'assistant', content: result.content, tool_calls: result.toolCalls.map((call) => toWireToolCall(call, { includeProviderMetadata: providerCapabilities(providerProxy(conn), conn.model).preservesThoughtSignatures })) })
+          thread.push({ role: 'assistant', content: result.content, tool_calls: result.toolCalls.map((call) => toWireToolCall(call, { includeProviderMetadata: resolveModelProfile(providerProxy(conn), conn.model).wireFamily === 'gemini-openai' })) })
         } else if (result.toolCalls.length) {
-          thread.push({ role: 'assistant', content: null, tool_calls: result.toolCalls.map((call) => toWireToolCall(call, { includeProviderMetadata: providerCapabilities(providerProxy(conn), conn.model).preservesThoughtSignatures })) })
+          thread.push({ role: 'assistant', content: null, tool_calls: result.toolCalls.map((call) => toWireToolCall(call, { includeProviderMetadata: resolveModelProfile(providerProxy(conn), conn.model).wireFamily === 'gemini-openai' })) })
         }
 
         if (result.toolCalls.length) {
@@ -291,6 +292,23 @@ async function runLoop(
             continue
           }
 
+          // execute هو envelope؛ يجب التحقق من الأداة الداخلية بنفس تعريفها قبل
+          // التنفيذ، وإلا يستطيع الموديل تجاوز required/types عبر wrapper صالح شكلياً.
+          if (call.name === 'execute') {
+            const outer = parseToolArgumentsStrict(call.arguments)
+            const innerArgs = outer.ok && outer.value.args && typeof outer.value.args === 'object' && !Array.isArray(outer.value.args) ? outer.value.args : null
+            const innerCall: ToolCall = { id: call.id, name: innerTool, arguments: innerArgs ? JSON.stringify(innerArgs) : '' }
+            const innerIssues = validateToolCallAgainstDefinitions(innerCall, agentFunctions)
+            if (!outer.ok || !innerArgs || innerIssues.length) {
+              const detail = !outer.ok ? outer.message : !innerArgs ? 'execute يحتاج args ككائن JSON.' : innerIssues.map((issue) => issue.message).join(' ')
+              const observation = `[فشل التحقق قبل التنفيذ] ${detail}`
+              await persistToolResult(sessionId, call, { ok: false, error: 'inner_tool_validation', detail }, { name: innerTool, args: innerArgs ?? {}, ok: false, observation }).catch(() => {})
+              thread.push({ role: 'tool', tool_call_id: call.id, name: innerTool, content: observation, tool_error: true })
+              if (emitEvents) publishRuntimeEvent(sessionId, { type: 'observation', title: 'حُجبت الأداة الداخلية قبل التنفيذ', detail, status: 'error' })
+              continue
+            }
+          }
+
           // ملاحظة التكرار: نقارن آخر نتيجة لنفس البصمة.
           // إذا تكرر نفس النداء بنفس النتيجة
           // فوفّر عجزاً توجيهياً في سياق الوكيل — لكن القرار يبقى بيد الوكيل وحده: قد يكرر
@@ -335,7 +353,20 @@ async function runLoop(
               if (active) publishRuntimeEvent(sessionId, { type: 'plan_step', step: { ...active, detail: `جار تنفيذ المرحلة عبر ${innerTool}` } })
             }
           }
-          const cont = await handleToolCall(sessionId, s, call, emitEvents)
+          let cont = true
+          try {
+            cont = await handleToolCall(sessionId, s, call, emitEvents)
+          } catch (error: any) {
+            const detail = error?.message ?? String(error)
+            const observation = `[فشل/غير مؤكد] تعذر إغلاق دورة تنفيذ «${innerTool}»: ${detail}. قد تكون العملية لم تُنفذ أو نُفذت قبل الخطأ؛ لا تعِدها تلقائياً، استخدم أداة تحقق أولاً.`
+            await persistToolResult(sessionId, call, { ok: false, error: 'tool_execution_exception', detail }, { name: innerTool, args: callArgs0, result: 'tool_execution_exception', observation, ok: false }).catch(() => {})
+            thread.push({ role: 'tool', tool_call_id: call.id, name: innerTool, content: observation, tool_error: true })
+            if (emitEvents) {
+              publishRuntimeEvent(sessionId, { type: 'observation', title: 'استثناء أثناء دورة الأداة', detail: observation, status: 'error' })
+              publishRuntimeEvent(sessionId, { type: 'recovery', title: 'أوقفْت إعادة التنفيذ التلقائي', detail: 'يجب التحقق من الحالة الحالية قبل أي محاولة جديدة لتجنب أثر مكرر.', strategy: 'retry' })
+            }
+            cont = true
+          }
           if (cont) {
             const callArgs = parseToolArgs(call.arguments)
             const innerTool = call.name === 'execute' ? String(callArgs.tool ?? 'execute') : call.name
@@ -461,9 +492,9 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
   let content = text
   let initialContent: ChatMessage['content'] | undefined
   if (opts?.audio) {
-    const capabilities = providerCapabilities(providerProxy(conn), conn.model)
+    const profile = resolveModelProfile(providerProxy(conn), conn.model)
     const voiceLabel = opts.audio.name ?? 'تسجيل صوتي'
-    if (!capabilities.supportsInputAudio) {
+    if (!profile.supports.inputAudio) {
       const message = `الموديل ${conn.model} لا يثبت دعماً للإدخال الصوتي عبر ${conn.providerName}. اختر موديل صوتياً معلناً من إعدادات كيمو؛ لم أرسل طلباً غير متوافق.`
       await persistUser(sessionId, `رسالة صوتية: ${voiceLabel}`)
       await persistAssistantText(sessionId, message, 'error')

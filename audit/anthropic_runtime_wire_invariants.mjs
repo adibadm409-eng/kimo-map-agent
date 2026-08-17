@@ -18,7 +18,11 @@ assert.equal(body.messages[1].content[0].type, 'tool_use')
 assert.equal(body.messages[1].content[0].id, 'toolu_01')
 assert.equal(body.messages[2].role, 'user')
 assert.equal(body.messages[2].content[0].type, 'tool_result')
-assert.equal(body.messages[2].content[0].tool_use_id, 'toolu_01')
+  assert.equal(body.messages[2].content[0].tool_use_id, 'toolu_01')
+  const failedBody = buildChatRequestBody({ provider, apiKey: 'test-key', model: 'claude-sonnet-4-5-20250929', messages: [{ role: 'user', content: 'نفذ' }, { role: 'assistant', content: null, tool_calls: [{ id: 'toolu_failed', function: { name: tool.name, arguments: '{"timezone":"Asia/Riyadh"}' } }] }, { role: 'tool', tool_call_id: 'toolu_failed', tool_error: true, content: 'فشل التحقق المحلي' }], functions: [tool], maxTokens: 200 }, false)
+  assert.equal(failedBody.messages[2].content[0].is_error, true)
+  assert.throws(() => buildChatRequestBody({ provider, apiKey: 'test-key', model: 'claude-sonnet-4-5-20250929', messages: [{ role: 'user', content: 'نفذ' }, { role: 'assistant', content: null, tool_calls: [{ id: 'toolu_bad', function: { name: tool.name, arguments: '{bad-json' } }] }], functions: [tool], maxTokens: 200 }, false), /JSON|object/i)
+
 assert.equal(body.tools[0].input_schema.required[0], 'timezone')
 assert.equal(body.max_tokens, 200)
 assert.equal(body.stream, undefined)
@@ -67,7 +71,20 @@ try {
   assert.equal(streamed.toolCalls[0].arguments, '{"timezone":"Asia/Riyadh"}')
   assert.equal(captured.at(-1).body.stream, true)
   assert.ok(deltas.some((delta) => delta.done === true))
-  console.log(`Anthropic runtime wire invariants: PASS (${calls} intercepted requests)`)
+
+  const mistral = defaultProvider('mistral')
+  let partialCalls = 0
+  globalThis.fetch = async (url, options) => {
+    partialCalls++
+    const partialStream = new ReadableStream({ start(controller) {
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: 'جزء' } }] })}\n\n`))
+      setTimeout(() => controller.error(new Error('connection dropped after partial content')), 10)
+    } })
+    return new Response(partialStream, { status: 200, headers: { 'content-type': 'text/event-stream' } })
+  }
+  await assert.rejects(() => chatWithRetry({ provider: mistral, baseUrl: 'https://api.mistral.test/v1', apiKey: 'secret', model: 'mistral-medium-2505', messages: [{ role: 'user', content: 'اختبار' }], timeoutMs: 2000, onDelta: () => {} }), /انقطع تيار الاستجابة/)
+  assert.equal(partialCalls, 1, 'partial stream must not be retried')
+  console.log(`Anthropic runtime wire invariants: PASS (${calls} intercepted requests; partial retry blocked)`)
 } finally {
   globalThis.fetch = originalFetch
 }

@@ -27,6 +27,7 @@ export interface InternalChatMessage {
   tool_call_id?: string
   name?: string
   tool_calls?: InternalToolCall[]
+  tool_error?: boolean
 }
 
 export interface WireRequestIssue {
@@ -34,10 +35,9 @@ export interface WireRequestIssue {
   message: string
 }
 
-export function providerWireFamily(def: ProviderDef, model: string): ProviderWireFamily {
-  const normalized = model.toLowerCase()
+export function providerWireFamily(def: ProviderDef, _model: string): ProviderWireFamily {
   if (def.id === 'anthropic') return 'anthropic-messages'
-  if (def.id === 'gemini' || /(?:^|[/:_-])gemini-(?:2\.5|3)(?:[./:_-]|$)/i.test(normalized)) return 'gemini-openai'
+  if (def.id === 'gemini') return 'gemini-openai'
   if (def.id === 'mistral') return 'mistral-chat'
   if (def.id === 'alibaba') return 'dashscope-chat'
   if (def.id === 'openrouter') return 'openrouter-chat'
@@ -143,14 +143,23 @@ export function providerWireRequestExtras(def: ProviderDef, model: string, hasTo
   return {}
 }
 
+export type ProviderCapabilityOverride = {
+  supportsChat: boolean
+  supportsTools: boolean
+  supportsParallelTools: boolean
+  supportsVision: boolean
+  supportsInputAudio: boolean
+}
+
 export function providerRequestIssues(
   def: ProviderDef,
   model: string,
   messages: InternalChatMessage[],
   hasTools: boolean,
+  capabilityOverride?: ProviderCapabilityOverride,
 ): WireRequestIssue[] {
   const issues: WireRequestIssue[] = []
-  const capabilities = providerCapabilities(def, model)
+  const capabilities = capabilityOverride ?? providerCapabilities(def, model)
   const family = providerWireFamily(def, model)
   if (!capabilities.supportsChat) {
     issues.push({ kind: 'invalid_request', message: `الموديل ${model} لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو.` })

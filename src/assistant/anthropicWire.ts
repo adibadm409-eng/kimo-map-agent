@@ -31,19 +31,18 @@ function toAnthropicContent(content: WireContent): string | Record<string, any>[
   })
 }
 
+function parseToolInputStrict(raw: unknown): Record<string, any> {
+  const value = typeof raw === 'string' ? JSON.parse(raw || '{}') : raw
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Anthropic tool_use input must be a JSON object.')
+  return value as Record<string, any>
+}
+
 function toToolUse(call: any): Record<string, any> {
-  let input: any = {}
-  try {
-    input = typeof call.function?.arguments === 'string' ? JSON.parse(call.function.arguments || '{}') : call.function?.arguments ?? {}
-  } catch {
-    input = {}
-  }
-  return {
-    type: 'tool_use',
-    id: String(call.id ?? ''),
-    name: String(call.function?.name ?? call.name ?? ''),
-    input,
-  }
+  const id = String(call.id ?? '').trim()
+  const name = String(call.function?.name ?? call.name ?? '').trim()
+  if (!id || !name) throw new Error('Anthropic tool_use requires a non-empty id and name.')
+  const input = parseToolInputStrict(typeof call.function?.arguments === 'string' ? call.function.arguments : call.function?.arguments ?? {})
+  return { type: 'tool_use', id, name, input }
 }
 
 export function buildAnthropicRequest(options: {
@@ -72,7 +71,7 @@ export function buildAnthropicRequest(options: {
           type: 'tool_result',
           tool_use_id: String(tool.tool_call_id ?? ''),
           content: String(tool.content ?? ''),
-          is_error: false,
+          is_error: tool.tool_error === true,
         })
         j++
       }
@@ -118,12 +117,13 @@ export function parseAnthropicResponse(data: any): {
 } {
   const blocks = Array.isArray(data?.content) ? data.content : []
   const text = blocks.filter((block: any) => block?.type === 'text').map((block: any) => String(block.text ?? '')).join('')
-  const toolCalls: ToolCall[] = blocks.filter((block: any) => block?.type === 'tool_use').map((block: any) => ({
-    id: String(block.id ?? ''),
-    name: String(block.name ?? ''),
-    arguments: JSON.stringify(block.input ?? {}),
-    extra: { raw: block },
-  }))
+  const toolCalls: ToolCall[] = blocks.filter((block: any) => block?.type === 'tool_use').map((block: any) => {
+    const id = String(block.id ?? '').trim()
+    const name = String(block.name ?? '').trim()
+    if (!id || !name) throw new Error('Anthropic tool_use response is missing id or name.')
+    if (!block.input || typeof block.input !== 'object' || Array.isArray(block.input)) throw new Error('Anthropic tool_use input must be an object.')
+    return { id, name, arguments: JSON.stringify(block.input), extra: { raw: block } }
+  })
   return {
     content: text || null,
     toolCalls,

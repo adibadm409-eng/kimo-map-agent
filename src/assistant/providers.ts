@@ -199,7 +199,7 @@ export function providerCapabilities(def: ProviderDef, model = ''): ProviderCapa
   ) || (
     def.id === 'alibaba' && /^(?:qwen3\.[5-9]|glm-5|kimi-k2\.[5-9]|deepseek-v4)/i.test(normalizedModel)
   )
-  const geminiFamily = def.id === 'gemini' || isGeminiModel(normalizedModel)
+  const geminiFamily = def.id === 'gemini'
   const supportsInputAudio = isKnownAudioModel(def, normalizedModel)
   const supportsChat = !/(?:embedding|text-embedding|image-generation|image-preview|tts|rerank)/i.test(normalizedModel)
   const supportsVision = supportsChat && isKnownVisionModel(def, normalizedModel)

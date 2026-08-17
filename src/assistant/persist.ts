@@ -35,6 +35,8 @@ export async function persistToolResult(sessionId: string, call: ToolCall, resul
   const observation = metaExtra?.observation != null ? truncateForModel(String(metaExtra.observation)) : undefined
   const content = typeof result === 'string' ? result : JSON.stringify(result)
   const capped = truncateForModel(content)
+  const statusText = observation ?? capped
+  const inferredOk = metaExtra?.ok ?? !/^\s*(?:\[فشل|\[فشل\/غير|فشل|محظور|خطأ)/i.test(statusText)
   await addMessage({
     sessionId,
     role: 'tool',
@@ -46,7 +48,7 @@ export async function persistToolResult(sessionId: string, call: ToolCall, resul
       args: metaExtra?.args,
       result: capped,
       observation,
-      ok: metaExtra?.ok,
+      ok: inferredOk,
     },
   })
   return observation ?? capped

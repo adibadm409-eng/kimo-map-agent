@@ -385,7 +385,12 @@ export async function verifyDataExists(tool: string, args: Record<string, any>, 
 /** منفّذ موحّد: تكييف + تنفيذ + حالة صريحة + تحقق من الوجود الفعلي، ويعيد الملاحظة الجاهزة للموديل. */
 export async function runToolWithFeedback(tool: string, rawArgs: Record<string, any>): Promise<{ ok: boolean; args: Record<string, any>; observation: string; result: any }> {
   const args = adaptToolArgs(tool, rawArgs ?? {})
-  const res = await executeTool(tool, args)
+  let res: { ok: boolean; result?: any; error?: string }
+  try {
+    res = await executeTool(tool, args)
+  } catch (error: any) {
+    res = { ok: false, result: { error: 'tool_exception' }, error: error?.message ?? String(error) }
+  }
   let verification: string | undefined
   const VERIFYABLE = new Set([
     'create', 'update', 'delete',

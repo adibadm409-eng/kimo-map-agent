@@ -2,6 +2,9 @@ import { defineConfig } from 'vitest/config'
 import path from 'node:path'
 
 export default defineConfig({
+  define: {
+    __DEV__: false,
+  },
   resolve: {
     alias: {
       'react-native': path.resolve(__dirname, './react-native-test-shim.ts'),
