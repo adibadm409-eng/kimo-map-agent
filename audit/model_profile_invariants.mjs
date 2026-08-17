@@ -8,6 +8,10 @@ assert.equal(openrouter.maxTokensField, 'unknown')
 assert.equal(openrouter.source, 'official_static')
 
 const custom = resolveModelProfile(defaultProvider('custom'), 'my-model')
+const mistralSerial = resolveModelProfile(defaultProvider('mistral'), 'mistral-medium-2505', {
+  supportedParameters: ['tools', 'parallel_tool_calls'],
+})
+assert.equal(mistralSerial.supports.parallelTools, false)
 assert.equal(custom.supports.tools, false)
 assert.equal(custom.supports.streaming, false)
 assert.equal(custom.supports.parallelTools, false)

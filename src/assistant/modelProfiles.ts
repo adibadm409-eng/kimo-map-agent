@@ -76,9 +76,14 @@ export function resolveModelProfile(
   const hasCatalog = params.size > 0 || Boolean(catalog?.inputModalities?.length || catalog?.outputModalities?.length)
   const inputModalities = new Set((catalog?.inputModalities ?? []).map((value) => String(value).toLowerCase()))
   const supportsTools = hasCatalog ? params.has('tools') : def.id === 'custom' ? false : base.supportsTools
-  const supportsParallelTools = hasCatalog
-    ? params.has('parallel_tool_calls')
-    : false
+  // اختبار Mistral الحي أثبت أن endpoint المستخدم يرفض جولات الأدوات المتوازية،
+  // حتى عندما تعلن catalog metadata عن parallel_tool_calls. نختار fail-closed
+  // وننفذها تسلسلياً؛ هذا لا يمنع الوكيل من إنجاز المهمة بل يمنع 400 بنيوياً.
+  const supportsParallelTools = def.id === 'mistral'
+    ? false
+    : hasCatalog
+      ? params.has('parallel_tool_calls')
+      : false
   const supportsVision = hasCatalog
     ? hasAny(inputModalities, ['image', 'image_url', 'vision'])
     : base.supportsVision

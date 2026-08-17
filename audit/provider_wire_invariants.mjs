@@ -8,7 +8,7 @@ import {
   LlmError,
 } from '../src/assistant/llm.ts'
 import { defaultProvider, providerCapabilities } from '../src/assistant/providers.ts'
-import { providerWireFamily, providerWireRequestExtras } from '../src/assistant/providerWire.ts'
+import { providerWireFamily, providerWireRequestExtras, normalizeMistralToolCallId } from '../src/assistant/providerWire.ts'
 
 const gemini = defaultProvider('gemini')
 const mistral = defaultProvider('mistral')
@@ -36,6 +36,10 @@ assert.deepEqual(preserved.extra_content, { google: { thought_signature: 'SIG_A'
 assert.deepEqual(preserved.function, { name: 'current_local_time', arguments: '{"timezone":"Asia/Riyadh"}' })
 assert.equal(preserved.function.thought_signature, undefined)
 assert.equal(normalizeToolCallId('call_01JABCD-legacy'), 'call_01JABCD-legacy')
+const mistralInvalidId = 'call_2308251'
+const normalizedMistralId = normalizeMistralToolCallId(mistralInvalidId)
+assert.match(normalizedMistralId, /^[A-Za-z0-9]{9}$/)
+assert.equal(normalizeMistralToolCallId(mistralInvalidId), normalizedMistralId)
 
 const wireMessages = serializeChatMessages(gemini, 'gemini-3.5-flash-lite', [
   { role: 'user', content: 'ما الوقت؟' },
@@ -54,6 +58,26 @@ const mistralMessages = serializeChatMessages(mistral, 'mistral-medium-2505', [
 ])
 assert.equal(mistralMessages[0].tool_calls[0].extra_content, undefined)
 assert.deepEqual(mistralMessages[0].tool_calls[0].function, { name: 'current_local_time', arguments: '{"timezone":"Asia/Riyadh"}' })
+const mistralIdMessages = serializeChatMessages(mistral, 'mistral-medium-2505', [
+  { role: 'assistant', content: null, tool_calls: [{ id: mistralInvalidId, type: 'function', function: { name: 'current_local_time', arguments: '{}' } }] },
+  { role: 'tool', tool_call_id: mistralInvalidId, name: 'current_local_time', content: '{}' },
+])
+assert.equal(mistralIdMessages[0].tool_calls[0].id, normalizedMistralId)
+assert.equal(mistralIdMessages[1].tool_call_id, normalizedMistralId)
+const duplicateMistralMessages = serializeChatMessages(mistral, 'mistral-medium-2505', [
+  { role: 'assistant', content: null, tool_calls: [
+    { id: 'duplicate-provider-id', type: 'function', function: { name: 'current_local_time', arguments: '{}' } },
+    { id: 'duplicate-provider-id', type: 'function', function: { name: 'list_entities', arguments: '{}' } },
+  ] },
+  { role: 'tool', tool_call_id: 'duplicate-provider-id', name: 'current_local_time', content: '{}' },
+  { role: 'tool', tool_call_id: 'duplicate-provider-id', name: 'list_entities', content: '{}' },
+])
+const duplicateIds = duplicateMistralMessages[0].tool_calls.map((call) => call.id)
+assert.equal(new Set(duplicateIds).size, 2)
+assert.match(duplicateIds[0], /^[A-Za-z0-9]{9}$/)
+assert.match(duplicateIds[1], /^[A-Za-z0-9]{9}$/)
+assert.equal(duplicateMistralMessages[1].tool_call_id, duplicateIds[0])
+assert.equal(duplicateMistralMessages[2].tool_call_id, duplicateIds[1])
 const nestedMistral = serializeChatMessages(mistral, 'mistral-medium-2505', [{ role: 'assistant', content: null, tool_calls: [{ id: 'm-1', type: 'function', function: { name: 'current_local_time', arguments: '{}', extra_content: { google: { thought_signature: 'LEAK' } } } }] }])
 assert.equal(nestedMistral[0].tool_calls[0].function.extra_content, undefined)
 assert.equal(nestedMistral[0].tool_calls[0].extra_content, undefined)

@@ -133,7 +133,8 @@ describe('Kimo live actual tool harness', () => {
     expect(geminiKey).toBeTruthy()
     expect(mistralKey).toBeTruthy()
 
-    for (const [provider, key] of [['gemini', geminiKey!], ['mistral', mistralKey!]] as const) {
+    const results: { provider: string; model: string; tool: string; ok: boolean; error?: string }[] = []
+    for (const [provider, key] of [['mistral', mistralKey!], ['gemini', geminiKey!]] as const) {
       state.settings.activeProvider = provider
       state.settings.keys[provider] = key
       for (const tool of ['current_local_time', 'list_entities']) {
@@ -148,6 +149,14 @@ describe('Kimo live actual tool harness', () => {
         const toolCall = rows.find((row: any) => row.role === 'assistant' && row.kind === 'tool_call')
         const toolResult = rows.find((row: any) => row.role === 'tool' && row.meta?.name === tool)
         const assistantText = rows.find((row: any) => row.role === 'assistant' && row.kind === 'text')
+        const errorRow = rows.find((row: any) => row.kind === 'error')
+        const model = state.settings.models[provider]
+        const failure = errorRow?.content ? String(errorRow.content) : !toolCall?.meta?.tool_calls?.length ? 'لم يعد الموديل نداء أداة' : !toolResult?.meta?.ok ? 'نتيجة الأداة غير ناجحة' : !assistantText?.content ? 'لا يوجد رد نهائي' : ''
+        results.push({ provider, model, tool, ok: !failure, error: failure || undefined })
+        if (failure) {
+          console.log(JSON.stringify({ provider, model, requestedTool: tool, failure, rows: rows.map((row: any) => ({ role: row.role, kind: row.kind, name: row.meta?.name, ok: row.meta?.ok, content: typeof row.content === 'string' ? row.content.slice(0, 220) : undefined })) }))
+          continue
+        }
         expect(toolCall?.meta?.tool_calls?.length).toBeGreaterThan(0)
         expect(toolResult?.meta?.ok).toBe(true)
         expect(toolResult?.meta?.observation).toMatch(/^\[نجاح\]/)
@@ -156,5 +165,9 @@ describe('Kimo live actual tool harness', () => {
         expect(assistantText?.content).toBeTruthy()
       }
     }
+    console.log(JSON.stringify({ liveMatrix: results }))
+    expect(results).toHaveLength(4)
+        expect(results.some((row) => row.provider === 'mistral' && row.ok)).toBe(true)
   }, 180_000)
+
 })

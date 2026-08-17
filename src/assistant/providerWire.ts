@@ -81,11 +81,75 @@ function serializeContent(content: WireContent, family: ProviderWireFamily): Wir
   return content.map((part) => part.type === 'input_audio' ? serializeAudioPart(part, family) : part)
 }
 
-function serializeToolCall(call: InternalToolCall, family: ProviderWireFamily, index: number): Record<string, any> {
+/**
+ * Mistral يفرض عقداً مختلفاً لمعرف نداء الأداة: تسع محارف ASCII أبجدية
+ * رقمية فقط. لا نسرّب هذا القيد إلى العقد الداخلي؛ نطبّقه على wire فقط وبشكل
+ * حتمي حتى يتطابق معرف assistant وtool result في الجولة نفسها.
+ */
+export function normalizeMistralToolCallId(raw: unknown): string {
+  const value = String(raw ?? '').trim()
+  if (/^[A-Za-z0-9]{9}$/.test(value)) return value
+  let hash = 1469598103934665603n
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= BigInt(value.charCodeAt(i))
+    hash = BigInt.asUintN(64, hash * 1099511628211n)
+  }
+  const token = hash.toString(36).toUpperCase().padStart(8, '0').slice(-8)
+  return `M${token}`
+}
+
+function wireToolCallId(raw: unknown, family: ProviderWireFamily): string {
+  return family === 'mistral-chat' ? normalizeMistralToolCallId(raw) : String(raw ?? '').trim()
+}
+
+type WireToolIdState = {
+  used: Set<string>
+  pendingByInternalId: Map<string, string[]>
+}
+
+function createWireToolIdState(): WireToolIdState {
+  return { used: new Set(), pendingByInternalId: new Map() }
+}
+
+function uniqueWireToolCallId(raw: unknown, family: ProviderWireFamily, state: WireToolIdState): string {
+  const internalId = String(raw ?? '').trim()
+  const base = wireToolCallId(internalId, family)
+  if (family !== 'mistral-chat' || !state.used.has(base)) return base
+  let ordinal = 1
+  let candidate = normalizeMistralToolCallId(`${internalId}:${ordinal}`)
+  while (state.used.has(candidate)) {
+    ordinal += 1
+    candidate = normalizeMistralToolCallId(`${internalId}:${ordinal}`)
+  }
+  return candidate
+}
+
+function reserveWireToolCallId(raw: unknown, family: ProviderWireFamily, state: WireToolIdState): string {
+  const internalId = String(raw ?? '').trim()
+  const wireId = uniqueWireToolCallId(internalId, family, state)
+  state.used.add(wireId)
+  const pending = state.pendingByInternalId.get(internalId) ?? []
+  pending.push(wireId)
+  state.pendingByInternalId.set(internalId, pending)
+  return wireId
+}
+
+function resolveWireToolResultId(raw: unknown, family: ProviderWireFamily, state: WireToolIdState): string {
+  const internalId = String(raw ?? '').trim()
+  const pending = state.pendingByInternalId.get(internalId)
+  if (pending?.length) {
+    const wireId = pending.shift()!
+    if (pending.length === 0) state.pendingByInternalId.delete(internalId)
+    return wireId
+  }
+  return wireToolCallId(internalId, family)
+}
+
+function serializeToolCall(call: InternalToolCall, family: ProviderWireFamily, index: number, wireId?: string): Record<string, any> {
   const fn = call.function && typeof call.function === 'object' ? call.function : {}
   const args = typeof fn.arguments === 'string' ? fn.arguments : JSON.stringify(fn.arguments ?? {})
   const wire: Record<string, any> = {
-    id: String(call.id ?? '').trim(),
+    id: wireId ?? wireToolCallId(call.id, family),
     type: 'function',
     function: {
       name: String(fn.name ?? call.name ?? '').trim(),
@@ -120,15 +184,23 @@ function serializeToolCall(call: InternalToolCall, family: ProviderWireFamily, i
 
 export function serializeProviderMessages(def: ProviderDef, model: string, messages: InternalChatMessage[]): Record<string, any>[] {
   const family = providerWireFamily(def, model)
+  const idState = createWireToolIdState()
   return messages.map((message) => {
     const output: Record<string, any> = {
       role: message.role,
       content: serializeContent(message.content, family) ?? null,
     }
-    if (message.tool_call_id) output.tool_call_id = message.tool_call_id
+    if (message.tool_call_id) {
+      output.tool_call_id = family === 'mistral-chat'
+        ? resolveWireToolResultId(message.tool_call_id, family, idState)
+        : wireToolCallId(message.tool_call_id, family)
+    }
     if (message.name) output.name = message.name
     if (message.tool_calls) {
-      output.tool_calls = message.tool_calls.map((call, index) => serializeToolCall(call, family, index))
+      output.tool_calls = message.tool_calls.map((call, index) => {
+        const wireId = family === 'mistral-chat' ? reserveWireToolCallId(call.id, family, idState) : undefined
+        return serializeToolCall(call, family, index, wireId)
+      })
     }
     return output
   })

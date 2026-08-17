@@ -8,6 +8,37 @@ import { Platform } from 'react-native'
 const AGENT_DIR = `${FileSystem.cacheDirectory}agent_files/`
 const SAVED_DIR = `${FileSystem.documentDirectory}AgentFiles/`
 
+const MIME_BY_EXT: Record<string, string> = {
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  xls: 'application/vnd.ms-excel',
+  csv: 'text/csv;charset=utf-8',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  doc: 'application/msword',
+  pdf: 'application/pdf',
+}
+
+function mimeTypeForFilename(name: string): string {
+  const ext = name.split('.').pop()?.toLowerCase() ?? ''
+  return MIME_BY_EXT[ext] ?? 'application/octet-stream'
+}
+
+function webDataUri(name: string, base64: string): string {
+  return `data:${mimeTypeForFilename(name)};base64,${base64}`
+}
+
+function webDownload(uri: string, filename: string): boolean {
+  if (Platform.OS !== 'web' || typeof document === 'undefined') return false
+  const anchor = document.createElement('a')
+  anchor.href = uri
+  anchor.download = filename
+  anchor.rel = 'noopener'
+  anchor.style.display = 'none'
+  document.body.appendChild(anchor)
+  anchor.click()
+  document.body.removeChild(anchor)
+  return true
+}
+
 let dirReady = false
 async function ensureDir(): Promise<void> {
   if (dirReady) return
@@ -64,8 +95,14 @@ function bufferToBase64(buf: Uint8Array | ArrayBuffer): string {
 }
 
 async function writeBase64(name: string, base64: string): Promise<{ uri: string; name: string }> {
-  await ensureDir()
   const clean = sanitizeFilename(name)
+  // expo-file-system/legacy intentionally exposes no writeAsStringAsync on Web.
+  // Keep generated files self-contained in SQLite as a data URI so they remain
+  // downloadable and reviewable after a reload, without any cloud storage.
+  if (Platform.OS === 'web') {
+    return { uri: webDataUri(clean, base64), name: clean }
+  }
+  await ensureDir()
   const uri = `${AGENT_DIR}${Date.now()}_${clean}`
   await FileSystem.writeAsStringAsync(uri, base64, { encoding: FileSystem.EncodingType.Base64 })
   return { uri, name: clean }
@@ -278,21 +315,18 @@ export async function generatePdfFile(html: string, filename: string): Promise<{
   return writeBase64(`${clean}.pdf`, base64)
 }
 
-const MIME_BY_EXT: Record<string, string> = {
-  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  xls: 'application/vnd.ms-excel',
-  csv: 'text/csv',
-  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  doc: 'application/msword',
-  pdf: 'application/pdf',
-}
-
 export async function shareFile(uri: string, name?: string): Promise<void> {
+  const cleanName = sanitizeFilename(name || 'ملف')
+  if (Platform.OS === 'web') {
+    if (typeof window === 'undefined' || typeof document === 'undefined') throw new Error('فتح الملفات غير متاح خارج المتصفح')
+    const opened = webDownload(uri, cleanName)
+    if (!opened) throw new Error('تعذر فتح تنزيل الملف في المتصفح')
+    return
+  }
   if (!(await Sharing.isAvailableAsync())) {
     throw new Error('المشاركة غير متاحة على هذا الجهاز')
   }
-  const ext = String(name ?? uri).split('.').pop()?.toLowerCase() ?? ''
-  const mimeType = MIME_BY_EXT[ext] ?? 'application/octet-stream'
+  const mimeType = mimeTypeForFilename(cleanName)
   await Sharing.shareAsync(uri, {
     mimeType,
     dialogTitle: name ? `فتح أو مشاركة ${name}` : 'فتح أو مشاركة الملف',
@@ -302,13 +336,15 @@ export async function shareFile(uri: string, name?: string): Promise<void> {
 /** حفظ الملف في مجلد التحميلات بجهاز المستخدم دون إظهار مسارات داخلية. */
 export async function saveToDownloads(uri: string, name?: string): Promise<{ ok: boolean; savedName: string }> {
   const cleanName = sanitizeFilename(name || (uri.split('/').pop() ?? 'ملف'))
+  if (Platform.OS === 'web') {
+    return { ok: webDownload(uri, cleanName), savedName: cleanName }
+  }
   if (Platform.OS === 'android') {
     try {
       const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync()
       if (permissions.granted) {
         const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 })
-        const ext = cleanName.split('.').pop()?.toLowerCase() ?? ''
-        const mimeType = MIME_BY_EXT[ext] ?? 'application/octet-stream'
+        const mimeType = mimeTypeForFilename(cleanName)
         const newUri = await FileSystem.StorageAccessFramework.createFileAsync(
           permissions.directoryUri,
           cleanName,
@@ -322,8 +358,7 @@ export async function saveToDownloads(uri: string, name?: string): Promise<{ ok:
     }
   }
   if (await Sharing.isAvailableAsync()) {
-    const ext = cleanName.split('.').pop()?.toLowerCase() ?? ''
-    const mimeType = MIME_BY_EXT[ext] ?? 'application/octet-stream'
+    const mimeType = mimeTypeForFilename(cleanName)
     await Sharing.shareAsync(uri, {
       mimeType,
       dialogTitle: `تحميل ${cleanName}`,

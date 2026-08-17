@@ -7,7 +7,7 @@ vi.mock('../src/agent', () => ({
   ENTITY_LABELS: {},
 }))
 
-import { messagesToLlm } from '../src/assistant/history'
+import { collapseParallelToolRounds, messagesToLlm } from '../src/assistant/history'
 import { validateToolCallBatch } from '../src/assistant/toolValidation'
 
 describe('adversarial tool history contract', () => {
@@ -23,6 +23,23 @@ describe('adversarial tool history contract', () => {
       { id: 'same-id', name: 'current_local_time', arguments: '{}' },
     ], definitions, true)
     expect(issues.some((issue) => issue.code === 'duplicate_tool_id')).toBe(true)
+  })
+
+  it('serializes legacy parallel rounds for non-parallel providers', () => {
+    const calls = [
+      { id: 'call-a', type: 'function', function: { name: 'current_local_time', arguments: '{}' } },
+      { id: 'call-b', type: 'function', function: { name: 'current_local_time', arguments: '{}' } },
+    ]
+    const serial = collapseParallelToolRounds([
+      { role: 'user', content: 'اقرأ الوقت مرتين للتحقق' },
+      { role: 'assistant', content: 'سأتحقق', tool_calls: calls },
+      { role: 'tool', tool_call_id: 'call-a', name: 'current_local_time', content: '[نجاح] أ' },
+      { role: 'tool', tool_call_id: 'call-b', name: 'current_local_time', content: '[نجاح] ب' },
+    ] as any)
+    const assistantTurns = serial.filter((message) => message.role === 'assistant' && message.tool_calls)
+    expect(assistantTurns).toHaveLength(2)
+    expect(assistantTurns.every((message) => message.tool_calls?.length === 1)).toBe(true)
+    expect(serial.filter((message) => message.role === 'tool').map((message) => message.tool_call_id)).toEqual(['call-a', 'call-b'])
   })
 
   it('drops incomplete rounds and orphan results during history replay', () => {

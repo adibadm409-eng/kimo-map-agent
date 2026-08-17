@@ -12,7 +12,7 @@ import { buildSystemPrompt, getAgentFunctions } from './prompts'
 import { assessSkill, getSkillById, planForSkill } from './skills'
 import { completePlanStep, type AgentPlan, type AgentSkill } from './agentContract'
 import { publishRuntimeEvent } from './runtimeEvents'
-import { readModelHistory, messagesToLlm } from './history'
+import { readModelHistory, messagesToLlm, collapseParallelToolRounds } from './history'
 import { handleToolCall, deleteOne, deleteApproved, deleteRefused } from './invokeTools'
 import { performUndo, toolSig } from './undo'
 import { appendTaskEvidence, createTaskRun, getLatestTaskRun, transitionTaskRun } from './store'
@@ -37,6 +37,19 @@ function hashOf(s: string): string {
 function truncate(s: string, n: number): string {
   const t = String(s ?? '')
   return t.length > n ? t.slice(0, n) + '…' : t
+}
+
+function buildPreflightText(goal: string, skill: AgentSkill | null, plan: AgentPlan | null, mode: AgentSettings['mode']): string {
+  const cleanGoal = truncate(goal.replace(/\s+/g, ' ').trim(), 360)
+  const steps = plan?.steps.slice(0, 4).map((step) => step.title).filter(Boolean) ?? []
+  const modeText = mode === 'read'
+    ? 'سأبقى في وضع القراءة: سأفحص وأحلل فقط، ولن أنشئ أو أعدّل أو أحذف أي بيانات.'
+    : 'إذا احتاج الطلب إلى تغيير بيانات، سأتوقف قبل الأثر الجانبي وأعرض ما سيحدث وأطلب موافقتك الصريحة.'
+  if (!plan) {
+    return `وصلت رسالتك وفهمت نطاقها: «${cleanGoal}». سأجيب أولاً على المطلوب مباشرة، ولن أبدأ قراءة أو تغييراً غير لازم قبل أن أحدد الحاجة. ${modeText}`
+  }
+  const route = steps.length ? steps.join(' ← ') : 'فهم المطلوب ثم التحقق من النتيجة'
+  return `فهمت طلبك: «${cleanGoal}». سأتعامل معه كعمل ${skill?.label ? `ضمن مهارة «${skill.label}»` : 'منظم'} عبر المراحل التالية: ${route}. سأبدأ بالقراءة والتحقق، ثم أراجع النتائج قبل صياغة الرد. ${modeText}`
 }
 
 // ---------- الحلقة الرئيسية ----------
@@ -97,6 +110,11 @@ async function runLoop(
       await addBrainOp(sessionId, 'skill', `المهارة المختارة: ${runtimeSkill.id} — ${runtimeSkill.label}`).catch(() => {})
       if (runtimePlan) await addBrainOp(sessionId, 'plan', runtimePlan.steps.map((step) => step.title).join(' ← ')).catch(() => {})
     }
+    if (lastUserMsg) {
+      const preflight = buildPreflightText(String(lastUserMsg.content ?? ''), runtimeSkill, runtimePlan, s.mode)
+      if (emitEvents) emit({ type: 'progress', text: preflight })
+      await addBrainOp(sessionId, 'preflight', preflight.slice(0, 600)).catch(() => {})
+    }
     if (lastUserMsg) await addBrainOp(sessionId, 'task', `مهمة المستخدم: ${String(lastUserMsg.content ?? '').slice(0, 300)}`).catch(() => {})
     // تحليل النية وسياق المحادثة: يُحقنان في سطر النظام ليتكيف الوكيل ويستمر من حيث توقف المستخدم
     if (lastUserMsg) {
@@ -107,7 +125,9 @@ async function runLoop(
     }
     // مسار تفكير ReAct داخل الذاكرة: محادثة المستخدم فقط كبذرة، ثم نلحق بها
     // كل أداة+ملاحظتها في الخيط الخاص (لا تدخل محادثة المستخدم الظاهرة).
-    const thread: ChatMessage[] = messagesToLlm(await readModelHistory(sessionId))
+    const threadProfile = resolveModelProfile(providerProxy(conn), conn.model)
+    const rawThread = messagesToLlm(await readModelHistory(sessionId))
+    const thread: ChatMessage[] = threadProfile.supports.parallelTools ? rawThread : collapseParallelToolRounds(rawThread)
     if (initialContent !== undefined) {
       // استبدال آخر رسالة مستخدم بالحمولة متعددة الوسائط نفسها؛ لا نحفظ Base64
       // في SQLite ولا نضيف رسالة وصفية ثانية إلى سياق الموديل.
@@ -189,9 +209,18 @@ async function runLoop(
 
         if (isCancelled(sessionId)) return
 
+        let deferredNonParallelCalls = 0
         if (result.toolCalls.length) {
-          // احفظ كل نداءات الجولة في assistant واحدة قبل تنفيذ أي أداة.
-          // هذا يحافظ على عقد parallel tool calls عند إعادة فتح الجلسة أو استئنافها.
+          const profile = resolveModelProfile(providerProxy(conn), conn.model)
+          if (!profile.supports.parallelTools && result.toolCalls.length > 1) {
+            deferredNonParallelCalls = result.toolCalls.length - 1
+            result.toolCalls = result.toolCalls.slice(0, 1)
+            const detail = `الموديل الحالي لا يثبت تنفيذ الأدوات بالتوازي؛ سأتابع ${deferredNonParallelCalls} نداءً مؤجلاً في جولات متتابعة بعد التحقق من نتيجة النداء الحالي.`
+            await persistAssistantText(sessionId, detail, 'progress').catch(() => {})
+            if (emitEvents) emit({ type: 'progress', text: detail })
+          }
+          // احفظ فقط النداءات التي ستنفذ في هذه الجولة؛ لا نسجل النداءات المؤجلة
+          // داخل assistant واحدة لأن ذلك يخالف عقد الموديلات ذات التنفيذ التسلسلي.
           const persistedCalls = result.toolCalls.map((call) => ({
             ...call,
             extra: { ...(call.extra ?? {}), __assistantPersisted: true },

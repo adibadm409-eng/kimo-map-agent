@@ -3,6 +3,24 @@ import * as FileSystem from 'expo-file-system/legacy'
 import * as SQLite from 'expo-sqlite'
 import { logChange } from './audit'
 
+function isDataUri(uri: string): boolean {
+  return /^data:[^,]+;base64,/i.test(uri)
+}
+
+function dataUriBase64(uri: string): string {
+  return uri.slice(uri.indexOf(',') + 1)
+}
+
+function base64ByteLength(base64: string): number {
+  const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0
+  return Math.max(0, Math.floor((base64.length * 3) / 4) - padding)
+}
+
+async function readGeneratedBase64(uri: string): Promise<string> {
+  if (isDataUri(uri)) return dataUriBase64(uri)
+  return FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 })
+}
+
 /**
  * مساحة العمل المرنة (Flexible Workspace):
  * نموذج حر للمشاريع العقارية بجداول وأعمدة وصفوف غير محدودة يمكن للوكيل بناءه من الصفر
@@ -946,10 +964,14 @@ export interface GeneratedFileRecord {
 export async function registerGeneratedFile(args: { sessionId: string; name: string; uri: string; format: string }): Promise<void> {
   const d = await db()
   let size = 0
-  try {
-    const info = await FileSystem.getInfoAsync(args.uri)
-    if (info.exists && 'size' in info) size = info.size ?? 0
-  } catch {}
+  if (isDataUri(args.uri)) {
+    size = base64ByteLength(dataUriBase64(args.uri))
+  } else {
+    try {
+      const info = await FileSystem.getInfoAsync(args.uri)
+      if (info.exists && 'size' in info) size = info.size ?? 0
+    } catch {}
+  }
   await d.runAsync(
     'INSERT INTO agent_generated_files (id, session_id, name, uri, format, size, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
     genId(), args.sessionId, args.name, args.uri, args.format || 'file', size, Date.now()
@@ -996,11 +1018,16 @@ export async function reviewGeneratedFile(name: string): Promise<{ ok: boolean; 
   }
   let exists = false
   let size = 0
-  try {
-    const info = await FileSystem.getInfoAsync(rec.uri)
-    exists = info.exists
-    if (info.exists && 'size' in info) size = info.size ?? 0
-  } catch {}
+  if (isDataUri(rec.uri)) {
+    exists = true
+    size = base64ByteLength(dataUriBase64(rec.uri))
+  } else {
+    try {
+      const info = await FileSystem.getInfoAsync(rec.uri)
+      exists = info.exists
+      if (info.exists && 'size' in info) size = info.size ?? 0
+    } catch {}
+  }
   if (!exists) {
     return { ok: false, contentType: 'missing', text: `الملف "${rec.name}" مسجّل لكن مساره غير موجود على الجهاز (${rec.uri}).` }
   }
@@ -1008,7 +1035,7 @@ export async function reviewGeneratedFile(name: string): Promise<{ ok: boolean; 
   const ext = extensionOf(rec.name)
   if (ext === 'xlsx' || ext === 'xls' || fmt === 'excel' || fmt === 'xlsx') {
     try {
-      const base64 = await FileSystem.readAsStringAsync(rec.uri, { encoding: FileSystem.EncodingType.Base64 })
+      const base64 = await readGeneratedBase64(rec.uri)
       const wb = await workbookFromBase64(base64)
       const out: string[] = [`[تحقق] الملف "${rec.name}" سليم — ${(size / 1024).toFixed(1)} كيلوبايت.`, `عدد الأوراق: ${wb.worksheets.length}`]
       wb.worksheets.forEach((ws: any, i: number) => {
@@ -1025,7 +1052,7 @@ export async function reviewGeneratedFile(name: string): Promise<{ ok: boolean; 
   }
   if (ext === 'csv' || fmt === 'csv') {
     try {
-      const b64 = await FileSystem.readAsStringAsync(rec.uri, { encoding: FileSystem.EncodingType.Base64 })
+      const b64 = await readGeneratedBase64(rec.uri)
       const utf8 = atob(b64)
       const lines = utf8.split(/\r?\n/).filter((l) => l.trim())
       return {
@@ -1039,7 +1066,7 @@ export async function reviewGeneratedFile(name: string): Promise<{ ok: boolean; 
   }
   if (ext === 'pdf' || fmt === 'pdf') {
     try {
-      const base64 = await FileSystem.readAsStringAsync(rec.uri, { encoding: FileSystem.EncodingType.Base64 })
+      const base64 = await readGeneratedBase64(rec.uri)
       const head = base64.slice(0, 5).toUpperCase()
       const valid = head === '%PDF-'
       return {
@@ -1055,7 +1082,7 @@ export async function reviewGeneratedFile(name: string): Promise<{ ok: boolean; 
   }
   if (ext === 'docx' || ext === 'doc' || fmt === 'word' || fmt === 'docx') {
     try {
-      const base64 = await FileSystem.readAsStringAsync(rec.uri, { encoding: FileSystem.EncodingType.Base64 })
+      const base64 = await readGeneratedBase64(rec.uri)
       const valid = base64.slice(0, 2) === 'UE' && base64.includes('eG1s')
       return {
         ok: valid,

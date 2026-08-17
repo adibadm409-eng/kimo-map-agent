@@ -19,6 +19,30 @@ function compressToolResult(meta: Record<string, any>): string {
   return summarizeToolResult(name, result)
 }
 
+export function collapseParallelToolRounds(messages: ChatMessage[]): ChatMessage[] {
+  const out: ChatMessage[] = []
+  for (let i = 0; i < messages.length; i++) {
+    const message = messages[i]
+    const calls = message.role === 'assistant' && Array.isArray(message.tool_calls) ? message.tool_calls : []
+    if (message.role !== 'assistant' || calls.length <= 1) {
+      out.push(message)
+      continue
+    }
+    const followingTools = new Map<string, ChatMessage>()
+    for (let j = i + 1; j < messages.length && messages[j].role === 'tool'; j++) {
+      const tool = messages[j]
+      if (tool.role === 'tool' && tool.tool_call_id) followingTools.set(tool.tool_call_id, tool)
+    }
+    calls.forEach((call, index) => {
+      out.push({ role: 'assistant', content: index === 0 ? message.content : null, tool_calls: [call] })
+      const result = followingTools.get(call.id)
+      if (result) out.push(result)
+    })
+    while (i + 1 < messages.length && messages[i + 1].role === 'tool') i++
+  }
+  return out
+}
+
 export function messagesToLlm(msgs: Message[]): ChatMessage[] {
   const out: ChatMessage[] = []
   const recent = msgs.slice(-MAX_HISTORY_MESSAGES)
