@@ -41,13 +41,13 @@ export const SCREEN_CATALOG: ScreenCatalogEntry[] = [
   },
   {
     id: 'marketing', route: 'MarketingStack', label: 'التسويق والعروض', purpose: 'العروض والحملات والمشاهدات ونقاط المسار مع مؤقتات تنبيه محلية مرتبطة بالعروض.',
-    entities: ['offers', 'reminders', 'campaigns', 'viewings', 'waypoints', 'areas'], readTools: ['query', 'get', 'catalog', 'current_local_time', 'list_reminders'], writeTools: ['create', 'update', 'delete', 'create_offer_with_reminder', 'offer_reminder_set', 'create_reminder', 'cancel_reminder'],
-    safeEditPolicy: 'عند تعديل حملة أو عرض، تحقق من الروابط والمدة والحالة؛ الحذف يحتاج معاينة وموافقة. لإنشاء عرض مع تنبيه أو تذكير عام اقرأ الوقت المحلي أولاً، تحقق من الموعد، ثم أعد قراءة التذكير بعد الحفظ.', risk: 'medium', verificationTools: ['get', 'query', 'audit_log_query'],
+    entities: ['offers', 'reminders', 'campaigns', 'viewings', 'waypoints', 'areas'], readTools: ['query', 'get', 'catalog', 'current_local_time', 'list_reminders', 'list_offer_reminders'], writeTools: ['create', 'update', 'delete', 'create_offer_with_reminder', 'offer_reminder_set', 'create_reminder', 'cancel_reminder'],
+    safeEditPolicy: 'التنبيهات كيان محلي مستقل وقد ترتبط بعرض أو عقار أو عميل أو معاينة أو مشروع أو دفعة أو تكون عامة. عند تعديل حملة أو عرض، تحقق من الروابط والمدة والحالة؛ الحذف يحتاج معاينة وموافقة. اقرأ الوقت المحلي أولاً، تحقق من الموعد والهدف، ثم أعد قراءة التنبيه بعد الحفظ.', risk: 'medium', verificationTools: ['get', 'query', 'list_reminders', 'audit_log_query'],
   },
   {
     id: 'reminders', route: 'Reminders', label: 'التذكيرات', purpose: 'إدارة التذكيرات والإشعارات المحلية القادمة التي تعمل دون اتصال أو خادم.',
-    entities: ['reminders'], readTools: ['list_reminders', 'get', 'current_local_time'], writeTools: ['create_reminder', 'cancel_reminder'],
-    safeEditPolicy: 'لا تنشئ تذكيراً دون نص وموعد مستقبلي واضح؛ اقرأ الوقت المحلي للعبارات النسبية، واعرض التذكير قبل إلغائه عند غياب معرف واضح.', risk: 'medium', verificationTools: ['list_reminders', 'get'],
+    entities: ['reminders', 'offers', 'properties', 'clients', 'viewings', 'projects', 'plot_payments'], readTools: ['list_reminders', 'list_offer_reminders', 'get', 'current_local_time'], writeTools: ['create_reminder', 'offer_reminder_set', 'cancel_reminder'],
+    safeEditPolicy: 'التنبيه كيان محلي مستقل ويمكن أن يكون عاماً أو مرتبطاً بعرض أو عقار أو عميل أو معاينة أو مشروع أو دفعة. لا تنشئه دون نص وموعد مستقبلي واضح؛ تحقق من target_type وtarget_id، واعرض القائمة قبل الإلغاء عند غياب معرف واضح.', risk: 'medium', verificationTools: ['list_reminders', 'list_offer_reminders', 'get'],
   },
   {
     id: 'reports', route: 'Reports', label: 'التقارير', purpose: 'تقارير المشاريع والمال والتصدير.',

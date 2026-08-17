@@ -1,6 +1,7 @@
 import { providerCapabilities, type ProviderDef } from './providers'
 
 export type ProviderWireFamily =
+  | 'anthropic-messages'
   | 'gemini-openai'
   | 'openai-chat'
   | 'mistral-chat'
@@ -35,6 +36,7 @@ export interface WireRequestIssue {
 
 export function providerWireFamily(def: ProviderDef, model: string): ProviderWireFamily {
   const normalized = model.toLowerCase()
+  if (def.id === 'anthropic') return 'anthropic-messages'
   if (def.id === 'gemini' || /(?:^|[/:_-])gemini-(?:2\.5|3)(?:[./:_-]|$)/i.test(normalized)) return 'gemini-openai'
   if (def.id === 'mistral') return 'mistral-chat'
   if (def.id === 'alibaba') return 'dashscope-chat'

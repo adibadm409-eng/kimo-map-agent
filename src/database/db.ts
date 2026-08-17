@@ -1,7 +1,7 @@
 import * as SQLite from 'expo-sqlite'
-import type { Property, Client, Offer, Campaign, Viewing } from '../types'
+import type { Property, Client, Offer, Campaign, Viewing, OfferReminder } from '../types'
 import { logChange } from './audit'
-import { cancelLocalReminder, cancelOfferReminder, scheduleLocalReminder } from '../notifications/offerReminders'
+import { cancelLocalReminder, cancelOfferReminder, scheduleLocalReminder, scheduleOfferReminder } from '../notifications/offerReminders'
 
 const DB_NAME = 'realestate.db'
 
@@ -47,6 +47,32 @@ async function safeMigrate(database: SQLite.SQLiteDatabase) {
   await addColumnIfMissing("offers", "reminder_at", "TEXT DEFAULT ''")
   await addColumnIfMissing("offers", "reminder_notification_id", "TEXT DEFAULT ''")
   await addColumnIfMissing("offers", "media", "TEXT DEFAULT '[]'")
+  await addColumnIfMissing("reminders", "target_type", "TEXT DEFAULT 'general'")
+  await addColumnIfMissing("reminders", "target_id", "TEXT DEFAULT ''")
+  await database.execAsync(`
+    CREATE TABLE IF NOT EXISTS offer_reminders (
+      id TEXT PRIMARY KEY,
+      offer_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      body TEXT DEFAULT '',
+      remind_at TEXT NOT NULL,
+      notification_id TEXT DEFAULT '',
+      status TEXT DEFAULT 'scheduled',
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (offer_id) REFERENCES offers (id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_offer_reminders_offer ON offer_reminders (offer_id, status);
+    CREATE INDEX IF NOT EXISTS idx_offer_reminders_time ON offer_reminders (remind_at, status);
+    INSERT OR IGNORE INTO offer_reminders (id, offer_id, title, body, remind_at, notification_id, status)
+      SELECT 'legacy-' || id, id, 'متابعة العرض', '', reminder_at, reminder_notification_id, 'scheduled'
+      FROM offers
+      WHERE COALESCE(reminder_at, '') <> '' AND COALESCE(reminder_notification_id, '') <> ''
+        AND NOT EXISTS (SELECT 1 FROM offer_reminders r WHERE r.offer_id = offers.id);
+    INSERT OR IGNORE INTO reminders (id, title, body, remind_at, notification_id, status, target_type, target_id, created_at)
+      SELECT r.id, r.title, r.body, r.remind_at, r.notification_id, r.status, 'offer', r.offer_id, r.created_at
+      FROM offer_reminders r
+      WHERE NOT EXISTS (SELECT 1 FROM reminders existing WHERE existing.id = r.id);
+  `)
   await ensureOfferPropertyOptional(database)
 }
 
@@ -155,7 +181,21 @@ async function initSchema(database: SQLite.SQLiteDatabase) {
       remind_at TEXT NOT NULL,
       notification_id TEXT DEFAULT '',
       status TEXT DEFAULT 'scheduled',
+      target_type TEXT DEFAULT 'general',
+      target_id TEXT DEFAULT '',
       created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS offer_reminders (
+      id TEXT PRIMARY KEY,
+      offer_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      body TEXT DEFAULT '',
+      remind_at TEXT NOT NULL,
+      notification_id TEXT DEFAULT '',
+      status TEXT DEFAULT 'scheduled',
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (offer_id) REFERENCES offers (id) ON DELETE CASCADE
     );
 
     CREATE TABLE IF NOT EXISTS campaigns (
@@ -188,6 +228,9 @@ async function initSchema(database: SQLite.SQLiteDatabase) {
     CREATE INDEX IF NOT EXISTS idx_offers_property ON offers (property_id);
     CREATE INDEX IF NOT EXISTS idx_reminders_status ON reminders (status);
     CREATE INDEX IF NOT EXISTS idx_reminders_remind_at ON reminders (remind_at);
+    CREATE INDEX IF NOT EXISTS idx_reminders_target ON reminders (target_type, target_id, status);
+    CREATE INDEX IF NOT EXISTS idx_offer_reminders_offer ON offer_reminders (offer_id, status);
+    CREATE INDEX IF NOT EXISTS idx_offer_reminders_time ON offer_reminders (remind_at, status);
     CREATE INDEX IF NOT EXISTS idx_offers_client ON offers (client_id);
     CREATE INDEX IF NOT EXISTS idx_viewings_property ON viewings (property_id);
     CREATE INDEX IF NOT EXISTS idx_viewings_client ON viewings (client_id);
@@ -377,26 +420,47 @@ export async function deleteClient(id: string): Promise<void> {
 }
 
 // CRUD helpers - OFFER
+async function attachOfferReminders<T extends { id: string }>(rows: T[]): Promise<(T & { reminders: OfferReminder[] })[]> {
+  if (!rows.length) return rows.map((row) => ({ ...row, reminders: [] }))
+  const db = await getDB()
+  const ids = rows.map((row) => row.id)
+  const placeholders = ids.map(() => '?').join(', ')
+  const reminderRows = await db.getAllAsync<OfferReminder & { target_id: string }>(
+    `SELECT *, target_id as offer_id FROM reminders WHERE target_type = 'offer' AND target_id IN (${placeholders}) AND status = 'scheduled' ORDER BY remind_at ASC`,
+    ids,
+  )
+  const grouped = new Map<string, OfferReminder[]>()
+  for (const reminder of reminderRows) {
+    const list = grouped.get(reminder.offer_id) ?? []
+    list.push(reminder)
+    grouped.set(reminder.offer_id, list)
+  }
+  return rows.map((row) => ({ ...row, reminders: grouped.get(row.id) ?? [] }))
+}
+
 export async function getOffer(id: string): Promise<any | null> {
   const db = await getDB()
-  return await db.getFirstAsync(`
+  const row = await db.getFirstAsync(`
     SELECT o.*, p.name as property_name, c.name as client_name
     FROM offers o
     LEFT JOIN properties p ON o.property_id = p.id
     LEFT JOIN clients c ON o.client_id = c.id
     WHERE o.id = ?
-  `, [id])
+  `, [id]) as any | null
+  if (!row) return null
+  return (await attachOfferReminders([row]))[0]
 }
 
 export async function getAllOffers(): Promise<any[]> {
   const db = await getDB()
-  return await db.getAllAsync(`
+  const rows = await db.getAllAsync(`
     SELECT o.*, p.name as property_name, c.name as client_name
     FROM offers o
     LEFT JOIN properties p ON o.property_id = p.id
     LEFT JOIN clients c ON o.client_id = c.id
     ORDER BY o.created_at DESC
   `) as any[]
+  return attachOfferReminders(rows)
 }
 
 export async function updateOffer(id: string, o: Partial<Offer>): Promise<void> {
@@ -406,7 +470,7 @@ export async function updateOffer(id: string, o: Partial<Offer>): Promise<void> 
   const allowed = new Set(['property_id', 'client_id', 'type', 'amount', 'status', 'date', 'notes', 'media'])
   const entries = Object.entries(o).filter(([key]) => allowed.has(key))
   if (!entries.length) return
-  const values = entries.map(([key, value]) => key === 'property_id' ? (value ? String(value) : null) : value)
+  const values: any[] = entries.map(([key, value]) => key === 'property_id' ? (value ? String(value) : null) : value)
   await db.runAsync(`UPDATE offers SET ${entries.map(([key]) => `${key} = ?`).join(', ')} WHERE id = ?`, [...values, id])
   await logChange({ action: 'update', scope: 'offers', scopeId: id, before, after: Object.fromEntries(entries), summary: `تعديل عرض (${id})` })
 }
@@ -422,29 +486,119 @@ export async function createOffer(o: Partial<Offer>): Promise<string> {
   return id
 }
 
+export async function getRemindersForTarget(targetType: string, targetId: string, includeCancelled = false): Promise<any[]> {
+  const db = await getDB()
+  const where = includeCancelled ? '' : " AND status = 'scheduled'"
+  return await db.getAllAsync(`SELECT * FROM reminders WHERE target_type = ? AND target_id = ?${where} ORDER BY remind_at ASC`, [targetType, targetId]) as any[]
+}
+
+export async function getOfferReminders(offerId: string, includeCancelled = false): Promise<OfferReminder[]> {
+  const rows = await getRemindersForTarget('offer', offerId, includeCancelled)
+  return rows.map((row) => ({ ...row, offer_id: row.target_id })) as OfferReminder[]
+}
+
+export async function createEntityReminder(input: {
+  targetType?: string
+  targetId?: string
+  title: string
+  body?: string
+  remindAt: string
+  offerMeta?: { propertyName?: string; clientName?: string; amount?: number }
+}): Promise<string> {
+  const title = String(input.title || '').trim()
+  const body = String(input.body || '').trim()
+  const targetType = String(input.targetType || 'general').trim() || 'general'
+  const targetId = String(input.targetId || '').trim()
+  const date = new Date(String(input.remindAt || ''))
+  if (!title) throw new Error('عنوان التذكير مطلوب.')
+  if (Number.isNaN(date.getTime()) || date.getTime() <= Date.now()) throw new Error('موعد التذكير غير صالح أو منتهٍ.')
+  if (targetType !== 'general' && !targetId) throw new Error('التنبيه المرتبط يحتاج target_id.')
+  const db = await getDB()
+  const id = genId()
+  let notificationId = ''
+  try {
+    notificationId = targetType === 'offer'
+      ? await scheduleOfferReminder(date, { offerId: targetId, propertyName: input.offerMeta?.propertyName, clientName: input.offerMeta?.clientName, amount: Number(input.offerMeta?.amount) || 0 })
+      : await scheduleLocalReminder(date, title, body || title, { type: 'entity-reminder', reminderId: id, targetType, targetId })
+    await db.runAsync(
+      'INSERT INTO reminders (id,title,body,remind_at,notification_id,status,target_type,target_id) VALUES (?,?,?,?,?,?,?,?)',
+      [id, title, body, date.toISOString(), notificationId, 'scheduled', targetType, targetId],
+    )
+  } catch (error) {
+    if (notificationId) await cancelLocalReminder(notificationId).catch(() => {})
+    throw error
+  }
+  await logChange({ action: 'create', scope: 'reminders', scopeId: id, after: { title, body, remind_at: date.toISOString(), target_type: targetType, target_id: targetId }, summary: `إنشاء تنبيه "${title}"` })
+  return id
+}
+
+export async function createOfferReminder(input: {
+  offerId: string
+  remindAt: string
+  title?: string
+  body?: string
+  propertyName?: string
+  clientName?: string
+  amount?: number
+}): Promise<string> {
+  const offer = await getOffer(input.offerId)
+  if (!offer) throw new Error(`العرض (${input.offerId}) غير موجود.`)
+  const id = await createEntityReminder({
+    targetType: 'offer',
+    targetId: input.offerId,
+    title: input.title || 'متابعة العرض',
+    body: input.body,
+    remindAt: input.remindAt,
+    offerMeta: { propertyName: input.propertyName ?? offer.property_name, clientName: input.clientName ?? offer.client_name, amount: Number(input.amount ?? offer.amount) || 0 },
+  })
+  const db = await getDB()
+  const active = await getOfferReminders(input.offerId)
+  if (active.length === 1) await db.runAsync('UPDATE offers SET reminder_at = ?, reminder_notification_id = ? WHERE id = ?', [active[0].remind_at, active[0].notification_id, input.offerId])
+  return id
+}
+
+export async function cancelOfferReminderById(reminderId: string): Promise<void> {
+  const before = await getReminder(reminderId) as any
+  if (!before || before.target_type !== 'offer') throw new Error(`تنبيه العرض (${reminderId}) غير موجود.`)
+  await cancelReminder(reminderId)
+}
+
+export async function cancelOfferReminders(offerId: string): Promise<void> {
+  const reminders = await getOfferReminders(offerId)
+  for (const reminder of reminders) await cancelOfferReminderById(reminder.id)
+  const db = await getDB()
+  await db.runAsync('UPDATE offers SET reminder_at = ?, reminder_notification_id = ? WHERE id = ?', ['', '', offerId])
+}
+
+/** توافق رجعي مع واجهة التنبيه القديمة؛ يخزن في reminders canonical ولا يلغي التنبيهات الأخرى عند الضبط. */
 export async function setOfferReminder(id: string, reminderAt: string | null, notificationId: string | null): Promise<void> {
   const db = await getDB()
   const before = await db.getFirstAsync('SELECT reminder_at, reminder_notification_id FROM offers WHERE id = ?', [id])
   if (!before) throw new Error(`العرض (${id}) غير موجود.`)
-  await db.runAsync(
-    'UPDATE offers SET reminder_at = ?, reminder_notification_id = ? WHERE id = ?',
-    [reminderAt || '', notificationId || '', id],
-  )
-  await logChange({
-    action: 'update',
-    scope: 'offers',
-    scopeId: id,
-    before,
-    after: { reminder_at: reminderAt || '', reminder_notification_id: notificationId || '' },
-    summary: reminderAt ? `ضبط تنبيه للعرض (${id})` : `إلغاء تنبيه العرض (${id})`,
-  })
+  if (!reminderAt || !notificationId) {
+    await cancelOfferReminders(id)
+    await logChange({ action: 'update', scope: 'offers', scopeId: id, before, after: { reminder_at: '', reminder_notification_id: '' }, summary: `إلغاء تنبيهات العرض (${id})` })
+    return
+  }
+  const existing = (await getOfferReminders(id))[0]
+  if (existing) {
+    await db.runAsync('UPDATE reminders SET remind_at = ?, notification_id = ?, status = ?, target_type = ?, target_id = ? WHERE id = ?', [reminderAt, notificationId, 'scheduled', 'offer', id, existing.id])
+  } else {
+    await db.runAsync('INSERT OR IGNORE INTO reminders (id,title,body,remind_at,notification_id,status,target_type,target_id) VALUES (?,?,?,?,?,?,?,?)', [`legacy-${id}`, 'متابعة العرض', '', reminderAt, notificationId, 'scheduled', 'offer', id])
+  }
+  await db.runAsync('UPDATE offers SET reminder_at = ?, reminder_notification_id = ? WHERE id = ?', [reminderAt, notificationId, id])
+  await logChange({ action: 'update', scope: 'offers', scopeId: id, before, after: { reminder_at: reminderAt, reminder_notification_id: notificationId }, summary: `ضبط تنبيه للعرض (${id})` })
 }
 
 export async function deleteOffer(id: string): Promise<void> {
   const db = await getDB()
   const before = await db.getFirstAsync('SELECT * FROM offers WHERE id = ?', [id])
   if (!before) throw new Error(`العرض (${id}) غير موجود.`)
-  await cancelOfferReminder((before as any)?.reminder_notification_id).catch(() => {})
+  const linkedReminders = await getOfferReminders(id, true)
+  for (const reminder of linkedReminders) await cancelLocalReminder(reminder.notification_id).catch(() => {})
+  if ((before as any)?.reminder_notification_id && !linkedReminders.some((reminder) => reminder.notification_id === (before as any).reminder_notification_id)) {
+    await cancelOfferReminder((before as any).reminder_notification_id).catch(() => {})
+  }
   await db.runAsync('DELETE FROM offers WHERE id = ?', [id])
   await logChange({ action: 'delete', scope: 'offers', scopeId: id, before, summary: `حذف عرض (${id})` })
 }
@@ -461,28 +615,8 @@ export async function getReminder(id: string): Promise<any | null> {
   return await db.getFirstAsync('SELECT * FROM reminders WHERE id = ?', [id])
 }
 
-export async function createReminder(r: { title: string; body?: string; remind_at: string }): Promise<string> {
-  const title = String(r.title || '').trim()
-  const body = String(r.body || '').trim()
-  const remindAt = String(r.remind_at || '')
-  if (!title) throw new Error('عنوان التذكير مطلوب.')
-  const date = new Date(remindAt)
-  if (!remindAt || Number.isNaN(date.getTime()) || date.getTime() <= Date.now()) throw new Error('موعد التذكير غير صالح أو منتهٍ.')
-  const db = await getDB()
-  const id = genId()
-  let notificationId = ''
-  try {
-    notificationId = await scheduleLocalReminder(date, title, body || title, { type: 'general-reminder', reminderId: id })
-    await db.runAsync(
-      'INSERT INTO reminders (id,title,body,remind_at,notification_id,status) VALUES (?,?,?,?,?,?)',
-      [id, title, body, date.toISOString(), notificationId, 'scheduled'],
-    )
-  } catch (error) {
-    if (notificationId) await cancelLocalReminder(notificationId).catch(() => {})
-    throw error
-  }
-  await logChange({ action: 'create', scope: 'reminders', scopeId: id, after: { title, body, remind_at: date.toISOString() }, summary: `إنشاء تذكير "${title}"` })
-  return id
+export async function createReminder(r: { title: string; body?: string; remind_at: string; target_type?: string; target_id?: string }): Promise<string> {
+  return createEntityReminder({ title: r.title, body: r.body, remindAt: r.remind_at, targetType: r.target_type || 'general', targetId: r.target_id || '' })
 }
 
 export async function clearAllReminders(): Promise<void> {
@@ -499,6 +633,11 @@ export async function cancelReminder(id: string): Promise<void> {
   if (before.status === 'cancelled') return
   await cancelLocalReminder(before.notification_id)
   await db.runAsync("UPDATE reminders SET status = 'cancelled', notification_id = '' WHERE id = ?", [id])
+  if (before.target_type === 'offer' && before.target_id) {
+    const active = await getOfferReminders(String(before.target_id))
+    const next = active[0]
+    await db.runAsync('UPDATE offers SET reminder_at = ?, reminder_notification_id = ? WHERE id = ?', [next?.remind_at || '', next?.notification_id || '', before.target_id])
+  }
   await logChange({ action: 'update', scope: 'reminders', scopeId: id, before, after: { status: 'cancelled' }, summary: `إلغاء تذكير (${id})` })
 }
 

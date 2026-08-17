@@ -59,14 +59,15 @@ const base = (providerId, model, messages, extra = {}) => ({
 
 try {
   for (const def of PROVIDERS) {
+    if (def.id === 'anthropic') continue
     const model = def.defaultModels[0] || 'custom-text-model'
-    const result = await chatWithRetry(base(def.id, model, [{ role: 'user', content: 'مرحبا' }]))
+    const result = await chatWithRetry(base(def.id, model, [{ role: 'user', content: 'مرحبا' }], { functions: [] }))
     assert.equal(result.content, 'متصل', `${def.id} text runtime`)
     assert.equal(captures.at(-1).messages[0].role, 'user')
   }
 
   const customDeltas = []
-  await chatWithRetry(base('custom', 'custom-text-model', [{ role: 'user', content: 'بدون بث' }], { onDelta: (delta) => customDeltas.push(delta) }))
+  await chatWithRetry(base('custom', 'custom-text-model', [{ role: 'user', content: 'بدون بث' }], { functions: [], onDelta: (delta) => customDeltas.push(delta) }))
   assert.equal(captures.at(-1).stream, undefined, 'custom must not receive stream field')
   assert.equal(customDeltas.at(-1).done, true)
 

@@ -29,6 +29,12 @@ export default function Reminders() {
 
   useFocusEffect(useCallback(() => { void load() }, [load]))
 
+  const targetLabel = (item: any): string => {
+    const labels: Record<string, string> = { general: 'عام', offer: 'عرض', property: 'عقار', client: 'عميل', viewing: 'معاينة', project: 'مشروع', payment: 'دفعة', campaign: 'حملة', area: 'منطقة', waypoint: 'نقطة' }
+    const kind = labels[String(item.target_type || 'general')] ?? String(item.target_type || 'مرتبط')
+    return item.target_id ? `مرتبط بـ${kind} (${item.target_id})` : kind
+  }
+
   const handleCancel = (item: any) => {
     Alert.alert('إلغاء التذكير', `هل تريد إلغاء «${item.title}»؟`, [
       { text: 'تراجع', style: 'cancel' },
@@ -54,6 +60,7 @@ export default function Reminders() {
         <View style={styles.info}>
           <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={2}>{item.title}</Text>
           {item.body ? <Text style={[styles.body, { color: colors.textSecondary }]} numberOfLines={3}>{item.body}</Text> : null}
+          <Text style={[styles.target, { color: colors.textMuted }]} numberOfLines={1}>{targetLabel(item)}</Text>
           <View style={styles.meta}>
             <Ionicons name="time-outline" size={15} color={colors.accent} />
             <Text style={[styles.date, { color: colors.accent }]}>{dateLabel}</Text>
@@ -109,6 +116,7 @@ const styles = StyleSheet.create({
   info: { flex: 1, gap: spacing.xs },
   title: { fontSize: fontSize.md, fontWeight: '700', fontFamily: 'Tajawal_700Bold' },
   body: { fontSize: fontSize.sm, lineHeight: 20, fontFamily: 'Tajawal_400Regular' },
+  target: { fontSize: fontSize.xs, fontFamily: 'Tajawal_500Medium' },
   meta: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
   date: { flex: 1, fontSize: fontSize.xs, fontFamily: 'Tajawal_500Medium' },
   cancelBtn: { width: 34, height: 34, borderWidth: 1, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' },

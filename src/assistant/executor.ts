@@ -3,8 +3,10 @@ import { saveAttachment } from '../database/workspace'
 import { readAudioInput } from './files'
 import { chatWithRetry, parseToolArgs, toWireToolCall, type ChatContentPart, type ChatMessage, type ToolCall } from './llm'
 import { defaultProvider, providerCapabilities, type ProviderDef, type ProviderId } from './providers'
+import { resolveModelProfile } from './modelProfiles'
+import { validateToolCallAgainstDefinitions, validateToolCallBatch } from './toolValidation'
 import { analyzeIntent, buildContextSummary } from './intent'
-import { persistUser, persistAssistantText, persistAssistantToolCalls, mimeOf } from './persist'
+import { persistUser, persistAssistantText, persistAssistantToolCalls, persistToolResult, mimeOf } from './persist'
 import { buildSystemPrompt, getAgentFunctions } from './prompts'
 import { assessSkill, getSkillById, planForSkill } from './skills'
 import { completePlanStep, type AgentPlan, type AgentSkill } from './agentContract'
@@ -133,6 +135,7 @@ async function runLoop(
         }
         if (emitEvents) emit({ type: 'thinking' })
 
+        const agentFunctions = getAgentFunctions(runtimeSkill)
         let result
         try {
           let liveText = ''
@@ -143,7 +146,7 @@ async function runLoop(
               apiKey: conn.apiKey,
               model: conn.model,
               messages: [system, ...thread],
-              functions: getAgentFunctions(runtimeSkill),
+              functions: agentFunctions,
               maxTokens: 4000,
               onDelta: (d) => {
                 liveText = d.content || liveText
@@ -207,6 +210,26 @@ async function runLoop(
           thread.push({ role: 'assistant', content: result.content, tool_calls: result.toolCalls.map((call) => toWireToolCall(call, { includeProviderMetadata: providerCapabilities(providerProxy(conn), conn.model).preservesThoughtSignatures })) })
         } else if (result.toolCalls.length) {
           thread.push({ role: 'assistant', content: null, tool_calls: result.toolCalls.map((call) => toWireToolCall(call, { includeProviderMetadata: providerCapabilities(providerProxy(conn), conn.model).preservesThoughtSignatures })) })
+        }
+
+        if (result.toolCalls.length) {
+          const profile = resolveModelProfile(providerProxy(conn), conn.model)
+          const turnIssues = validateToolCallBatch(result.toolCalls, agentFunctions, profile.supports.parallelTools)
+          if (turnIssues.length) {
+            const issueText = turnIssues.map((issue) => issue.message).join(' ')
+            for (const invalidCall of result.toolCalls) {
+              const callIssues = validateToolCallAgainstDefinitions(invalidCall, agentFunctions)
+              const detail = callIssues.length ? callIssues.map((issue) => issue.message).join(' ') : issueText
+              const observation = `[فشل التحقق قبل التنفيذ] ${detail}`
+              await persistToolResult(sessionId, invalidCall, { ok: false, error: 'tool_validation', detail }, { name: invalidCall.name, ok: false, observation, args: invalidCall.arguments }).catch(() => {})
+              thread.push({ role: 'tool', tool_call_id: invalidCall.id, name: invalidCall.name, content: observation })
+            }
+            if (emitEvents) {
+              publishRuntimeEvent(sessionId, { type: 'observation', title: 'حُجبت أداة قبل التنفيذ', detail: issueText, status: 'error' })
+              publishRuntimeEvent(sessionId, { type: 'recovery', title: 'أعيد الطلب إلى الوكيل للتصحيح', detail: 'لم أُنفّذ أي أثر جانبي قبل اجتياز التحقق المحلي للوسائط والمعرفات والقدرات.', strategy: 'retry' })
+            }
+            continue
+          }
         }
 
         if (!result.toolCalls.length) {

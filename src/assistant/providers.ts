@@ -1,5 +1,6 @@
 export type ProviderId =
   | 'gemini'
+  | 'anthropic'
   | 'mistral'
   | 'deepseek'
   | 'alibaba'
@@ -31,7 +32,7 @@ export interface ProviderDef {
   color: string
   baseUrl: string
   defaultModels: string[]
-  modelsKind: 'openai' | 'gemini' | 'none'
+  modelsKind: 'openai' | 'gemini' | 'anthropic' | 'none'
   hint?: string
   note?: string
 }
@@ -75,6 +76,15 @@ export const PROVIDERS: ProviderDef[] = [
     defaultModels: ['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna', 'gpt-5.5', 'gpt-5.5-pro', 'gpt-5.4-mini', 'gpt-5.4-nano'],
     modelsKind: 'openai',
     hint: 'مفتاح API من platform.openai.com',
+  },
+  {
+    id: 'anthropic',
+    name: 'Anthropic Claude',
+    color: '#D97757',
+    baseUrl: 'https://api.anthropic.com/v1',
+    defaultModels: ['claude-sonnet-4-5-20250929', 'claude-opus-4-1-20250805', 'claude-haiku-4-5-20251001'],
+    modelsKind: 'anthropic',
+    hint: 'مفتاح API من console.anthropic.com — واجهة Messages الأصلية',
   },
   {
     id: 'mistral',
@@ -162,6 +172,7 @@ function isKnownVisionModel(def: ProviderDef, model: string): boolean {
   const normalized = model.toLowerCase()
   if (def.id === 'gemini') return isGeminiModel(normalized) && !/image|embedding|tts|live/i.test(normalized)
   if (def.id === 'openai') return /(?:gpt-4o|gpt-5|^o[1-9])/i.test(normalized)
+  if (def.id === 'anthropic') return /^claude-/i.test(normalized)
   if (def.id === 'mistral') return /(?:pixtral|mistral-small-3\.1|ministral-3)/i.test(normalized)
   if (def.id === 'alibaba') return /qwen.*(?:vl|omni)/i.test(normalized)
   if (def.id === 'openrouter') return /(?:gemini|gpt-4o|qwen.*(?:vl|omni)|pixtral|vision|vl)/i.test(normalized)
@@ -174,6 +185,7 @@ function isKnownAudioModel(def: ProviderDef, model: string): boolean {
   const normalized = model.toLowerCase()
   if (def.id === 'gemini') return isGeminiModel(normalized) && !/image|embedding|tts|live/i.test(normalized)
   if (def.id === 'openai') return /gpt-4o-(?:mini-)?audio(?:-preview)?$/i.test(normalized)
+  if (def.id === 'anthropic') return false
   if (def.id === 'alibaba') return /(?:qwen.*(?:omni|audio)|qwen3-asr)/i.test(normalized)
   if (def.id === 'mistral') return /voxtral-small/i.test(normalized)
   if (def.id === 'openrouter') return /(?:gemini-(?:2\.5|3)|gpt-4o-(?:mini-)?audio|voxtral|qwen.*(?:omni|audio))/i.test(normalized)
@@ -242,6 +254,15 @@ export async function fetchProviderModels(
         .filter((m: any) => (m.supportedGenerationMethods ?? []).includes('generateContent'))
         .map((m: any) => String(m.name ?? '').replace(/^models\//, ''))
       return list.filter(Boolean)
+    }
+    if (def.modelsKind === 'anthropic') {
+      const base = normalizeBaseUrl(def.baseUrl)
+      const res = await fetch(`${base}/models`, {
+        headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', Accept: 'application/json' },
+      })
+      if (!res.ok) return []
+      const data: any = await res.json()
+      return (data.data ?? data.models ?? []).map((m: any) => String(m.id ?? m.name ?? '')).filter(Boolean)
     }
     if (def.modelsKind === 'openai' && def.id !== 'custom') {
       const base = normalizeBaseUrl(def.baseUrl)

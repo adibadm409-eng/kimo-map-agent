@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { buildChatRequestBody } from '../src/assistant/llm.ts'
 import { defaultProvider, providerCapabilities, PROVIDERS } from '../src/assistant/providers.ts'
+import { resolveModelProfile } from '../src/assistant/modelProfiles.ts'
 import { providerWireFamily } from '../src/assistant/providerWire.ts'
 
 const modelsByProvider = {
@@ -75,8 +76,10 @@ for (const provider of PROVIDERS) {
   for (const model of modelsByProvider[provider.id] ?? provider.defaultModels) {
     const def = defaultProvider(provider.id)
     const capabilities = providerCapabilities(def, model)
+    const profile = resolveModelProfile(def, model)
     for (const input of inputs) {
-      const row = { provider: provider.id, model, input, family: providerWireFamily(def, model), supportsChat: capabilities.supportsChat, supportsVision: capabilities.supportsVision, supportsTools: capabilities.supportsTools, supportsInputAudio: capabilities.supportsInputAudio, status: 'PASS', detail: '' }
+      const row = { provider: provider.id, model, input, family: providerWireFamily(def, model), supportsChat: capabilities.supportsChat, supportsVision: capabilities.supportsVision, supportsTools: capabilities.supportsTools, supportsInputAudio: profile.supports.inputAudio, supportsParallelTools: profile.supports.parallelTools, profileSource: profile.source, status: 'PASS', detail: ''
+ }
       try {
         const body = buildChatRequestBody({
           provider: def,
@@ -107,7 +110,7 @@ for (const provider of PROVIDERS) {
           assert.ok(Array.isArray(body.messages[1].content))
         }
         if (input.startsWith('tool_') || input === 'gemini_metadata') {
-          if (!capabilities.supportsTools) {
+          if (!profile.supports.tools) {
             row.status = 'BLOCKED'
             row.detail = 'الأدوات محجوبة محلياً لأن الموديل غير حواري/لا يثبت دعم الأدوات.'
             blocked++
@@ -126,8 +129,8 @@ for (const provider of PROVIDERS) {
         const expectedChatBlock = !capabilities.supportsChat
         const expectedAudioBlock = (input === 'audio' || input === 'mixed') && !capabilities.supportsInputAudio
         const expectedVisionBlock = (input === 'image' || input === 'mixed') && !capabilities.supportsVision
-        const expectedToolBlock = !capabilities.supportsTools
-        const expectedParallelBlock = (input === 'tool_parallel' || input === 'tool_result') && !capabilities.supportsParallelTools
+        const expectedToolBlock = !profile.supports.tools
+        const expectedParallelBlock = (input === 'tool_parallel' || input === 'tool_result') && !profile.supports.parallelTools
         if (expectedChatBlock || expectedAudioBlock || expectedVisionBlock || expectedToolBlock || expectedParallelBlock) {
           row.status = 'BLOCKED'
           row.detail = error?.message ?? String(error)

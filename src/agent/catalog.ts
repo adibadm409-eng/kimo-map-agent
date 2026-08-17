@@ -40,6 +40,7 @@ export interface EntityDef {
   fields: FieldDef[]
   customFieldEntities?: boolean
   parent?: EntityKey
+  relations?: string[]
   namesJoin?: {
     select: string
     join: string
@@ -162,6 +163,7 @@ export const ALL_ENTITIES: EntityDef[] = [
     label: ENTITY_LABELS.offers,
     titleField: 'notes',
     parent: 'properties',
+    relations: ['reminders: target_type=offer, target_id=id (عدة تنبيهات محلية مستقلة)'],
     fields: [
       f('id', 'المعرف', 'text'),
       f('property_id', 'العقار', 'text', { filterable: true, fk: { to: 'properties', via: 'property_id' } }),
@@ -408,7 +410,8 @@ function entityGuide(e: EntityDef): string {
     .map((x) => `${x.label} (${Object.keys(x.values!).join(' ، ')})`)
   const rel = e.parent ? ` — تابعة لـ ${ENTITY_LABELS[e.parent as EntityKey]}` : ''
   const custom = e.customFieldEntities ? ' تدعم حقولاً مخصصة إضافية' : ''
-  return `- ${e.label} [الكيان ${e.key}]${rel}${custom}.\n   ابحث فيها عن: ${searchable.join(' ، ') || 'لا يوجد نص حر'}. الفلاتر المتاحة: ${filterable
+  const relations = e.relations?.length ? ` العلاقات: ${e.relations.join(' ؛ ')}.` : ''
+  return `- ${e.label} [الكيان ${e.key}]${rel}${custom}.${relations}\n   ابحث فيها عن: ${searchable.join(' ، ') || 'لا يوجد نص حر'}. الفلاتر المتاحة: ${filterable
     .join(' ، ')
     .slice(0, 200)}. القيم المحتملة: ${selectVals.join(' ؛ ') || '—'}.\n   الجلب: query {entity:"${e.key}", search أو filters} — والتفاصيل الكاملة عبر get.`
 }
@@ -467,7 +470,8 @@ export function compactAppCatalog(): string {
     const searchable = e.fields.filter((x) => x.searchable).map((x) => x.label)
     const p = e.parent ? ` (تابعة لـ ${ENTITY_LABELS[e.parent as EntityKey]})` : ''
     const c = e.customFieldEntities ? ' +حقول مخصصة' : ''
-    lines.push(`${e.label} [${e.key}]${p}${c}: حقول بحث نصي: ${searchable.join('، ').slice(0, 140) || '—'}`)
+    const r = e.relations?.length ? ` علاقات: ${e.relations.join(' ؛ ')}` : ''
+    lines.push(`${e.label} [${e.key}]${p}${c}: حقول بحث نصي: ${searchable.join('، ').slice(0, 140) || '—'}.${r}`)
   }
   return lines.join('\n')
 }

@@ -1,6 +1,8 @@
 import type { ProviderDef } from './providers'
-import { normalizeBaseUrl, providerCapabilities } from './providers'
-import { providerRequestIssues, providerWireRequestExtras, serializeProviderMessages } from './providerWire'
+import { normalizeBaseUrl } from './providers'
+import { providerRequestIssues, providerWireFamily, providerWireRequestExtras, serializeProviderMessages } from './providerWire'
+import { buildAnthropicRequest, parseAnthropicResponse } from './anthropicWire'
+import { profileAllowsParam, resolveModelProfile } from './modelProfiles'
 
 export interface ToolCall {
   id: string
@@ -126,7 +128,23 @@ export function serializeChatMessages(provider: ProviderDef, model: string, mess
 
 export function assertChatRequest(opts: ChatOpts): void {
   const issues = providerRequestIssues(opts.provider, opts.model, opts.messages, !!opts.functions?.length)
-  const issue = issues[0]
+  const profile = resolveModelProfile(opts.provider, opts.model)
+  const profileIssues: { kind: 'invalid_request'; message: string }[] = []
+  if (!profile.supports.chat) profileIssues.push({ kind: 'invalid_request', message: `الموديل ${opts.model} لا يثبت دعماً للمحادثة.` })
+  if (opts.functions?.length && !profile.supports.tools) profileIssues.push({ kind: 'invalid_request', message: `الموديل ${opts.model} لا يثبت دعماً للأدوات وفق ملف قدراته (${profile.source}/${profile.confidence}).` })
+  if (!profile.supports.parallelTools && opts.messages.some((message) => Array.isArray(message.tool_calls) && message.tool_calls.length > 1)) {
+    profileIssues.push({ kind: 'invalid_request', message: `الموديل ${opts.model} لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة.` })
+  }
+  for (const message of opts.messages) {
+    if (!Array.isArray(message.content)) continue
+    if (message.content.some((part: any) => part?.type === 'input_audio') && !profile.supports.inputAudio) {
+      profileIssues.push({ kind: 'invalid_request', message: `الموديل ${opts.model} لا يثبت دعماً للصوت.` })
+    }
+    if (message.content.some((part: any) => part?.type === 'image_url') && !profile.supports.vision) {
+      profileIssues.push({ kind: 'invalid_request', message: `الموديل ${opts.model} لا يثبت دعماً للصور.` })
+    }
+  }
+  const issue = profileIssues[0] ?? issues[0]
   if (issue) throw new LlmError(issue.kind, `${issue.message} أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة.`)
 }
 
@@ -134,11 +152,13 @@ export class LlmError extends Error {
   kind: LlmErrorKind
   status?: number
   retryable: boolean
-  constructor(kind: LlmErrorKind, message: string, status?: number, retryable?: boolean) {
+  partialStream: boolean
+  constructor(kind: LlmErrorKind, message: string, status?: number, retryable?: boolean, partialStream = false) {
     super(message)
     this.kind = kind
     this.status = status
     this.retryable = retryable ?? (kind === 'network' || kind === 'timeout' || kind === 'rate_limit' || kind === 'server')
+    this.partialStream = partialStream
   }
 }
 
@@ -167,24 +187,35 @@ export interface ChatOpts {
 /** يبني payload النهائي مرة واحدة لجميع مسارات النقل، ويطبّق محول المزود قبل الشبكة. */
 export function buildChatRequestBody(opts: ChatOpts, stream = false): Record<string, any> {
   assertChatRequest(opts)
-  const capabilities = providerCapabilities(opts.provider, opts.model)
+  const family = providerWireFamily(opts.provider, opts.model)
+  if (family === 'anthropic-messages') {
+    return buildAnthropicRequest({
+      model: opts.model,
+      messages: opts.messages,
+      functions: opts.functions,
+      maxTokens: opts.maxTokens,
+      temperature: opts.temperature,
+      stream,
+    })
+  }
+  const profile = resolveModelProfile(opts.provider, opts.model)
   const body: Record<string, any> = {
     model: opts.model,
     messages: serializeChatMessages(opts.provider, opts.model, opts.messages),
   }
   if (stream) {
-    body.stream = capabilities.supportsStreaming
-    if (capabilities.supportsStreamOptions) body.stream_options = { include_usage: true }
+    body.stream = profile.supports.streaming
+    if (profileAllowsParam(profile, 'stream_options')) body.stream_options = { include_usage: true }
   }
   Object.assign(body, providerWireRequestExtras(opts.provider, opts.model, !!opts.functions?.length))
-  if (opts.functions?.length && capabilities.supportsTools) {
+  if (opts.functions?.length && profile.supports.tools) {
     body.tools = opts.functions.map((f) => ({
       type: 'function',
       function: { name: f.name, description: f.description, parameters: f.parameters },
     }))
   }
   if (opts.temperature !== undefined) body.temperature = opts.temperature
-  if (opts.maxTokens) body[capabilities.maxTokensField] = opts.maxTokens
+  if (opts.maxTokens && profile.maxTokensField !== 'unknown' && profileAllowsParam(profile, profile.maxTokensField)) body[profile.maxTokensField] = opts.maxTokens
   return body
 }
 
@@ -215,12 +246,141 @@ export function splitSse(buf: string): { data: string }[] {
   return parseSseBuffer(buf, true).events
 }
 
+function anthropicHeaders(apiKey: string): Record<string, string> {
+  return {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+    'x-api-key': apiKey,
+    'anthropic-version': '2023-06-01',
+  }
+}
+
+async function readProviderError(res: Response): Promise<string> {
+  try {
+    const payload = await res.json()
+    return payload?.error?.message ?? payload?.message ?? JSON.stringify(payload).slice(0, 500)
+  } catch {
+    return await res.text().catch(() => '')
+  }
+}
+
+async function postAnthropic(opts: ChatOpts, signal: AbortSignal): Promise<ChatResult> {
+  const base = normalizeBaseUrl(opts.baseUrl && opts.baseUrl.trim() ? opts.baseUrl : opts.provider.baseUrl)
+  const body = buildChatRequestBody(opts, false)
+  let res: Response
+  try {
+    res = await fetch(`${base}/messages`, {
+      method: 'POST',
+      headers: anthropicHeaders(opts.apiKey),
+      body: JSON.stringify(body),
+      signal,
+    })
+  } catch (e: any) {
+    if (e?.name === 'AbortError') throw new LlmError('timeout', 'انتهت مهلة الاتصال بـAnthropic')
+    throw new LlmError('network', `خطأ في الاتصال بـAnthropic: ${e?.message ?? String(e)}`)
+  }
+  if (!res.ok) {
+    const detail = await readProviderError(res)
+    throw new LlmError(classifyHttpStatus(res.status), `Anthropic رفض الطلب (${res.status}): ${detail || 'بدون تفاصيل'}`, res.status)
+  }
+  let data: any
+  try {
+    data = await res.json()
+  } catch {
+    throw new LlmError('parse', 'استجابة Anthropic غير صالحة')
+  }
+  return parseAnthropicResponse(data)
+}
+
+async function postAnthropicStream(opts: ChatOpts, signal: AbortSignal): Promise<ChatResult> {
+  const base = normalizeBaseUrl(opts.baseUrl && opts.baseUrl.trim() ? opts.baseUrl : opts.provider.baseUrl)
+  const body = buildChatRequestBody(opts, true)
+  let res: Response
+  try {
+    res = await fetch(`${base}/messages`, {
+      method: 'POST',
+      headers: anthropicHeaders(opts.apiKey),
+      body: JSON.stringify(body),
+      signal,
+    })
+  } catch (e: any) {
+    if (e?.name === 'AbortError') throw new LlmError('timeout', 'انتهت مهلة الاتصال بـAnthropic أثناء البث')
+    throw new LlmError('network', `خطأ في الاتصال بـAnthropic أثناء البث: ${e?.message ?? String(e)}`)
+  }
+  if (!res.ok) {
+    const detail = await readProviderError(res)
+    throw new LlmError(classifyHttpStatus(res.status), `Anthropic رفض البث (${res.status}): ${detail || 'بدون تفاصيل'}`, res.status)
+  }
+  if (!res.body) throw new LlmError('parse', 'Anthropic لم يرسل تيار استجابة')
+  if (!(res.headers.get('content-type') ?? '').toLowerCase().includes('text/event-stream')) {
+    throw new LlmError('parse', 'Anthropic أعلن streaming لكنه أعاد استجابة غير متدفقة')
+  }
+
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let content = ''
+  let finishReason = 'stop'
+  const calls: Record<string, { id: string; name: string; args: string }> = {}
+  let started = false
+  const emitCalls = () => Object.values(calls).map((call) => ({ id: call.id, name: call.name, arguments: call.args || '{}', extra: { raw: call } }))
+  const consume = (events: { data: string }[]) => {
+    for (const event of events) {
+      if (!event.data || event.data === '[DONE]') continue
+      let payload: any
+      try { payload = JSON.parse(event.data) } catch { continue }
+      if (payload.type === 'content_block_start') {
+        const block = payload.content_block
+        if (block?.type === 'tool_use') calls[String(payload.index ?? Object.keys(calls).length)] = { id: String(block.id ?? ''), name: String(block.name ?? ''), args: '' }
+      } else if (payload.type === 'content_block_delta') {
+        const delta = payload.delta ?? {}
+        if (delta.type === 'text_delta' && typeof delta.text === 'string') {
+          content += delta.text
+          started = true
+          opts.onDelta?.({ content, toolCalls: emitCalls() })
+        } else if (delta.type === 'input_json_delta') {
+          const key = String(payload.index ?? Object.keys(calls).length - 1)
+          const call = calls[key]
+          if (call) {
+            call.args += String(delta.partial_json ?? '')
+            started = true
+            opts.onDelta?.({ content, toolCalls: emitCalls() })
+          }
+        }
+      } else if (payload.type === 'message_delta') {
+        finishReason = String(payload.delta?.stop_reason ?? finishReason)
+        if (payload.usage) opts.onDelta?.({ content, toolCalls: emitCalls() })
+      }
+    }
+  }
+  try {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      const parsed = parseSseBuffer(buffer)
+      buffer = parsed.rest
+      consume(parsed.events)
+    }
+    buffer += decoder.decode()
+    consume(parseSseBuffer(buffer, true).events)
+  } catch (e: any) {
+    if (e?.name === 'AbortError') throw new LlmError('timeout', 'انتهت مهلة الاتصال بـAnthropic أثناء البث', undefined, true, started)
+    if (started) throw new LlmError('network', `انقطع تيار Anthropic بعد بدء الاستجابة: ${e?.message ?? String(e)}`, undefined, true, true)
+    throw new LlmError('parse', `خطأ في قراءة تيار Anthropic: ${e?.message ?? String(e)}`)
+  }
+  const toolCalls = emitCalls().map((call) => ({ ...call, arguments: call.arguments || '{}' }))
+  opts.onDelta?.({ content, toolCalls, done: true })
+  return { content: content || null, toolCalls, finishReason }
+}
+
 /**
  * استدعاء المزود مع بث مباشر لدفعات النص/الأدوات، مع نفس منطق إعادة المحاولة
  * التصاعدية. يُرجع النتيجة الكاملة (جسم ChatResult) بعد اكتمال البث.
  */
 async function postChatStream(opts: ChatOpts, signal: AbortSignal): Promise<ChatResult> {
   assertChatRequest(opts)
+  if (providerWireFamily(opts.provider, opts.model) === 'anthropic-messages') return postAnthropicStream(opts, signal)
   const base = normalizeBaseUrl(opts.baseUrl && opts.baseUrl.trim() ? opts.baseUrl : opts.provider.baseUrl)
   if (!base) throw new LlmError('unknown', 'رابط المزود غير مكتمل — أضف الرابط من إعدادات المساعد')
   if (!opts.apiKey.trim()) throw new LlmError('unknown', 'لا يوجد مفتاح API — أضفه من إعدادات المساعد')
@@ -253,6 +413,9 @@ async function postChatStream(opts: ChatOpts, signal: AbortSignal): Promise<Chat
   }
 
   if (!res.body) throw new LlmError('parse', 'المزود لم يرسل تيار استجابة')
+  if (!(res.headers.get('content-type') ?? '').toLowerCase().includes('text/event-stream')) {
+    throw new LlmError('parse', 'المزود أعلن streaming لكنه أعاد استجابة غير متدفقة')
+  }
 
   const reader = res.body.getReader()
   const decoder = new TextDecoder()
@@ -297,7 +460,7 @@ async function postChatStream(opts: ChatOpts, signal: AbortSignal): Promise<Chat
             const idx = String(tc.index ?? 0)
             const acc = tcAcc[idx] ?? { id: '', name: '', args: '', extra: {} }
             if (tc.id) acc.id = tc.id
-            if (tc.function?.name) acc.name += tc.function.name
+            if (tc.function?.name && !acc.name) acc.name = tc.function.name
             if (typeof tc.function?.arguments === 'string') acc.args += tc.function.arguments
             // نحافظ على كائن النداء الأصلي كاملاً (thought_signature وغيرها) — تُعاد
             // الصيغة الحرفية عند إعادة بثّ tool_calls في الجولات اللاحقة.
@@ -339,8 +502,9 @@ async function postChatStream(opts: ChatOpts, signal: AbortSignal): Promise<Chat
     sseBuffer += decoder.decode()
     consumeEvents(parseSseBuffer(sseBuffer, true).events)
   } catch (e: any) {
-    if (e?.name === 'AbortError') throw new LlmError('timeout', 'انتهت مهلة الاتصال بالمزود أثناء البث')
-    throw new LlmError('parse', `خطأ في قراءة تيار الاستجابة: ${e?.message ?? String(e)}`)
+    const partialStream = Object.keys(tcAcc).length > 0 || fullContent.length > 0
+    if (e?.name === 'AbortError') throw new LlmError('timeout', 'انتهت مهلة الاتصال بالمزود أثناء البث', undefined, true, partialStream)
+    throw new LlmError('network', `انقطع تيار الاستجابة: ${e?.message ?? String(e)}`, undefined, true, partialStream)
   }
 
   const toolCalls: ToolCall[] = Object.keys(tcAcc).map((k) => ({
@@ -368,6 +532,7 @@ function sleep(ms: number): Promise<void> {
 
 async function postChat(opts: ChatOpts, signal: AbortSignal): Promise<ChatResult> {
   assertChatRequest(opts)
+  if (providerWireFamily(opts.provider, opts.model) === 'anthropic-messages') return postAnthropic(opts, signal)
   const base = normalizeBaseUrl(opts.baseUrl && opts.baseUrl.trim() ? opts.baseUrl : opts.provider.baseUrl)
   if (!base) throw new LlmError('unknown', 'رابط المزود غير مكتمل — أضف الرابط من إعدادات المساعد')
   if (!opts.apiKey.trim()) throw new LlmError('unknown', 'لا يوجد مفتاح API — أضفه من إعدادات المساعد')
@@ -472,12 +637,12 @@ export async function chatWithRetry(
     const timer = setTimeout(() => controller.abort(), opts.timeoutMs ?? DEFAULT_TIMEOUT_MS)
     try {
       let result: ChatResult
-      if (opts.onDelta && providerCapabilities(opts.provider, opts.model).supportsStreaming) {
+      if (opts.onDelta && resolveModelProfile(opts.provider, opts.model).supports.streaming) {
         try {
           result = await postChatStream(opts, controller.signal)
         } catch (streamErr: any) {
           // بعض البوابات قد تعلن البث ثم تعيد استجابة غير متدفقة؛ نعود لطلب عادي مرة واحدة.
-          if (controller.signal.aborted) throw streamErr
+          if (controller.signal.aborted || streamErr?.kind !== 'parse' || streamErr?.partialStream) throw streamErr
           result = await postChat(opts, controller.signal)
           opts.onDelta({ content: result.content ?? '', toolCalls: result.toolCalls, done: true })
         }

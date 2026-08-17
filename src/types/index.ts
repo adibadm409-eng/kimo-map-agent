@@ -33,6 +33,17 @@ export interface Client {
   created_at: string
 }
 
+export interface OfferReminder {
+  id: string
+  offer_id: string
+  title: string
+  body: string
+  remind_at: string
+  notification_id: string
+  status: 'scheduled' | 'cancelled'
+  created_at: string
+}
+
 export interface Offer {
   id: string
   property_id: string | null
@@ -44,6 +55,7 @@ export interface Offer {
   notes: string
   reminder_at: string
   reminder_notification_id: string
+  reminders?: OfferReminder[]
   created_at: string
   media?: string
 }

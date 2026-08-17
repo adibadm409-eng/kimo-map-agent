@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-17T00:35:54.551Z",
+  "generatedAt": "2026-08-17T02:03:38.932Z",
   "providers": [
     "gemini",
     "openai",
@@ -21,9 +21,9 @@
     "tool_result",
     "gemini_metadata"
   ],
-  "pass": 205,
-  "blocked": 119,
-  "total": 324,
+  "pass": 154,
+  "blocked": 197,
+  "total": 351,
   "failures": [],
   "rows": [
     {
@@ -35,6 +35,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -47,6 +49,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -59,6 +63,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -71,6 +77,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -83,6 +91,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -95,6 +105,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -107,8 +119,10 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل gemini-3.5-flash لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "gemini",
@@ -119,8 +133,10 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل gemini-3.5-flash لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "gemini",
@@ -131,6 +147,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -143,6 +161,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -155,6 +175,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -167,6 +189,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -179,6 +203,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -191,6 +217,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -203,6 +231,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -215,8 +245,10 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل gemini-2.5-flash لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "gemini",
@@ -227,8 +259,10 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل gemini-2.5-flash لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "gemini",
@@ -239,6 +273,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -251,6 +287,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -263,6 +301,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -275,6 +315,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -287,6 +329,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -299,6 +343,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -311,6 +357,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -323,8 +371,10 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل gemini-3.6-flash لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "gemini",
@@ -335,8 +385,10 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل gemini-3.6-flash لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "gemini",
@@ -347,6 +399,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -359,6 +413,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -371,6 +427,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -383,8 +441,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل gemini-2.5-flash-image لا يثبت دعماً لفهم الصور عبر جوجل جيميني. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل gemini-2.5-flash-image لا يثبت دعماً للصور. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "gemini",
@@ -395,8 +455,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل gemini-2.5-flash-image لا يثبت دعماً للإدخال الصوتي عبر جوجل جيميني. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل gemini-2.5-flash-image لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "gemini",
@@ -407,8 +469,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل gemini-2.5-flash-image لا يثبت دعماً للإدخال الصوتي عبر جوجل جيميني. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل gemini-2.5-flash-image لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "gemini",
@@ -419,6 +483,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -431,8 +497,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل gemini-2.5-flash-image لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "gemini",
@@ -443,8 +511,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل gemini-2.5-flash-image لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "gemini",
@@ -455,6 +525,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -467,8 +539,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل text-embedding-004 لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل text-embedding-004 لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "gemini",
@@ -479,8 +553,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل text-embedding-004 لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل text-embedding-004 لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "gemini",
@@ -491,8 +567,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل text-embedding-004 لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل text-embedding-004 لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "gemini",
@@ -503,8 +581,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل text-embedding-004 لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل text-embedding-004 لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "gemini",
@@ -515,8 +595,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل text-embedding-004 لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل text-embedding-004 لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "gemini",
@@ -527,8 +609,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل text-embedding-004 لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل text-embedding-004 لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "gemini",
@@ -539,8 +623,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل text-embedding-004 لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل text-embedding-004 لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "gemini",
@@ -551,8 +637,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل text-embedding-004 لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل text-embedding-004 لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "gemini",
@@ -563,8 +651,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل text-embedding-004 لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل text-embedding-004 لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openai",
@@ -575,6 +665,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -587,6 +679,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -599,6 +693,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -611,8 +707,10 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل gpt-5.6-sol لا يثبت دعماً للإدخال الصوتي عبر OpenAI. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل gpt-5.6-sol لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openai",
@@ -623,8 +721,10 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل gpt-5.6-sol لا يثبت دعماً للإدخال الصوتي عبر OpenAI. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل gpt-5.6-sol لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openai",
@@ -635,6 +735,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -647,8 +749,10 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل gpt-5.6-sol لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openai",
@@ -659,8 +763,10 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل gpt-5.6-sol لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openai",
@@ -671,6 +777,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -683,6 +791,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -695,6 +805,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -707,6 +819,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -719,8 +833,10 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل gpt-5.4-mini لا يثبت دعماً للإدخال الصوتي عبر OpenAI. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل gpt-5.4-mini لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openai",
@@ -731,8 +847,10 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل gpt-5.4-mini لا يثبت دعماً للإدخال الصوتي عبر OpenAI. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل gpt-5.4-mini لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openai",
@@ -743,6 +861,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -755,8 +875,10 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل gpt-5.4-mini لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openai",
@@ -767,8 +889,10 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل gpt-5.4-mini لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openai",
@@ -779,6 +903,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -791,6 +917,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -803,6 +931,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -815,8 +945,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل gpt-audio-1.5 لا يثبت دعماً لفهم الصور عبر OpenAI. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل gpt-audio-1.5 لا يثبت دعماً للصور. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openai",
@@ -827,8 +959,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل gpt-audio-1.5 لا يثبت دعماً للإدخال الصوتي عبر OpenAI. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل gpt-audio-1.5 لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openai",
@@ -839,8 +973,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل gpt-audio-1.5 لا يثبت دعماً للإدخال الصوتي عبر OpenAI. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل gpt-audio-1.5 لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openai",
@@ -851,6 +987,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -863,8 +1001,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل gpt-audio-1.5 لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openai",
@@ -875,8 +1015,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل gpt-audio-1.5 لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openai",
@@ -887,6 +1029,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -899,6 +1043,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -911,6 +1057,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -923,6 +1071,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -935,6 +1085,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -947,6 +1099,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -959,6 +1113,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -971,8 +1127,10 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل gpt-4o-audio-preview لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openai",
@@ -983,8 +1141,10 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل gpt-4o-audio-preview لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openai",
@@ -995,6 +1155,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1007,8 +1169,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل text-embedding-3-small لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل text-embedding-3-small لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openai",
@@ -1019,8 +1183,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل text-embedding-3-small لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل text-embedding-3-small لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openai",
@@ -1031,8 +1197,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل text-embedding-3-small لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل text-embedding-3-small لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openai",
@@ -1043,8 +1211,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل text-embedding-3-small لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل text-embedding-3-small لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openai",
@@ -1055,8 +1225,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل text-embedding-3-small لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل text-embedding-3-small لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openai",
@@ -1067,8 +1239,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل text-embedding-3-small لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل text-embedding-3-small لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openai",
@@ -1079,8 +1253,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل text-embedding-3-small لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل text-embedding-3-small لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openai",
@@ -1091,8 +1267,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل text-embedding-3-small لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل text-embedding-3-small لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openai",
@@ -1103,8 +1281,388 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل text-embedding-3-small لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل text-embedding-3-small لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5-20250929",
+      "input": "text",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5-20250929",
+      "input": "attachment_reference",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5-20250929",
+      "input": "image",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5-20250929",
+      "input": "audio",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل claude-sonnet-4-5-20250929 لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5-20250929",
+      "input": "mixed",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل claude-sonnet-4-5-20250929 لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5-20250929",
+      "input": "tool_single",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5-20250929",
+      "input": "tool_parallel",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل claude-sonnet-4-5-20250929 لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5-20250929",
+      "input": "tool_result",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل claude-sonnet-4-5-20250929 لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5-20250929",
+      "input": "gemini_metadata",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-opus-4-1-20250805",
+      "input": "text",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-opus-4-1-20250805",
+      "input": "attachment_reference",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-opus-4-1-20250805",
+      "input": "image",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-opus-4-1-20250805",
+      "input": "audio",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل claude-opus-4-1-20250805 لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-opus-4-1-20250805",
+      "input": "mixed",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل claude-opus-4-1-20250805 لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-opus-4-1-20250805",
+      "input": "tool_single",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-opus-4-1-20250805",
+      "input": "tool_parallel",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل claude-opus-4-1-20250805 لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-opus-4-1-20250805",
+      "input": "tool_result",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل claude-opus-4-1-20250805 لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-opus-4-1-20250805",
+      "input": "gemini_metadata",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5-20251001",
+      "input": "text",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5-20251001",
+      "input": "attachment_reference",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5-20251001",
+      "input": "image",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5-20251001",
+      "input": "audio",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل claude-haiku-4-5-20251001 لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5-20251001",
+      "input": "mixed",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل claude-haiku-4-5-20251001 لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5-20251001",
+      "input": "tool_single",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5-20251001",
+      "input": "tool_parallel",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل claude-haiku-4-5-20251001 لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5-20251001",
+      "input": "tool_result",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل claude-haiku-4-5-20251001 لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5-20251001",
+      "input": "gemini_metadata",
+      "family": "anthropic-messages",
+      "supportsChat": true,
+      "supportsVision": true,
+      "supportsTools": true,
+      "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "PASS",
+      "detail": ""
     },
     {
       "provider": "mistral",
@@ -1115,6 +1673,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1127,6 +1687,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1139,8 +1701,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل mistral-large-2-latest لا يثبت دعماً لفهم الصور عبر مستـرال. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل mistral-large-2-latest لا يثبت دعماً للصور. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "mistral",
@@ -1151,8 +1715,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل mistral-large-2-latest لا يثبت دعماً للإدخال الصوتي عبر مستـرال. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل mistral-large-2-latest لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "mistral",
@@ -1163,8 +1729,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل mistral-large-2-latest لا يثبت دعماً للإدخال الصوتي عبر مستـرال. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل mistral-large-2-latest لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "mistral",
@@ -1175,6 +1743,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1187,8 +1757,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل mistral-large-2-latest لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "mistral",
@@ -1199,8 +1771,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل mistral-large-2-latest لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "mistral",
@@ -1211,6 +1785,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1223,6 +1799,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1235,6 +1813,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1247,8 +1827,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل mistral-medium-2505 لا يثبت دعماً لفهم الصور عبر مستـرال. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل mistral-medium-2505 لا يثبت دعماً للصور. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "mistral",
@@ -1259,8 +1841,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل mistral-medium-2505 لا يثبت دعماً للإدخال الصوتي عبر مستـرال. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل mistral-medium-2505 لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "mistral",
@@ -1271,8 +1855,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل mistral-medium-2505 لا يثبت دعماً للإدخال الصوتي عبر مستـرال. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل mistral-medium-2505 لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "mistral",
@@ -1283,6 +1869,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1295,8 +1883,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل mistral-medium-2505 لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "mistral",
@@ -1307,8 +1897,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل mistral-medium-2505 لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "mistral",
@@ -1319,6 +1911,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1331,6 +1925,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1343,6 +1939,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1355,8 +1953,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل codestral-2-latest لا يثبت دعماً لفهم الصور عبر مستـرال. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل codestral-2-latest لا يثبت دعماً للصور. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "mistral",
@@ -1367,8 +1967,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل codestral-2-latest لا يثبت دعماً للإدخال الصوتي عبر مستـرال. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل codestral-2-latest لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "mistral",
@@ -1379,8 +1981,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل codestral-2-latest لا يثبت دعماً للإدخال الصوتي عبر مستـرال. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل codestral-2-latest لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "mistral",
@@ -1391,6 +1995,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1403,8 +2009,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل codestral-2-latest لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "mistral",
@@ -1415,8 +2023,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل codestral-2-latest لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "mistral",
@@ -1427,6 +2037,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1439,6 +2051,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1451,6 +2065,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1463,8 +2079,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل voxtral-small-latest لا يثبت دعماً لفهم الصور عبر مستـرال. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل voxtral-small-latest لا يثبت دعماً للصور. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "mistral",
@@ -1475,6 +2093,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1487,8 +2107,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل voxtral-small-latest لا يثبت دعماً لفهم الصور عبر مستـرال. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل voxtral-small-latest لا يثبت دعماً للصور. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "mistral",
@@ -1499,6 +2121,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1511,8 +2135,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": true,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل voxtral-small-latest لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "mistral",
@@ -1523,8 +2149,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": true,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل voxtral-small-latest لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "mistral",
@@ -1535,6 +2163,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1547,6 +2177,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1559,6 +2191,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1571,8 +2205,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل voxtral-mini-latest لا يثبت دعماً لفهم الصور عبر مستـرال. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل voxtral-mini-latest لا يثبت دعماً للصور. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "mistral",
@@ -1583,8 +2219,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل voxtral-mini-latest لا يثبت دعماً للإدخال الصوتي عبر مستـرال. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل voxtral-mini-latest لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "mistral",
@@ -1595,8 +2233,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل voxtral-mini-latest لا يثبت دعماً للإدخال الصوتي عبر مستـرال. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل voxtral-mini-latest لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "mistral",
@@ -1607,6 +2247,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1619,8 +2261,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل voxtral-mini-latest لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "mistral",
@@ -1631,8 +2275,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل voxtral-mini-latest لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "mistral",
@@ -1643,6 +2289,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1655,6 +2303,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1667,6 +2317,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1679,8 +2331,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل deepseek-v4-flash لا يثبت دعماً لفهم الصور عبر ديب سيك. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل deepseek-v4-flash لا يثبت دعماً للصور. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "deepseek",
@@ -1691,8 +2345,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل deepseek-v4-flash لا يثبت دعماً للإدخال الصوتي عبر ديب سيك. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل deepseek-v4-flash لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "deepseek",
@@ -1703,8 +2359,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل deepseek-v4-flash لا يثبت دعماً للإدخال الصوتي عبر ديب سيك. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل deepseek-v4-flash لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "deepseek",
@@ -1715,6 +2373,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1727,8 +2387,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل deepseek-v4-flash لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "deepseek",
@@ -1739,8 +2401,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل deepseek-v4-flash لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "deepseek",
@@ -1751,6 +2415,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1763,6 +2429,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1775,6 +2443,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1787,8 +2457,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل deepseek-v4-pro لا يثبت دعماً لفهم الصور عبر ديب سيك. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل deepseek-v4-pro لا يثبت دعماً للصور. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "deepseek",
@@ -1799,8 +2471,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل deepseek-v4-pro لا يثبت دعماً للإدخال الصوتي عبر ديب سيك. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل deepseek-v4-pro لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "deepseek",
@@ -1811,8 +2485,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل deepseek-v4-pro لا يثبت دعماً للإدخال الصوتي عبر ديب سيك. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل deepseek-v4-pro لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "deepseek",
@@ -1823,6 +2499,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1835,8 +2513,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل deepseek-v4-pro لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "deepseek",
@@ -1847,8 +2527,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل deepseek-v4-pro لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "deepseek",
@@ -1859,6 +2541,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1871,6 +2555,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1883,6 +2569,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1895,8 +2583,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل deepseek-chat لا يثبت دعماً لفهم الصور عبر ديب سيك. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل deepseek-chat لا يثبت دعماً للصور. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "deepseek",
@@ -1907,8 +2597,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل deepseek-chat لا يثبت دعماً للإدخال الصوتي عبر ديب سيك. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل deepseek-chat لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "deepseek",
@@ -1919,8 +2611,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل deepseek-chat لا يثبت دعماً للإدخال الصوتي عبر ديب سيك. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل deepseek-chat لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "deepseek",
@@ -1931,6 +2625,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1943,8 +2639,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل deepseek-chat لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "deepseek",
@@ -1955,8 +2653,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل deepseek-chat لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "deepseek",
@@ -1967,6 +2667,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1979,6 +2681,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -1991,6 +2695,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2003,8 +2709,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل deepseek-reasoner لا يثبت دعماً لفهم الصور عبر ديب سيك. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل deepseek-reasoner لا يثبت دعماً للصور. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "deepseek",
@@ -2015,8 +2723,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل deepseek-reasoner لا يثبت دعماً للإدخال الصوتي عبر ديب سيك. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل deepseek-reasoner لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "deepseek",
@@ -2027,8 +2737,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل deepseek-reasoner لا يثبت دعماً للإدخال الصوتي عبر ديب سيك. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل deepseek-reasoner لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "deepseek",
@@ -2039,6 +2751,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2051,8 +2765,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل deepseek-reasoner لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "deepseek",
@@ -2063,8 +2779,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل deepseek-reasoner لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "deepseek",
@@ -2075,6 +2793,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2087,6 +2807,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2099,6 +2821,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2111,8 +2835,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل qwen3.7-max لا يثبت دعماً لفهم الصور عبر داش سكوب (علي بابا). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل qwen3.7-max لا يثبت دعماً للصور. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2123,8 +2849,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل qwen3.7-max لا يثبت دعماً للإدخال الصوتي عبر داش سكوب (علي بابا). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل qwen3.7-max لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2135,8 +2863,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل qwen3.7-max لا يثبت دعماً للإدخال الصوتي عبر داش سكوب (علي بابا). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل qwen3.7-max لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2147,6 +2877,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2159,8 +2891,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل qwen3.7-max لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2171,8 +2905,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل qwen3.7-max لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2183,6 +2919,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2195,6 +2933,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2207,6 +2947,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2219,8 +2961,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل qwen3.7-plus لا يثبت دعماً لفهم الصور عبر داش سكوب (علي بابا). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل qwen3.7-plus لا يثبت دعماً للصور. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2231,8 +2975,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل qwen3.7-plus لا يثبت دعماً للإدخال الصوتي عبر داش سكوب (علي بابا). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل qwen3.7-plus لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2243,8 +2989,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل qwen3.7-plus لا يثبت دعماً للإدخال الصوتي عبر داش سكوب (علي بابا). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل qwen3.7-plus لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2255,6 +3003,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2267,8 +3017,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل qwen3.7-plus لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2279,8 +3031,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل qwen3.7-plus لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2291,6 +3045,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2303,6 +3059,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2315,6 +3073,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2327,6 +3087,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2339,6 +3101,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2351,6 +3115,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2363,6 +3129,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2375,8 +3143,10 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل qwen3.5-omni-plus لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2387,8 +3157,10 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل qwen3.5-omni-plus لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2399,6 +3171,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2411,8 +3185,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل qwen3-asr-flash لا يثبت دعماً لاستدعاء الأدوات عبر داش سكوب (علي بابا). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل qwen3-asr-flash لا يثبت دعماً للأدوات وفق ملف قدراته (official_static/medium). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2423,8 +3199,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل qwen3-asr-flash لا يثبت دعماً لاستدعاء الأدوات عبر داش سكوب (علي بابا). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل qwen3-asr-flash لا يثبت دعماً للأدوات وفق ملف قدراته (official_static/medium). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2435,8 +3213,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل qwen3-asr-flash لا يثبت دعماً لاستدعاء الأدوات عبر داش سكوب (علي بابا). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل qwen3-asr-flash لا يثبت دعماً للأدوات وفق ملف قدراته (official_static/medium). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2447,8 +3227,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل qwen3-asr-flash لا يثبت دعماً لاستدعاء الأدوات عبر داش سكوب (علي بابا). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل qwen3-asr-flash لا يثبت دعماً للأدوات وفق ملف قدراته (official_static/medium). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2459,8 +3241,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل qwen3-asr-flash لا يثبت دعماً لاستدعاء الأدوات عبر داش سكوب (علي بابا). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل qwen3-asr-flash لا يثبت دعماً للأدوات وفق ملف قدراته (official_static/medium). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2471,8 +3255,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل qwen3-asr-flash لا يثبت دعماً لاستدعاء الأدوات عبر داش سكوب (علي بابا). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل qwen3-asr-flash لا يثبت دعماً للأدوات وفق ملف قدراته (official_static/medium). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2483,8 +3269,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل qwen3-asr-flash لا يثبت دعماً لاستدعاء الأدوات عبر داش سكوب (علي بابا). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل qwen3-asr-flash لا يثبت دعماً للأدوات وفق ملف قدراته (official_static/medium). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2495,8 +3283,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل qwen3-asr-flash لا يثبت دعماً لاستدعاء الأدوات عبر داش سكوب (علي بابا). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل qwen3-asr-flash لا يثبت دعماً للأدوات وفق ملف قدراته (official_static/medium). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2507,8 +3297,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل qwen3-asr-flash لا يثبت دعماً لاستدعاء الأدوات عبر داش سكوب (علي بابا). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل qwen3-asr-flash لا يثبت دعماً للأدوات وفق ملف قدراته (official_static/medium). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2519,6 +3311,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2531,6 +3325,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2543,8 +3339,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل glm-5.2 لا يثبت دعماً لفهم الصور عبر داش سكوب (علي بابا). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل glm-5.2 لا يثبت دعماً للصور. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2555,8 +3353,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل glm-5.2 لا يثبت دعماً للإدخال الصوتي عبر داش سكوب (علي بابا). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل glm-5.2 لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2567,8 +3367,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل glm-5.2 لا يثبت دعماً للإدخال الصوتي عبر داش سكوب (علي بابا). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل glm-5.2 لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2579,6 +3381,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2591,8 +3395,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل glm-5.2 لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2603,8 +3409,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل glm-5.2 لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "alibaba",
@@ -2615,6 +3423,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2627,6 +3437,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2639,6 +3451,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2651,8 +3465,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل openrouter/free لا يثبت دعماً لفهم الصور عبر أوبن روتـر. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل openrouter/free لا يثبت دعماً للصور. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openrouter",
@@ -2663,8 +3479,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل openrouter/free لا يثبت دعماً للإدخال الصوتي عبر أوبن روتـر. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل openrouter/free لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openrouter",
@@ -2675,8 +3493,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل openrouter/free لا يثبت دعماً للإدخال الصوتي عبر أوبن روتـر. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل openrouter/free لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openrouter",
@@ -2687,6 +3507,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2699,8 +3521,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل openrouter/free لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openrouter",
@@ -2711,8 +3535,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل openrouter/free لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openrouter",
@@ -2723,6 +3549,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2735,6 +3563,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2747,6 +3577,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2759,6 +3591,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2771,6 +3605,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2783,6 +3619,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2795,6 +3633,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2807,8 +3647,10 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل google/gemini-3.6-flash لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openrouter",
@@ -2819,8 +3661,10 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل google/gemini-3.6-flash لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openrouter",
@@ -2831,6 +3675,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2843,6 +3689,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2855,6 +3703,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2867,8 +3717,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل openai/gpt-audio-1.5 لا يثبت دعماً لفهم الصور عبر أوبن روتـر. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل openai/gpt-audio-1.5 لا يثبت دعماً للصور. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openrouter",
@@ -2879,8 +3731,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل openai/gpt-audio-1.5 لا يثبت دعماً للإدخال الصوتي عبر أوبن روتـر. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل openai/gpt-audio-1.5 لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openrouter",
@@ -2891,8 +3745,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل openai/gpt-audio-1.5 لا يثبت دعماً للإدخال الصوتي عبر أوبن روتـر. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل openai/gpt-audio-1.5 لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openrouter",
@@ -2903,6 +3759,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2915,8 +3773,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل openai/gpt-audio-1.5 لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openrouter",
@@ -2927,8 +3787,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل openai/gpt-audio-1.5 لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openrouter",
@@ -2939,6 +3801,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2951,6 +3815,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2963,6 +3829,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2975,8 +3843,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل mistralai/voxtral-small-latest:free لا يثبت دعماً لفهم الصور عبر أوبن روتـر. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل mistralai/voxtral-small-latest:free لا يثبت دعماً للصور. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openrouter",
@@ -2987,6 +3857,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -2999,8 +3871,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل mistralai/voxtral-small-latest:free لا يثبت دعماً لفهم الصور عبر أوبن روتـر. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل mistralai/voxtral-small-latest:free لا يثبت دعماً للصور. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openrouter",
@@ -3011,6 +3885,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -3023,8 +3899,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": true,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل mistralai/voxtral-small-latest:free لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openrouter",
@@ -3035,8 +3913,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": true,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل mistralai/voxtral-small-latest:free لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openrouter",
@@ -3047,6 +3927,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": true,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -3059,6 +3941,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -3071,6 +3955,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -3083,8 +3969,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل meta-llama/llama-3.3-70b-instruct:free لا يثبت دعماً لفهم الصور عبر أوبن روتـر. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل meta-llama/llama-3.3-70b-instruct:free لا يثبت دعماً للصور. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openrouter",
@@ -3095,8 +3983,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل meta-llama/llama-3.3-70b-instruct:free لا يثبت دعماً للإدخال الصوتي عبر أوبن روتـر. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل meta-llama/llama-3.3-70b-instruct:free لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openrouter",
@@ -3107,8 +3997,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل meta-llama/llama-3.3-70b-instruct:free لا يثبت دعماً للإدخال الصوتي عبر أوبن روتـر. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل meta-llama/llama-3.3-70b-instruct:free لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openrouter",
@@ -3119,6 +4011,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -3131,8 +4025,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل meta-llama/llama-3.3-70b-instruct:free لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openrouter",
@@ -3143,8 +4039,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل meta-llama/llama-3.3-70b-instruct:free لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "openrouter",
@@ -3155,6 +4053,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -3167,6 +4067,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -3179,6 +4081,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -3191,8 +4095,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل meta/llama-3.3-70b-instruct لا يثبت دعماً لفهم الصور عبر NVIDIA NIM. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل meta/llama-3.3-70b-instruct لا يثبت دعماً للصور. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "nvidia",
@@ -3203,8 +4109,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل meta/llama-3.3-70b-instruct لا يثبت دعماً للإدخال الصوتي عبر NVIDIA NIM. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل meta/llama-3.3-70b-instruct لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "nvidia",
@@ -3215,8 +4123,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل meta/llama-3.3-70b-instruct لا يثبت دعماً للإدخال الصوتي عبر NVIDIA NIM. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل meta/llama-3.3-70b-instruct لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "nvidia",
@@ -3227,6 +4137,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -3239,8 +4151,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل meta/llama-3.3-70b-instruct لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "nvidia",
@@ -3251,8 +4165,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل meta/llama-3.3-70b-instruct لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "nvidia",
@@ -3263,6 +4179,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -3275,6 +4193,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -3287,6 +4207,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -3299,6 +4221,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -3311,8 +4235,10 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل mistralai/mistral-small-3.1-24b-instruct-2503 لا يثبت دعماً للإدخال الصوتي عبر NVIDIA NIM. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل mistralai/mistral-small-3.1-24b-instruct-2503 لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "nvidia",
@@ -3323,8 +4249,10 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل mistralai/mistral-small-3.1-24b-instruct-2503 لا يثبت دعماً للإدخال الصوتي عبر NVIDIA NIM. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل mistralai/mistral-small-3.1-24b-instruct-2503 لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "nvidia",
@@ -3335,6 +4263,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -3347,8 +4277,10 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل mistralai/mistral-small-3.1-24b-instruct-2503 لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "nvidia",
@@ -3359,8 +4291,10 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل mistralai/mistral-small-3.1-24b-instruct-2503 لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "nvidia",
@@ -3371,6 +4305,8 @@
       "supportsVision": true,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -3383,6 +4319,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -3395,6 +4333,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -3407,8 +4347,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل microsoft/phi-4-mini-instruct لا يثبت دعماً لفهم الصور عبر NVIDIA NIM. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل microsoft/phi-4-mini-instruct لا يثبت دعماً للصور. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "nvidia",
@@ -3419,8 +4361,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل microsoft/phi-4-mini-instruct لا يثبت دعماً للإدخال الصوتي عبر NVIDIA NIM. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل microsoft/phi-4-mini-instruct لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "nvidia",
@@ -3431,8 +4375,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل microsoft/phi-4-mini-instruct لا يثبت دعماً للإدخال الصوتي عبر NVIDIA NIM. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل microsoft/phi-4-mini-instruct لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "nvidia",
@@ -3443,6 +4389,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -3455,8 +4403,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل microsoft/phi-4-mini-instruct لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "nvidia",
@@ -3467,8 +4417,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
+      "status": "BLOCKED",
+      "detail": "الموديل microsoft/phi-4-mini-instruct لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "nvidia",
@@ -3479,6 +4431,8 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "PASS",
       "detail": ""
     },
@@ -3491,8 +4445,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل nvidia/embedding-1 لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل nvidia/embedding-1 لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "nvidia",
@@ -3503,8 +4459,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل nvidia/embedding-1 لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل nvidia/embedding-1 لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "nvidia",
@@ -3515,8 +4473,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل nvidia/embedding-1 لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل nvidia/embedding-1 لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "nvidia",
@@ -3527,8 +4487,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل nvidia/embedding-1 لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل nvidia/embedding-1 لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "nvidia",
@@ -3539,8 +4501,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل nvidia/embedding-1 لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل nvidia/embedding-1 لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "nvidia",
@@ -3551,8 +4515,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل nvidia/embedding-1 لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل nvidia/embedding-1 لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "nvidia",
@@ -3563,8 +4529,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل nvidia/embedding-1 لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل nvidia/embedding-1 لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "nvidia",
@@ -3575,8 +4543,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل nvidia/embedding-1 لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل nvidia/embedding-1 لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "nvidia",
@@ -3587,8 +4557,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "official_static",
       "status": "BLOCKED",
-      "detail": "الموديل nvidia/embedding-1 لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل nvidia/embedding-1 لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3599,8 +4571,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
+      "status": "BLOCKED",
+      "detail": "الموديل custom-text-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3611,8 +4585,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
+      "status": "BLOCKED",
+      "detail": "الموديل custom-text-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3623,8 +4599,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-text-model لا يثبت دعماً لفهم الصور عبر مزود مخصص. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-text-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3635,8 +4613,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-text-model لا يثبت دعماً للإدخال الصوتي عبر مزود مخصص. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-text-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3647,8 +4627,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-text-model لا يثبت دعماً للإدخال الصوتي عبر مزود مخصص. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-text-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3659,8 +4641,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
+      "status": "BLOCKED",
+      "detail": "الموديل custom-text-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3671,8 +4655,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-text-model لا يثبت دعماً لنداءات الأدوات المتوازية عبر مزود مخصص. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-text-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3683,8 +4669,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-text-model لا يثبت دعماً لنداءات الأدوات المتوازية عبر مزود مخصص. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-text-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3695,8 +4683,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
+      "status": "BLOCKED",
+      "detail": "الموديل custom-text-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3707,8 +4697,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
+      "status": "BLOCKED",
+      "detail": "الموديل custom-audio-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3719,8 +4711,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
+      "status": "BLOCKED",
+      "detail": "الموديل custom-audio-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3731,8 +4725,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-audio-model لا يثبت دعماً لفهم الصور عبر مزود مخصص. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-audio-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3743,8 +4739,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-audio-model لا يثبت دعماً للإدخال الصوتي عبر مزود مخصص. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-audio-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3755,8 +4753,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-audio-model لا يثبت دعماً للإدخال الصوتي عبر مزود مخصص. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-audio-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3767,8 +4767,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
+      "status": "BLOCKED",
+      "detail": "الموديل custom-audio-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3779,8 +4781,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-audio-model لا يثبت دعماً لنداءات الأدوات المتوازية عبر مزود مخصص. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-audio-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3791,8 +4795,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-audio-model لا يثبت دعماً لنداءات الأدوات المتوازية عبر مزود مخصص. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-audio-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3803,8 +4809,10 @@
       "supportsVision": false,
       "supportsTools": true,
       "supportsInputAudio": false,
-      "status": "PASS",
-      "detail": ""
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
+      "status": "BLOCKED",
+      "detail": "الموديل custom-audio-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3815,8 +4823,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-embedding-model لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-embedding-model لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3827,8 +4837,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-embedding-model لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-embedding-model لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3839,8 +4851,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-embedding-model لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-embedding-model لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3851,8 +4865,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-embedding-model لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-embedding-model لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3863,8 +4879,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-embedding-model لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-embedding-model لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3875,8 +4893,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-embedding-model لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-embedding-model لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3887,8 +4907,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-embedding-model لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-embedding-model لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3899,8 +4921,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-embedding-model لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-embedding-model لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -3911,8 +4935,10 @@
       "supportsVision": false,
       "supportsTools": false,
       "supportsInputAudio": false,
+      "supportsParallelTools": false,
+      "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-embedding-model لا يدعم واجهة Chat Completions؛ لا يمكن استخدامه مع دورة كيمو. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-embedding-model لا يثبت دعماً للمحادثة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     }
   ]
 }

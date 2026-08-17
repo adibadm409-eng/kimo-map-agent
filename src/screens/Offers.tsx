@@ -8,8 +8,7 @@ import * as Haptics from 'expo-haptics'
 import { useTheme } from '../theme/ThemeContext'
 import { spacing, radius, fontSize } from '../theme/tokens'
 import { Card, StatusBadge } from '../components/ui'
-import { getAllOffers, deleteOffer, setOfferReminder } from '../database/db'
-import { cancelOfferReminder, scheduleOfferReminder } from '../notifications/offerReminders'
+import { getAllOffers, deleteOffer, createOfferReminder, cancelOfferReminderById } from '../database/db'
 import { OfferReminderModal } from '../components/OfferReminderModal'
 import { formatPrice, formatDate } from '../utils/helpers'
 import { STATUS_LABELS } from '../types'
@@ -56,30 +55,27 @@ export default function Offers() {
 
   async function saveReminder(date: Date) {
     if (!reminderOffer) return
-    let notificationId = ''
     try {
-      await cancelOfferReminder(reminderOffer.reminder_notification_id)
-      notificationId = await scheduleOfferReminder(date, {
+      await createOfferReminder({
         offerId: reminderOffer.id,
+        remindAt: date.toISOString(),
+        title: 'متابعة العرض',
         propertyName: reminderOffer.property_name,
         clientName: reminderOffer.client_name,
         amount: Number(reminderOffer.amount) || 0,
       })
-      await setOfferReminder(reminderOffer.id, date.toISOString(), notificationId)
       setReminderOffer(null)
       await load()
-      Alert.alert('تم ضبط التنبيه', 'سيظهر إشعار محلي في الموعد المحدد حتى لو كان التطبيق مغلقاً.')
+      Alert.alert('تمت إضافة التنبيه', 'يمكنك إضافة مواعيد أخرى للعرض نفسه، وستظهر كلها في قائمة التنبيهات المحلية.')
     } catch (error) {
-      if (notificationId) await cancelOfferReminder(notificationId).catch(() => {})
       Alert.alert('تعذر ضبط التنبيه', error instanceof Error ? error.message : 'تحقق من صلاحية الإشعارات والموعد.')
       throw error
     }
   }
 
-  async function clearReminder(o: any) {
+  async function clearReminder(o: any, reminder: any) {
     try {
-      await cancelOfferReminder(o.reminder_notification_id)
-      await setOfferReminder(o.id, null, null)
+      await cancelOfferReminderById(String(reminder.id))
       await load()
     } catch {
       Alert.alert('خطأ', 'تعذر إلغاء تنبيه العرض')
@@ -131,19 +127,28 @@ export default function Offers() {
               <Ionicons name="trash-outline" size={16} color={colors.error} />
             </Pressable>
           </View>
-          {o.reminder_at ? (
-            <View style={[styles.reminderRow, { borderTopColor: colors.border, backgroundColor: colors.infoSurface }]}>
-              <Ionicons name="notifications-outline" size={15} color={colors.info} />
-              <Text style={[styles.reminderText, { color: colors.textSecondary }]} numberOfLines={1}>التنبيه: {formatReminder(o.reminder_at)}</Text>
-              <Pressable accessibilityRole="button" accessibilityLabel="تعديل تنبيه العرض" onPress={(event) => { event.stopPropagation(); setReminderOffer(o) }} hitSlop={8} style={styles.reminderAction}><Ionicons name="create-outline" size={16} color={colors.info} /></Pressable>
-              <Pressable accessibilityRole="button" accessibilityLabel="إلغاء تنبيه العرض" onPress={(event) => { event.stopPropagation(); void clearReminder(o) }} hitSlop={8} style={styles.reminderAction}><Ionicons name="close-circle-outline" size={17} color={colors.error} /></Pressable>
-            </View>
-          ) : (
-            <Pressable accessibilityRole="button" accessibilityLabel="ضبط تنبيه للعرض" onPress={(event) => { event.stopPropagation(); setReminderOffer(o) }} style={({ pressed }) => [styles.setReminderRow, { borderTopColor: colors.border, opacity: pressed ? 0.65 : 1 }]}>
-              <Ionicons name="alarm-outline" size={15} color={colors.accent} />
-              <Text style={[styles.setReminderText, { color: colors.accent }]}>ضبط تنبيه متابعة</Text>
-            </Pressable>
-          )}
+          {(() => {
+            const reminders = Array.isArray(o.reminders) && o.reminders.length
+              ? o.reminders
+              : o.reminder_at ? [{ id: `legacy-${o.id}`, remind_at: o.reminder_at }] : []
+            return reminders.length ? (
+              <View style={[styles.remindersWrap, { borderTopColor: colors.border, backgroundColor: colors.infoSurface }]}>
+                {reminders.map((reminder: any) => (
+                  <View key={String(reminder.id)} style={styles.reminderRow}>
+                    <Ionicons name="notifications-outline" size={15} color={colors.info} />
+                    <Text style={[styles.reminderText, { color: colors.textSecondary }]} numberOfLines={1}>التنبيه: {formatReminder(reminder.remind_at)}</Text>
+                    <Pressable accessibilityRole="button" accessibilityLabel="إضافة تنبيه آخر للعرض" onPress={(event) => { event.stopPropagation(); setReminderOffer(o) }} hitSlop={8} style={styles.reminderAction}><Ionicons name="add-circle-outline" size={17} color={colors.info} /></Pressable>
+                    {String(reminder.id).startsWith('legacy-') ? null : <Pressable accessibilityRole="button" accessibilityLabel="إلغاء هذا التنبيه" onPress={(event) => { event.stopPropagation(); void clearReminder(o, reminder) }} hitSlop={8} style={styles.reminderAction}><Ionicons name="close-circle-outline" size={17} color={colors.error} /></Pressable>}
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <Pressable accessibilityRole="button" accessibilityLabel="ضبط تنبيه للعرض" onPress={(event) => { event.stopPropagation(); setReminderOffer(o) }} style={({ pressed }) => [styles.setReminderRow, { borderTopColor: colors.border, opacity: pressed ? 0.65 : 1 }]}>
+                <Ionicons name="alarm-outline" size={15} color={colors.accent} />
+                <Text style={[styles.setReminderText, { color: colors.accent }]}>ضبط تنبيه متابعة</Text>
+              </Pressable>
+            )
+          })()}
         </Card>
       </Pressable>
     )
@@ -236,7 +241,8 @@ const styles = StyleSheet.create({
   propertyName: { fontSize: fontSize.md, fontWeight: '700', fontFamily: 'Tajawal_700Bold' },
   clientName: { fontSize: fontSize.sm, fontFamily: 'Tajawal_400Regular' },
   cardFooter: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.lg, borderTopWidth: StyleSheet.hairlineWidth },
-  reminderRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth },
+  remindersWrap: { borderTopWidth: StyleSheet.hairlineWidth },
+  reminderRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   reminderText: { flex: 1, fontSize: fontSize.xs, fontFamily: 'Tajawal_400Regular' },
   reminderAction: { padding: spacing.xs },
   setReminderRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth },

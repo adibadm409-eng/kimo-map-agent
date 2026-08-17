@@ -1,7 +1,6 @@
 import { agentCreate, agentUpdate } from './crud'
-import { cancelReminder, createReminder, getAllOffers, getAllReminders, getReminder, setOfferReminder } from '../database/db'
+import { cancelReminder, createReminder, createOfferReminder, deleteOffer, getAllOffers, getAllReminders, getOfferReminders, getRemindersForTarget, getReminder, cancelOfferReminderById } from '../database/db'
 import { linkAttachmentToEntity, type MediaTargetType } from '../database/workspace'
-import { cancelOfferReminder, scheduleOfferReminder } from '../notifications/offerReminders'
 import { previewPropertyChange } from './propertyIntake'
 import {
   commitProjectImport,
@@ -217,7 +216,7 @@ export const DOMAIN_TOOLS: DomainToolDef[] = [
   },
   {
     name: 'create_offer_with_reminder',
-    description: 'إنشاء عرض شراء أو بيع محلياً ثم ضبط تنبيه متابعة اختياري له في العملية نفسها. اقرأ العقار والعميل أولاً، واستدعِ current_local_time إذا كان الموعد نسبياً. reminder_at يجب أن يكون ISO واضحاً وفي المستقبل؛ لا تخترع معرفات العقار أو العميل.',
+    description: 'إنشاء عرض شراء أو بيع محلياً ثم ضبط صفر أو عدة تنبيهات متابعة مستقلة له في العملية نفسها. استخدم reminders[] للتنبيهات المتعددة، وreminder_at كاختصار رجعي واحد. اقرأ العقار والعميل أولاً، واستدعِ current_local_time إذا كان الموعد نسبياً؛ كل موعد يجب أن يكون ISO واضحاً وفي المستقبل.',
     args: [
       { name: 'property_id', type: 'string', description: 'معرف العقار الموجود؛ اختياري لعرض طلب الشراء ويمكن ربطه لاحقاً' },
       { name: 'client_id', type: 'string', required: true, description: 'معرف العميل الموجود' },
@@ -226,15 +225,20 @@ export const DOMAIN_TOOLS: DomainToolDef[] = [
       { name: 'status', type: 'string', description: 'pending أو accepted أو rejected أو countered' },
       { name: 'date', type: 'string', description: 'تاريخ العرض YYYY-MM-DD' },
       { name: 'notes', type: 'string', description: 'ملاحظات العرض' },
-      { name: 'reminder_at', type: 'string', description: 'موعد التنبيه بصيغة ISO في المستقبل، أو اتركه فارغاً دون تنبيه' },
+      { name: 'reminder_at', type: 'string', description: 'توافق رجعي: موعد تنبيه واحد بصيغة ISO في المستقبل' },
+      { name: 'reminders', type: 'array', description: 'مصفوفة تنبيهات مستقلة، كل عنصر يحتوي remind_at وtitle اختياري وbody اختياري' },
     ],
     handler: async (args) => {
       if (!(Number(args.amount) >= 0)) throw new Error('مبلغ العرض غير صالح.')
       const type = String(args.type || 'buy_offer')
       if (type === 'sell_offer' && !String(args.property_id || '').trim()) throw new Error('عرض البيع يحتاج عقاراً مرتبطاً.')
-      const reminderAt = args.reminder_at ? String(args.reminder_at) : ''
-      const parsedReminder = reminderAt ? new Date(reminderAt) : null
-      if (parsedReminder && (Number.isNaN(parsedReminder.getTime()) || parsedReminder.getTime() <= Date.now())) throw new Error('موعد التنبيه غير صالح أو منتهٍ؛ استخدم current_local_time ثم أرسل موعداً مستقبلياً.')
+      const reminderItems = Array.isArray(args.reminders) ? args.reminders.map((item) => item && typeof item === 'object' ? item : {}) : []
+      if (args.reminder_at) reminderItems.unshift({ remind_at: String(args.reminder_at), title: 'متابعة العرض', body: '' })
+      const reminders = reminderItems.map((item) => ({ remindAt: String(item.remind_at || ''), title: item.title ? String(item.title) : 'متابعة العرض', body: item.body ? String(item.body) : '' }))
+      for (const reminder of reminders) {
+        const parsed = new Date(reminder.remindAt)
+        if (!reminder.remindAt || Number.isNaN(parsed.getTime()) || parsed.getTime() <= Date.now()) throw new Error('أحد مواعيد التنبيه غير صالح أو منتهٍ؛ استخدم current_local_time ثم أرسل مواعيد مستقبلية.')
+      }
       const created = await agentCreate({
         entity: 'offers',
         data: {
@@ -247,29 +251,34 @@ export const DOMAIN_TOOLS: DomainToolDef[] = [
           notes: args.notes ? String(args.notes) : '',
         },
       })
-      if (!reminderAt) return { id: created.id, offerCreated: true, reminderScheduled: false }
-      const parsed = parsedReminder as Date
+      if (!reminders.length) return { id: created.id, offerCreated: true, reminderScheduled: false, reminders: [] }
       const offers = await getAllOffers()
       const offer = offers.find((item) => item.id === created.id)
-      if (!offer) throw new Error('أُنشئ العرض لكن تعذر قراءته لضبط التنبيه.')
-      let notificationId = ''
+      if (!offer) throw new Error('أُنشئ العرض لكن تعذر قراءته لضبط التنبيهات.')
+      const createdReminderIds: string[] = []
       try {
-        notificationId = await scheduleOfferReminder(parsed, { offerId: created.id, propertyName: offer.property_name, clientName: offer.client_name, amount: Number(offer.amount) || 0 })
-        await setOfferReminder(created.id, parsed.toISOString(), notificationId)
+        for (const reminder of reminders) {
+          const reminderId = await createOfferReminder({ offerId: created.id, remindAt: reminder.remindAt, title: reminder.title, body: reminder.body, propertyName: offer.property_name, clientName: offer.client_name, amount: Number(offer.amount) || 0 })
+          createdReminderIds.push(reminderId)
+        }
       } catch (error) {
-        if (notificationId) await cancelOfferReminder(notificationId).catch(() => {})
+        for (const reminderId of createdReminderIds) await cancelOfferReminderById(reminderId).catch(() => {})
+        await deleteOffer(created.id).catch(() => {})
         throw error
       }
-      return { id: created.id, offerCreated: true, reminderScheduled: true, reminderAt: parsed.toISOString() }
+      return { id: created.id, offerCreated: true, reminderScheduled: true, reminders: await getOfferReminders(created.id) }
     },
   },
   {
     name: 'offer_reminder_set',
-    description: 'ضبط أو إلغاء تنبيه متابعة لعرض موجود. اقرأ العرض أولاً. action=set يحتاج reminder_at ISO مستقبلياً؛ action=cancel يلغي التنبيه المحلي ويحذف موعده من العرض.',
+    description: 'إضافة أو إلغاء تنبيه مستقل لعرض موجود. action=set يضيف موعداً جديداً ولا يلغي التنبيهات الأخرى؛ action=cancel يحتاج reminder_id، أو يلغي الوحيد إذا كان هناك تنبيه واحد. استخدم list_offer_reminders قبل الإلغاء عند وجود أكثر من موعد.',
     args: [
       { name: 'offer_id', type: 'string', required: true, description: 'معرف العرض الموجود' },
       { name: 'action', type: 'string', required: true, description: 'set أو cancel' },
+      { name: 'reminder_id', type: 'string', description: 'معرف التنبيه عند الإلغاء' },
       { name: 'reminder_at', type: 'string', description: 'موعد التنبيه ISO في المستقبل عند action=set' },
+      { name: 'title', type: 'string', description: 'عنوان اختياري للتنبيه' },
+      { name: 'body', type: 'string', description: 'تفاصيل اختيارية للتنبيه' },
     ],
     handler: async (args) => {
       const offerId = String(args.offer_id || '')
@@ -277,47 +286,58 @@ export const DOMAIN_TOOLS: DomainToolDef[] = [
       const offer = (await getAllOffers()).find((item) => item.id === offerId)
       if (!offer) throw new Error('العرض غير موجود.')
       if (action === 'cancel') {
-        await cancelOfferReminder(offer.reminder_notification_id)
-        await setOfferReminder(offerId, null, null)
-        return { offerId, reminderScheduled: false, cancelled: true }
+        const existing = await getOfferReminders(offerId)
+        const reminderId = args.reminder_id ? String(args.reminder_id) : existing.length === 1 ? existing[0].id : ''
+        if (!reminderId) throw new Error('حدد reminder_id لأن العرض يحتوي عدة تنبيهات، أو استخدم list_offer_reminders أولاً.')
+        await cancelOfferReminderById(reminderId)
+        return { offerId, reminderId, reminderScheduled: false, cancelled: true }
       }
       if (action !== 'set') throw new Error('action يجب أن يكون set أو cancel.')
       const reminderAt = String(args.reminder_at || '')
       const parsed = new Date(reminderAt)
       if (!reminderAt || Number.isNaN(parsed.getTime()) || parsed.getTime() <= Date.now()) throw new Error('موعد التنبيه غير صالح أو منتهٍ؛ استخدم current_local_time ثم أرسل موعداً مستقبلياً.')
-      await cancelOfferReminder(offer.reminder_notification_id)
-      let notificationId = ''
-      try {
-        notificationId = await scheduleOfferReminder(parsed, { offerId, propertyName: offer.property_name, clientName: offer.client_name, amount: Number(offer.amount) || 0 })
-        await setOfferReminder(offerId, parsed.toISOString(), notificationId)
-      } catch (error) {
-        if (notificationId) await cancelOfferReminder(notificationId).catch(() => {})
-        throw error
-      }
-      return { offerId, reminderScheduled: true, reminderAt: parsed.toISOString() }
+      const reminderId = await createOfferReminder({ offerId, remindAt: parsed.toISOString(), title: args.title ? String(args.title) : 'متابعة العرض', body: args.body ? String(args.body) : '', propertyName: offer.property_name, clientName: offer.client_name, amount: Number(offer.amount) || 0 })
+      return { offerId, reminderId, reminderScheduled: true, reminderAt: parsed.toISOString() }
+    },
+  },
+  {
+    name: 'list_offer_reminders',
+    description: 'عرض كل التنبيهات المحلية المجدولة المرتبطة بعرض محدد، مع معرف كل تنبيه وموعده، قبل الإلغاء أو التعديل.',
+    args: [{ name: 'offer_id', type: 'string', required: true, description: 'معرف العرض الموجود' }],
+    handler: async (args) => {
+      const offerId = String(args.offer_id || '')
+      const offer = (await getAllOffers()).find((item) => item.id === offerId)
+      if (!offer) throw new Error('العرض غير موجود.')
+      const reminders = await getOfferReminders(offerId)
+      return { offerId, reminders: reminders.map((reminder) => ({ id: reminder.id, title: reminder.title, body: reminder.body, remind_at: reminder.remind_at, local_time: new Date(reminder.remind_at).toLocaleString('ar-YE', { dateStyle: 'full', timeStyle: 'short' }), status: reminder.status })) }
     },
   },
   {
     name: 'create_reminder',
-    description: 'إنشاء تذكير محلي عام بنص يحدده المستخدم، مثل: ذكرني بعد ساعتين أن أتصل بالعميل. اقرأ current_local_time قبل تحويل الموعد النسبي، وأرسل remind_at بصيغة ISO مستقبلية واضحة. يعمل الإشعار حتى عند إغلاق التطبيق.',
+    description: 'إنشاء تنبيه محلي متعدد الاستخدام: عام، أو مرتبط بعرض أو عقار أو عميل أو معاينة أو مشروع أو دفعة. يمكن إنشاء عدة تنبيهات للكيان نفسه. اقرأ current_local_time قبل تحويل الموعد النسبي، وأرسل remind_at بصيغة ISO مستقبلية واضحة. يعمل الإشعار حتى عند إغلاق التطبيق.',
     args: [
       { name: 'title', type: 'string', required: true, description: 'عنوان مختصر لما يجب تذكّره' },
       { name: 'remind_at', type: 'string', required: true, description: 'الموعد بصيغة ISO في المستقبل' },
       { name: 'body', type: 'string', description: 'تفاصيل إضافية للتذكير' },
+      { name: 'target_type', type: 'string', description: 'general أو offer أو property أو client أو viewing أو project أو payment' },
+      { name: 'target_id', type: 'string', description: 'معرف الكيان المحلي عند ربط التنبيه به' },
     ],
     handler: async (args) => {
-      const id = await createReminder({ title: String(args.title || ''), body: args.body ? String(args.body) : '', remind_at: String(args.remind_at || '') })
+      const id = await createReminder({ title: String(args.title || ''), body: args.body ? String(args.body) : '', remind_at: String(args.remind_at || ''), target_type: args.target_type ? String(args.target_type) : 'general', target_id: args.target_id ? String(args.target_id) : '' })
       const reminder = await getReminder(id)
-      return { id, reminderCreated: true, reminder: reminder ? { id: reminder.id, title: reminder.title, body: reminder.body, remind_at: reminder.remind_at, status: reminder.status } : null }
+      return { id, reminderCreated: true, target_type: reminder?.target_type ?? 'general', target_id: reminder?.target_id ?? '', reminder: reminder ? { id: reminder.id, title: reminder.title, body: reminder.body, remind_at: reminder.remind_at, target_type: reminder.target_type, target_id: reminder.target_id, status: reminder.status } : null }
     },
   },
   {
     name: 'list_reminders',
-    description: 'عرض التذكيرات المحلية المجدولة القادمة. استخدمها عندما يسأل المستخدم عن تذكيراته أو يريد مراجعة ما تم ضبطه.',
-    args: [],
-    handler: async () => {
-      const reminders = await getAllReminders()
-      return { reminders: reminders.map((reminder) => ({ id: reminder.id, title: reminder.title, body: reminder.body, remind_at: reminder.remind_at, local_time: new Date(reminder.remind_at).toLocaleString('ar-YE', { dateStyle: 'full', timeStyle: 'short' }), status: reminder.status })) }
+    description: 'عرض التنبيهات المحلية المجدولة القادمة، عامة أو مرتبطة بكيان محدد. استخدم target_type وtarget_id لتضييق القائمة.',
+    args: [
+      { name: 'target_type', type: 'string', description: 'نوع الكيان أو general' },
+      { name: 'target_id', type: 'string', description: 'معرف الكيان عند التضييق' },
+    ],
+    handler: async (args) => {
+      const reminders = args.target_type && args.target_id ? await getRemindersForTarget(String(args.target_type), String(args.target_id)) : await getAllReminders()
+      return { reminders: reminders.map((reminder) => ({ id: reminder.id, title: reminder.title, body: reminder.body, remind_at: reminder.remind_at, target_type: reminder.target_type, target_id: reminder.target_id, local_time: new Date(reminder.remind_at).toLocaleString('ar-YE', { dateStyle: 'full', timeStyle: 'short' }), status: reminder.status })) }
     },
   },
   {
