@@ -1,4 +1,5 @@
 import * as SQLite from 'expo-sqlite'
+import { Platform } from 'react-native'
 import type { Property, Client, Offer, Campaign, Viewing, OfferReminder } from '../types'
 import { logChange } from './audit'
 import { cancelLocalReminder, cancelOfferReminder, scheduleLocalReminder, scheduleOfferReminder } from '../notifications/offerReminders'
@@ -426,7 +427,7 @@ async function attachOfferReminders<T extends { id: string }>(rows: T[]): Promis
   const ids = rows.map((row) => row.id)
   const placeholders = ids.map(() => '?').join(', ')
   const reminderRows = await db.getAllAsync<OfferReminder & { target_id: string }>(
-    `SELECT *, target_id as offer_id FROM reminders WHERE target_type = 'offer' AND target_id IN (${placeholders}) AND status = 'scheduled' ORDER BY remind_at ASC`,
+    `SELECT *, target_id as offer_id FROM reminders WHERE target_type = 'offer' AND target_id IN (${placeholders}) AND status IN ('scheduled', 'pending_permission') ORDER BY remind_at ASC`,
     ids,
   )
   const grouped = new Map<string, OfferReminder[]>()
@@ -488,7 +489,7 @@ export async function createOffer(o: Partial<Offer>): Promise<string> {
 
 export async function getRemindersForTarget(targetType: string, targetId: string, includeCancelled = false): Promise<any[]> {
   const db = await getDB()
-  const where = includeCancelled ? '' : " AND status = 'scheduled'"
+  const where = includeCancelled ? '' : " AND status IN ('scheduled', 'pending_permission')"
   return await db.getAllAsync(`SELECT * FROM reminders WHERE target_type = ? AND target_id = ?${where} ORDER BY remind_at ASC`, [targetType, targetId]) as any[]
 }
 
@@ -516,19 +517,24 @@ export async function createEntityReminder(input: {
   const db = await getDB()
   const id = genId()
   let notificationId = ''
+  let status: 'scheduled' | 'pending_permission' = Platform.OS === 'web' ? 'pending_permission' : 'scheduled'
   try {
-    notificationId = targetType === 'offer'
-      ? await scheduleOfferReminder(date, { offerId: targetId, propertyName: input.offerMeta?.propertyName, clientName: input.offerMeta?.clientName, amount: Number(input.offerMeta?.amount) || 0 })
-      : await scheduleLocalReminder(date, title, body || title, { type: 'entity-reminder', reminderId: id, targetType, targetId })
-    await db.runAsync(
-      'INSERT INTO reminders (id,title,body,remind_at,notification_id,status,target_type,target_id) VALUES (?,?,?,?,?,?,?,?)',
-      [id, title, body, date.toISOString(), notificationId, 'scheduled', targetType, targetId],
-    )
+    if (Platform.OS !== 'web') {
+      notificationId = targetType === 'offer'
+        ? await scheduleOfferReminder(date, { offerId: targetId, propertyName: input.offerMeta?.propertyName, clientName: input.offerMeta?.clientName, amount: Number(input.offerMeta?.amount) || 0 })
+        : await scheduleLocalReminder(date, title, body || title, { type: 'entity-reminder', reminderId: id, targetType, targetId })
+    }
   } catch (error) {
-    if (notificationId) await cancelLocalReminder(notificationId).catch(() => {})
-    throw error
+    const permissionBlocked = error instanceof Error && error.message.includes('صلاحية الإشعارات المحلية')
+    if (!permissionBlocked) throw error
+    status = 'pending_permission'
+    notificationId = ''
   }
-  await logChange({ action: 'create', scope: 'reminders', scopeId: id, after: { title, body, remind_at: date.toISOString(), target_type: targetType, target_id: targetId }, summary: `إنشاء تنبيه "${title}"` })
+  await db.runAsync(
+    'INSERT INTO reminders (id,title,body,remind_at,notification_id,status,target_type,target_id) VALUES (?,?,?,?,?,?,?,?)',
+    [id, title, body, date.toISOString(), notificationId, status, targetType, targetId],
+  )
+  await logChange({ action: 'create', scope: 'reminders', scopeId: id, after: { title, body, remind_at: date.toISOString(), notification_id: notificationId, status, target_type: targetType, target_id: targetId }, summary: `إنشاء تنبيه "${title}"${status === 'pending_permission' ? ' (بانتظار صلاحية الإشعارات)' : ''}` })
   return id
 }
 
@@ -606,7 +612,7 @@ export async function deleteOffer(id: string): Promise<void> {
 // CRUD helpers - REMINDERS
 export async function getAllReminders(includeCancelled = false): Promise<any[]> {
   const db = await getDB()
-  const where = includeCancelled ? '' : "WHERE status = 'scheduled'"
+  const where = includeCancelled ? '' : "WHERE status IN ('scheduled', 'pending_permission')"
   return await db.getAllAsync(`SELECT * FROM reminders ${where} ORDER BY remind_at ASC`) as any[]
 }
 

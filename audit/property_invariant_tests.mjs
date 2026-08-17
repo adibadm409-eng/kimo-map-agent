@@ -50,6 +50,15 @@ assert.match(duplicateBlock, /const newId = await createWorkspace/)
 assert.match(duplicateBlock, /await duplicateTable\(t\.id, t\.name, newId\)/)
 assert.match(duplicateBlock, /while \(await d\.getFirstAsync/)
 
+const crud = fs.readFileSync(new URL('../src/agent/crud.ts', import.meta.url), 'utf8')
+assert.match(crud, /assertExistingRecord\(spec\.entity, spec\.id\)/)
+assert.match(crud, /assertKnownPatchFields\(spec\.entity, entity\.fields, spec\.data\)/)
+assert.match(crud, /لم تتم أي كتابة/)
+
+const schemas = fs.readFileSync(new URL('../src/assistant/toolSchemas.ts', import.meta.url), 'utf8')
+assert.match(schemas, /فشل التحقق الذري/)
+assert.match(schemas, /result\.changedFields/)
+
 const tools = fs.readFileSync(new URL('../src/screens/Tools.tsx', import.meta.url), 'utf8')
 const importBlock = tools.slice(tools.indexOf('async function doImport'), tools.indexOf('async function pasteFromClipboard'))
 assert.match(importBlock, /importSpatialItems\(parsed\.map/)

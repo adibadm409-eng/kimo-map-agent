@@ -137,6 +137,10 @@ function buildWhere(entity: EntityDef, spec: QuerySpec): { where: string; params
       for (let i = 0; i < searchable.length; i++) params.push(like)
       clauses.push(`(${parts.join(' OR ')})`)
     }
+    if (entity.namesJoin?.search) {
+      clauses.push(entity.namesJoin.search.sql)
+      for (let i = 0; i < entity.namesJoin.search.paramCount; i++) params.push(like)
+    }
   }
 
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : ''
@@ -189,7 +193,7 @@ export async function queryEntities(spec: QuerySpec): Promise<QueryResult> {
   const { where, params } = buildWhere(entity, spec)
   const url = `${buildOrder(entity, spec)}`
   const countRow = await db.getFirstAsync<{ c: number }>(
-    `SELECT COUNT(*) as c FROM ${entity.table} e ${where}`,
+    `SELECT COUNT(*) as c FROM ${entity.table} e ${entity.namesJoin?.join ?? ''} ${where}`,
     params
   )
   const total = countRow?.c ?? 0

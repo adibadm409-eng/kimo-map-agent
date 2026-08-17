@@ -263,10 +263,16 @@ export const DOMAIN_TOOLS: DomainToolDef[] = [
         }
       } catch (error) {
         for (const reminderId of createdReminderIds) await cancelOfferReminderById(reminderId).catch(() => {})
-        await deleteOffer(created.id).catch(() => {})
-        throw error
+        return {
+          id: created.id,
+          offerCreated: true,
+          partial: true,
+          reminderScheduled: false,
+          reminderError: error instanceof Error ? error.message : String(error),
+          reminders: await getOfferReminders(created.id),
+        }
       }
-      return { id: created.id, offerCreated: true, reminderScheduled: true, reminders: await getOfferReminders(created.id) }
+      return { id: created.id, offerCreated: true, partial: false, reminderScheduled: true, reminders: await getOfferReminders(created.id) }
     },
   },
   {

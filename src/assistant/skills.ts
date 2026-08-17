@@ -7,9 +7,9 @@ export const AGENT_SKILLS: AgentSkill[] = [
     label: 'إدارة المشروع العقاري',
     description: 'ينشئ وينظم المشاريع الهرمية وبلوكاتها وقطعها ووحداتها ويتابع سلامة الروابط والبيانات المالية.',
     triggers: ['أنشئ مشروع', 'إنشاء مشروع', 'مشروع عقاري', 'أضف بلوك', 'أنشئ بلوك', 'أضف قطعة', 'أنشئ قطعة', 'طابق', 'وحدة سكنية', 'عدّل القطعة', 'تعديل المشروع'],
-    preferredTools: ['project_profile_get', 'project_nodes_list', 'project_tree', 'project_financials', 'project_cashflow', 'project_integrity_check', 'query', 'get', 'create', 'update'],
+    preferredTools: ['project_profile_get', 'project_nodes_list', 'project_tree', 'project_financials', 'project_cashflow', 'project_integrity_check', 'query', 'get', 'mutate_record'],
     readTools: ['project_profile_get', 'project_nodes_list', 'project_tree', 'project_financials', 'project_cashflow', 'project_integrity_check', 'query', 'get'],
-    writeTools: ['create', 'update'],
+    writeTools: ['mutate_record'],
     requiredInputs: ['هوية المشروع عند التعديل؛ واسم المشروع ونوعه عند الإنشاء؛ وهوية الأصل عند التعديل'],
     questionPolicy: 'ask_on_missing',
     verificationTools: ['project_tree', 'project_financials', 'project_integrity_check'],
@@ -77,9 +77,9 @@ export const AGENT_SKILLS: AgentSkill[] = [
     label: 'إدارة العروض والتنبيهات',
     description: 'ينشئ عروض البيع والشراء ويربط بها تنبيهات متابعة محلية في مواعيد مستقبلية.',
     triggers: ['عرض شراء', 'عرض بيع', 'العروض', 'تنبيه العرض', 'تنبيه', 'تذكير العرض', 'تذكير', 'ذكرني', 'ذكّرني', 'إشعار', 'اشعار', 'موعد متابعة'],
-    preferredTools: ['current_local_time', 'query', 'get', 'list_attachments', 'attach_media_to_entity', 'create_offer_with_reminder', 'offer_reminder_set', 'create_reminder', 'list_reminders', 'cancel_reminder'],
+    preferredTools: ['current_local_time', 'query', 'get', 'list_attachments', 'attach_media_to_entity', 'create_offer_with_reminder', 'offer_reminder_set', 'create_reminder', 'list_reminders', 'cancel_reminder', 'mutate_record'],
     readTools: ['current_local_time', 'query', 'get', 'catalog', 'list_attachments', 'list_reminders'],
-    writeTools: ['attach_media_to_entity', 'create_offer_with_reminder', 'offer_reminder_set', 'create_reminder', 'cancel_reminder', 'create', 'update'],
+    writeTools: ['attach_media_to_entity', 'create_offer_with_reminder', 'offer_reminder_set', 'create_reminder', 'cancel_reminder', 'mutate_record'],
     requiredInputs: ['نص التذكير وموعده في التذكير العام؛ أو العقار والعميل والمبلغ عند إنشاء عرض'],
     questionPolicy: 'ask_on_missing',
     verificationTools: ['get', 'query'],
@@ -104,10 +104,10 @@ export const AGENT_SKILLS: AgentSkill[] = [
     id: 'property_management',
     label: 'إدارة العقارات والوسائط',
     description: 'ينظم بيانات العقار وسعره وتصنيفه ووسائطه وبيانات الدلال دون خلطها ببيانات العرض أو العميل.',
-    triggers: ['عقار', 'عقارات', 'بيت', 'فندق', 'عمارة', 'برج سكني', 'مزرعة', 'قطعة أرض', 'هنجر', 'محل', 'سعر العقار', 'صورة العقار', 'فيديو العقار'],
-    preferredTools: ['catalog', 'query', 'get', 'list_attachments', 'property_change_preview', 'property_intake_apply', 'attach_media_to_entity', 'create', 'update', 'preview_update', 'data_snapshot'],
+    triggers: ['أضف عقار', 'أنشئ عقار', 'إنشاء عقار', 'عدّل العقار', 'احذف العقار', 'عقار', 'عقارات', 'بيت', 'فندق', 'عمارة', 'برج سكني', 'مزرعة', 'قطعة أرض', 'هنجر', 'محل', 'سعر العقار', 'صورة العقار', 'فيديو العقار'],
+    preferredTools: ['catalog', 'query', 'get', 'list_attachments', 'property_change_preview', 'property_intake_apply', 'attach_media_to_entity', 'mutate_record', 'preview_update', 'data_snapshot'],
     readTools: ['catalog', 'query', 'get', 'list_attachments', 'property_change_preview', 'search_everything', 'data_snapshot'],
-    writeTools: ['property_intake_apply', 'attach_media_to_entity', 'create', 'update', 'custom_field_set'],
+    writeTools: ['property_intake_apply', 'attach_media_to_entity', 'mutate_record', 'custom_field_set'],
     requiredInputs: ['هوية العقار عند التعديل؛ والاسم أو البيانات الأساسية عند الإنشاء'],
     questionPolicy: 'ask_on_missing',
     verificationTools: ['get', 'query'],
@@ -118,10 +118,10 @@ export const AGENT_SKILLS: AgentSkill[] = [
     id: 'client_relationship',
     label: 'إدارة العملاء والعلاقات',
     description: 'ينظم العملاء وبيانات الاتصال والارتباطات بالعروض والمشاهدات دون افتراض هوية أو رقم.',
-    triggers: ['عميل', 'العميل', 'مشتري', 'بائع', 'هاتف العميل', 'رقم العميل', 'جهة اتصال', 'اتصل بالعميل', 'بيانات العميل'],
-    preferredTools: ['catalog', 'query', 'get', 'create', 'update', 'search_everything'],
+    triggers: ['أضف عميلاً', 'أضف عميل', 'أنشئ عميلاً', 'أنشئ عميل', 'إنشاء عميل', 'سجّل عميلاً', 'عدّل العميل', 'عدّل عميلاً', 'احذف العميل', 'عميل', 'العميل', 'مشتري', 'بائع', 'هاتف العميل', 'رقم العميل', 'جهة اتصال', 'اتصل بالعميل', 'بيانات العميل'],
+    preferredTools: ['catalog', 'query', 'get', 'mutate_record', 'search_everything'],
     readTools: ['catalog', 'query', 'get', 'search_everything'],
-    writeTools: ['create', 'update'],
+    writeTools: ['mutate_record'],
     requiredInputs: ['هوية العميل عند التعديل؛ والاسم أو وسيلة تعريف عند الإنشاء'],
     questionPolicy: 'never_guess',
     verificationTools: ['get', 'query'],
@@ -169,17 +169,46 @@ function classifyIntent(text: string, match: SkillMatch): SkillAssessment['inten
   const normalized = String(text ?? '').trim().toLowerCase()
   if (!normalized || /^(مرحبا|مرحباً|هلا|أهلا|اهلا|السلام عليكم|شكرا|شكرًا|كيف حالك)[!.؟\s]*$/.test(normalized)) return 'conversation'
   if (match.skill.id === 'general_assistant') return /\?|؟|ما الذي|كيف|هل/.test(normalized) ? 'question' : 'ambiguous'
-  if (/أنشئ|أضف|سجل|سجّل|عدّل|عدل|حدّث|احذف|حذف|استورد|استيراد|ذكرني|تذكير|اعرض|ابحث|راجع|حلل|احسب/.test(normalized)) return 'execution'
+  const readOnly = /استكشف|اكتشف|اعرض|أظهر|اظهر|ابحث|استعلم|استعلام|اقرأ|قراءة|راجع|حلل|احسب|ما هي|ماهو|ما هو|كم عدد/.test(normalized)
+  const writeIntent = /أنشئ|أنشاء|إنشاء|أضف|اضف|سجل|سجّل|عدّل|عدل|حدّث|حدث|احذف|حذف|استورد|استيراد|ذكرني|تذكير/.test(normalized)
+  const explicitNoWrite = /لا\s+(?:تنشئ|تنشأ|تضف|تعدل|تحدّث|تحدث|تحذف|تستورد)|دون\s+(?:إنشاء|تعديل|حذف|استيراد)|بدون\s+(?:إنشاء|تعديل|حذف|استيراد)/.test(normalized)
+  if (readOnly && (!writeIntent || explicitNoWrite)) return 'question'
+  if (writeIntent) return 'execution'
   return 'ambiguous'
 }
 
 export function matchSkill(text: string): SkillMatch {
   const normalized = String(text ?? '').toLowerCase()
+  const hasOfferFlow = /عرض\s*(شراء|بيع)|تنبيه|تذكير|ذكرني|موعد متابعة|إشعار|اشعار/.test(normalized)
+  const hasClientFlow = /عميل|عميلة|مشتري|بائع|جهة اتصال|هاتف العميل|رقم العميل/.test(normalized)
+  const hasPropertyFlow = /عقار|عقارات|بيت|فندق|عمارة|برج سكني|مزرعة|قطعة أرض|هنجر|محل/.test(normalized)
+  const hasProjectImportFlow = /استيراد|استورد|جدول|صفوف|بلوكات|قطع|ملف مشروع/.test(normalized)
+  const hasPaymentFlow = /دفعة|دفع|قسط|أقساط|تحصيل|متبقي|سند|تدفق نقدي|دفتر نقد/.test(normalized)
   const ranked = AGENT_SKILLS.map((skill) => {
     const hits = skill.triggers.filter((trigger) => normalized.includes(trigger.toLowerCase()))
     const specificityBonus = skill.id === 'general_assistant' || skill.id === 'data_search' ? 0 : 0.08
-    const score = skill.id === 'general_assistant' ? 0.1 : hits.length ? Math.min(0.98, 0.2 + hits.length * 0.15 + specificityBonus) : 0
-    return { skill, score, missingInputs: [], reasons: hits.length ? [`مطابقة الكلمات: ${hits.join('، ')}`] : [] }
+    let score = skill.id === 'general_assistant' ? 0.1 : hits.length ? Math.min(0.98, 0.2 + hits.length * 0.15 + specificityBonus) : 0
+    const reasons = hits.length ? [`مطابقة الكلمات: ${hits.join('، ')}`] : []
+
+    // الطلب المركب يجب أن يوجّه إلى المهارة التي تملك مسار المجال الحساس،
+    // لا إلى أول كلمة سطحية مثل «عميل» فتُحجب أدوات العرض والتنبيه لاحقاً.
+    if (hasOfferFlow && (hasClientFlow || hasPropertyFlow)) {
+      if (skill.id === 'offer_management') {
+        score = Math.max(score, 0.97)
+        reasons.push('مسار مركب: عرض/تنبيه مع عميل أو عقار')
+      } else if (skill.id === 'client_relationship' || skill.id === 'property_management') {
+        score = Math.min(score, 0.42)
+      }
+    }
+    if (hasPaymentFlow && skill.id === 'cashflow') {
+      score = Math.max(score, 0.97)
+      reasons.push('مسار دفعة/قسط مالي')
+    }
+    if (hasProjectImportFlow && !hasOfferFlow && !hasPaymentFlow && skill.id === 'project_import') {
+      score = Math.max(score, 0.96)
+      reasons.push('مسار مشروع/استيراد هرمي')
+    }
+    return { skill, score, missingInputs: [], reasons }
   }).sort((a, b) => b.score - a.score)
   return ranked[0] ?? { skill: AGENT_SKILLS[AGENT_SKILLS.length - 1], score: 0.1, missingInputs: [], reasons: [] }
 }

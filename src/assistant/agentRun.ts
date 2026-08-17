@@ -4,6 +4,16 @@ import type { PendingDeleteItem } from './store'
 
 import type { VisibleAgentEvent } from './agentContract'
 
+export type AgentOutcome = 'completed' | 'failed' | 'paused' | 'cancelled'
+
+export function deriveAgentOutcome(taskStatus?: string | null, latestAssistantKind?: string): AgentOutcome {
+  if (taskStatus === 'completed') return 'completed'
+  if (taskStatus === 'awaiting_user') return 'paused'
+  if (taskStatus === 'cancelled') return 'cancelled'
+  if (taskStatus) return 'failed'
+  return latestAssistantKind === 'error' ? 'failed' : 'completed'
+}
+
 export type AgentEvent =
   | { type: 'text'; content: string }
   | { type: 'tool'; name: string; args: any; result: any }
@@ -15,7 +25,7 @@ export type AgentEvent =
   | { type: 'stream'; content: string; done?: boolean }
   | { type: 'error'; message: string }
   | { type: 'thinking' }
-  | { type: 'done' }
+  | { type: 'done'; outcome?: AgentOutcome }
   | VisibleAgentEvent
 
 export type Listener = (e: AgentEvent) => void

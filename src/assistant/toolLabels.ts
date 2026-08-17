@@ -14,6 +14,7 @@ export const TOOL_ARABIC: Record<string, string> = {
   search_sessions: 'البحث في المحادثات',
   undo_last: 'التراجع عن آخر عملية',
   catalog: 'مراجعة دليل الأقسام',
+  schema_inspect: 'اكتشاف بنية البيانات',
 
   list_entities: 'استعراض الكيانات',
   query: 'البحث في البيانات',

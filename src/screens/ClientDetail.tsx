@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { View, Text, ScrollView, StyleSheet, Pressable, Linking, Alert } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, Pressable, Linking, Alert, Platform } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRoute, useNavigation } from '@react-navigation/native'
@@ -37,6 +37,11 @@ export default function ClientDetail() {
 
   function handleDelete() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+    if (Platform.OS === 'web' && typeof globalThis.confirm === 'function') {
+      if (!globalThis.confirm('هل تريد حذف هذا العميل؟')) return
+      deleteClient(client.id).then(() => navigation.goBack()).catch(() => Alert.alert('خطأ', 'تعذر حذف العميل'))
+      return
+    }
     Alert.alert('حذف العميل', 'هل تريد حذف هذا العميل؟', [
       { text: 'إلغاء', style: 'cancel' },
       { text: 'حذف', style: 'destructive', onPress: () => deleteClient(client.id).then(() => navigation.goBack()).catch(() => Alert.alert('خطأ', 'تعذر حذف العميل')) },

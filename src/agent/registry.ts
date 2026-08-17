@@ -90,6 +90,62 @@ export const TOOLS: ToolDef[] = [
     },
   },
   {
+    name: 'schema_inspect',
+    description: 'اكتشاف آمن لبنية SQLite المحلية عند الحاجة: يعيد الجداول الفعلية والأعمدة والأنواع والحقول المطلوبة والعلاقات والفهارس وعدد الصفوف، ويقارنها بكتالوج التطبيق. لا يقبل SQL ولا يغيّر أي بيانات؛ الجداول غير المعروفة للكتالوج للقراءة التشخيصية فقط.',
+    args: [
+      { name: 'entities', type: 'array', description: 'كيانات محددة مثل ["properties","clients"]؛ اتركها فارغة لفحص كل الكيانات المعروفة' },
+      { name: 'includeSystem', type: 'boolean', description: 'إظهار جداول SQLite الداخلية المساندة مثل change_log وreminders للقراءة فقط (افتراضي false)' },
+    ],
+    handler: async (args) => {
+      const requested = Array.isArray(args.entities)
+        ? args.entities.map((value: any) => String(value ?? '').trim()).filter(Boolean)
+        : []
+      const known = requested.length ? requested.map((key) => getEntityDef(key)).filter(Boolean) : ALL_ENTITIES
+      if (requested.length && known.length !== requested.length) {
+        const unknown = requested.filter((key) => !getEntityDef(key))
+        throw new Error(`كيانات غير مدعومة في schema_inspect: ${unknown.join('، ')}`)
+      }
+      const d = await getDB()
+      const safe = (name: string) => name.replace(/"/g, '""')
+      const rows = await d.getAllAsync<any>(`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name`)
+      const actualNames = rows.map((row: any) => String(row.name))
+      const targetNames = requested.length
+        ? known.map((entity: any) => entity.table)
+        : known.map((entity: any) => entity.table)
+      const systemNames = args.includeSystem === true ? actualNames.filter((name) => !targetNames.includes(name)) : []
+      const inspectNames = [...new Set([...targetNames, ...systemNames])]
+      const knownByTable = new Map(known.map((entity: any) => [entity.table, entity]))
+      const tables = []
+      for (const table of inspectNames) {
+        const tableSql = safe(table)
+        const columns = await d.getAllAsync<any>(`PRAGMA table_info("${tableSql}")`)
+        const foreignKeys = await d.getAllAsync<any>(`PRAGMA foreign_key_list("${tableSql}")`)
+        const indexes = await d.getAllAsync<any>(`PRAGMA index_list("${tableSql}")`)
+        let rowCount: number | null = null
+        try {
+          const countRow = await d.getFirstAsync<any>(`SELECT COUNT(*) AS count FROM "${tableSql}"`)
+          rowCount = Number(countRow?.count ?? 0)
+        } catch {}
+        const entity = knownByTable.get(table)
+        const declared = entity?.fields ?? []
+        const actualColumnNames = columns.map((column: any) => String(column.name))
+        tables.push({
+          table,
+          entity: entity?.key ?? null,
+          label: entity?.label ?? table,
+          access: entity ? 'catalog_query_get_and_guarded_mutation' : 'read_only_diagnostic',
+          row_count: rowCount,
+          columns: columns.map((column: any) => ({ name: column.name, type: column.type, not_null: Boolean(column.notnull), default: column.dflt_value, primary_key: Boolean(column.pk) })),
+          declared_fields_missing_from_sqlite: declared.map((field: any) => field.name).filter((name: string) => !actualColumnNames.includes(name)),
+          sqlite_columns_not_in_catalog: entity ? actualColumnNames.filter((name: string) => !declared.some((field: any) => field.name === name)) : actualColumnNames,
+          foreign_keys: foreignKeys.map((foreignKey: any) => ({ column: foreignKey.from, target_table: foreignKey.table, target_column: foreignKey.to, on_update: foreignKey.on_update, on_delete: foreignKey.on_delete })),
+          indexes: indexes.map((index: any) => ({ name: index.name, unique: Boolean(index.unique), origin: index.origin })),
+        })
+      }
+      return { source: 'sqlite-local', requested_entities: requested, include_system: args.includeSystem === true, tables }
+    },
+  },
+  {
     name: 'catalog',
     description:
       'دليل أقسام التطبيق: كل قسم (العقارات/العملاء/العروض/المشاهدات/الحملات/المشاريع/القطع/المالية/مساحات العمل/الملفات) مع بياناته وحقوله القابلة للبحث والفلاتر والقيم والعلاقات. اقرأه لتقرر ما إذا كان قسم يلزم مهمتك، أو لتتأكد من بنية كيان قبل الاستعلام عنه أو قبل الحفظ فيه.',
@@ -166,19 +222,42 @@ export const TOOLS: ToolDef[] = [
     },
   },
   {
+    name: 'mutate_record',
+    description: 'بوابة البيانات الموحدة للكيانات الأساسية: operation=create لإنشاء سجل، operation=update لتعديل جزئي، operation=delete لطلب حذف سجل. أرسل entity دائماً، وأرسل data عند الإنشاء أو التعديل، وid عند التعديل أو الحذف. في offers يكون property_id اختياري لعرض طلب الشراء، ولا يُنسخ من بيانات العقار؛ أما عرض البيع فيحتاج عقاراً. لا تستخدمها للدفعات المالية الخام؛ استخدم ledger_record_payment، ولا تستخدمها لبنية الجداول الحرة؛ استخدم أدوات مساحة العمل المتخصصة. قبل الإنشاء أو التعديل اقرأ الكيان عند الحاجة، وقبل الحذف يعرض التطبيق معاينة وموافقة المستخدم تلقائياً.',
+    args: [
+      { name: 'operation', type: 'string', required: true, description: 'create أو update أو delete' },
+      { name: 'entity', type: 'string', required: true, description: 'اسم الكيان الأساسي مثل properties أو clients أو offers أو projects أو blocks أو plots' },
+      { name: 'id', type: 'string', description: 'معرف السجل؛ مطلوب في update وdelete' },
+      { name: 'data', type: 'object', description: 'الحقول الجديدة؛ مطلوب في create، ويحتوي فقط الحقول المراد تغييرها في update. لبلوك أو قطع يمكن أن يتضمن plots.' },
+    ],
+    handler: async (args) => {
+      const operation = String(args.operation ?? '').trim().toLowerCase()
+      const entity = String(args.entity ?? '').trim() as any
+      const data = args.data && typeof args.data === 'object' ? { ...args.data } : {}
+      if (!['create', 'update', 'delete'].includes(operation)) throw new Error('operation يجب أن يكون create أو update أو delete.')
+      if (!entity) throw new Error('entity مطلوب.')
+      if (operation === 'create') {
+        for (const [key, value] of Object.entries(args)) if (!['operation', 'entity', 'id', 'data'].includes(key) && value !== undefined && data[key] === undefined) data[key] = value
+        return await agentCreate({ entity, data })
+      }
+      const id = String(args.id ?? '').trim()
+      if (!id) throw new Error(`id مطلوب عند operation=${operation}.`)
+      if (operation === 'update') {
+        return await agentUpdate({ entity, id, data })
+      }
+      return await agentDelete({ entity, id })
+    },
+  },
+  {
     name: 'create',
-    description: 'إنشاء سجل جديد في أي كيان (يُعيد المعرف الجديد). في offers يكون client_id ومبلغ العرض أساسيين، وproperty_id اختياري لعرض طلب الشراء ويمكن ربطه لاحقاً؛ أما عرض البيع فيحتاج عقاراً. لإنشاء بلوك وقطع: blocks.project_id+name (+ plots: قائمة قطع الاختيارية في data.plots). لإنشاء عدة قطع دفعة واحدة: plots.block_id+data.plots=[{plot_no,area_sqm,value,status}...] — تُنشأ كلها في استدعاء واحد، وإن وُجدت قطعة بنفس الرقم تُحدَّث بدل التكرار. إلزامي: كل قطعة ترسل بحقولها الكاملة حسب حالتها — plot_no + area_sqm + value + status (available/sold/installment)؛ وإن كانت مبيعة أو تقسيطاً فأضف buyer_name وbuyer_contact وsale_date وpaid_amount وremaining_amount و(للتقسيط) installment_type — لا تُرسل القيمة الإجمالية فقط، فالعدّادات (متاحة/مبيعة/تقسيط/المحصل/المتبقي) تُبنى من حقول كل قطعة',
+    description: 'توافق خلفي: استخدم mutate_record مع operation=create بدلاً من هذه الأداة.',
     args: [
       { name: 'entity', type: 'string', required: true, description: 'اسم الكيان' },
-      { name: 'data', type: 'object', description: 'القيم: {اسم_العمود: القيمة}. المطلوب: properties.name — clients.name — offers.client_id+amount (property_id اختياري لطلب الشراء، ومطلوب لعرض البيع) — projects.name — blocks.project_id+name (+data.plots لقطع فورية) — plots.block_id (+data.plots لعدة قطع دفعة). إلزامي للقطع: كل عنصر في data.plots يُرسل كاملاً — plot_no, area_sqm, value, status (available|sold|installment) و(عند البيع/التقسيط) buyer_name, buyer_contact, sale_date, paid_amount, remaining_amount, installment_type' },
+      { name: 'data', type: 'object', description: 'القيم: {اسم_العمود: القيمة}' },
     ],
     handler: async (args) => {
       const data = (args.data && typeof args.data === 'object') ? { ...args.data } : {}
-      for (const [k, v] of Object.entries(args)) {
-        if (k !== 'entity' && k !== 'data' && v !== undefined) {
-          if (data[k] === undefined) data[k] = v
-        }
-      }
+      for (const [k, v] of Object.entries(args)) if (k !== 'entity' && k !== 'data' && v !== undefined && data[k] === undefined) data[k] = v
       return await agentCreate({ entity: String(args.entity) as any, data })
     },
   },

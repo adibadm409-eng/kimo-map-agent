@@ -265,12 +265,30 @@ export default function AssistantScreen({ navigation }: any) {
         setThinking(true)
         return
       }
+      if (e.type === 'error') {
+        setThinking(false)
+        setStreamText('')
+        setAgentPhase('error')
+        setActionError(e.message)
+        reload(sessionId).catch(() => {})
+        return
+      }
       if (e.type === 'done') {
+        const outcome = e.outcome ?? 'completed'
         setThinking(false)
         setStreamText('')
         setLiveProgress([])
         setLiveSteps([])
-        setAgentPhase('complete')
+        if (outcome === 'completed') {
+          setActionError(null)
+          setAgentPhase('complete')
+        } else if (outcome === 'paused' || outcome === 'cancelled') {
+          setActionError(null)
+          setAgentPhase('paused')
+        } else {
+          setActionError('توقفت المهمة قبل إثبات اكتمالها. راجع آخر نتيجة أو أرسل متابعة لإعادة التحقق.')
+          setAgentPhase('error')
+        }
         reload(sessionId).catch(() => {})
         return
       }

@@ -30,6 +30,7 @@ import CampaignForm from './src/screens/CampaignForm'
 import Reports from './src/screens/Reports'
 import Settings from './src/screens/Settings'
 import ToolsScreen from './src/screens/Tools'
+import KimoOperationsScreen from './src/screens/KimoOperations'
 import BackupManagerScreen from './src/screens/BackupManager'
 import AboutScreen from './src/screens/AboutScreen'
 import Reminders from './src/screens/Reminders'
@@ -106,6 +107,7 @@ function ProjectsStack() {
 function MoreMenuScreen({ navigation }: any) {
   const { colors } = useTheme()
   const menuItems = [
+    { label: 'إشراف Kimo وسجل العمليات', icon: 'shield-checkmark-outline', screen: 'KimoOperations', color: '#16A34A' },
     { label: 'أدوات التصدير والاستيراد', icon: 'cloud-upload-outline', screen: 'ToolsExport', color: '#0EA5E9' },
     { label: 'النسخ الاحتياطية', icon: 'archive-outline', screen: 'BackupManager', color: '#8B5CF6' },
     { label: 'المشاهدات', icon: 'calendar-outline', screen: 'ViewingsList', color: '#3B82F6' },
@@ -154,6 +156,7 @@ function MoreStack() {
       <Stack.Screen name="MapSettings" component={MapSettings} />
       <Stack.Screen name="MapKeysSettings" component={MapKeysSettings} />
       <Stack.Screen name="ToolsExport" component={ToolsScreen} />
+      <Stack.Screen name="KimoOperations" component={KimoOperationsScreen} />
       <Stack.Screen name="BackupManager" component={BackupManagerScreen} />
       <Stack.Screen name="About" component={AboutScreen} />
     </Stack.Navigator>

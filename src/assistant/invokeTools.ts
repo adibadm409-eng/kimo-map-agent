@@ -103,7 +103,34 @@ export async function runRegistryTool(
   emitEvents: boolean
 ): Promise<boolean> {
   const args = adaptToolArgs(tool, rawArgs ?? {})
-  if (tool === 'attach_media_to_entity' || tool === 'property_intake_apply') (args as any).__session_id = sessionId
+  // يدعم مزودي النماذج الذين يغلّفون الأدوات العامة داخل execute؛ لا تمرّر
+  // request_confirmation إلى سجل CRUD حتى لا يظهر كأداة غير معروفة.
+  if (tool === 'request_confirmation') {
+    return await handleRequestConfirmation(sessionId, args, emitEvents, call)
+  }
+  const mutationOperation = tool === 'mutate_record' ? String(args.operation ?? '').toLowerCase() : ''
+  const mutationInnerTool = mutationOperation === 'create' || mutationOperation === 'update' || mutationOperation === 'delete' ? mutationOperation : ''
+  const mutationInnerArgs = tool === 'mutate_record'
+    ? { entity: args.entity, id: args.id, data: args.data }
+    : args
+  if (tool === 'mutate_record' && !mutationInnerTool) {
+    const obs = '[فشل] بوابة البيانات الموحدة تحتاج operation يساوي create أو update أو delete.'
+    await persistPair(sessionId, call, obs, undefined, { name: tool, args, result: 'invalid_mutation_operation', ok: false })
+    if (emitEvents) emit({ type: 'tool', name: tool, args, result: 'invalid_mutation_operation' })
+    return true
+  }
+  if (tool === 'mutate_record' && mutationInnerTool !== 'delete' && mutationInnerTool === 'create' && !args.data) {
+    const obs = '[فشل] operation=create تحتاج data تحتوي حقول السجل.'
+    await persistPair(sessionId, call, obs, undefined, { name: tool, args, result: 'missing_mutation_data', ok: false })
+    if (emitEvents) emit({ type: 'tool', name: tool, args, result: 'missing_mutation_data' })
+    return true
+  }
+  if (tool === 'mutate_record' && mutationInnerTool !== 'create' && !args.id) {
+    const obs = `[فشل] operation=${mutationInnerTool} تحتاج id صالحاً للسجل.`
+    await persistPair(sessionId, call, obs, undefined, { name: tool, args, result: 'missing_mutation_id', ok: false })
+    if (emitEvents) emit({ type: 'tool', name: tool, args, result: 'missing_mutation_id' })
+    return true
+  }
 
   if (tool === 'update' && String(args.entity ?? '') === 'plots' && args.data && (Object.prototype.hasOwnProperty.call(args.data, 'paid_amount') || Object.prototype.hasOwnProperty.call(args.data, 'remaining_amount'))) {
     const obs = '[فشل] لا تعدل paid_amount أو remaining_amount مباشرة؛ استخدم مسار دفتر النقد لتسجيل دفعة أو عكسها حتى تبقى الأرقام قابلة للمراجعة.'
@@ -145,7 +172,7 @@ export async function runRegistryTool(
     return true
   }
 
-  if (DELETE_CONFIRM_TOOLS.has(tool)) {
+  if (DELETE_CONFIRM_TOOLS.has(tool) && (tool !== 'mutate_record' || mutationInnerTool === 'delete')) {
     const delId = String(args.id ?? args.row_id ?? args.table_id ?? args.workspace_id ?? '')
     if (!delId) {
       const msg = 'خطأ: العملية تتطلب معرّف عنصر صالحاً للحذف'
@@ -156,9 +183,10 @@ export async function runRegistryTool(
     // معاينة بشرية للمحتوى المراد حذفه (بلا معرفات ولا رموز تقنية)
     const preview = await deletePreview(tool, { ...args, id: delId })
     const entityLabel =
-      tool === 'delete'
-        ? (ENTITY_LABELS as Record<string, string>)[String(args.entity ?? '')] ?? String(args.entity ?? '')
-        : tool === 'workspace_delete'
+              tool === 'delete' || tool === 'mutate_record'
+          ? (ENTITY_LABELS as Record<string, string>)[String(args.entity ?? '')] ?? String(args.entity ?? '')
+          : tool === 'workspace_delete'
+
           ? 'مساحة عمل'
           : tool === 'workspace_delete_table'
             ? 'جدول'
@@ -179,11 +207,23 @@ export async function runRegistryTool(
       items,
       action: { type: 'delete', tool, id: delId, args: args as any },
     })
+    const pendingObservation = `[معلّق] لم يُنفّذ حذف ${entityLabel} بعد. أعددت معاينة للمستخدم وأنتظر موافقته الصريحة؛ لا تعلن نجاح الحذف ولا تتابع بأداة أخرى قبل القرار.`
+    await persistPair(sessionId, call, pendingObservation, undefined, {
+      name: tool,
+      args,
+      result: 'awaiting_confirmation',
+      observation: pendingObservation,
+      ok: false,
+    })
     if (emitEvents) emit({ type: 'confirmation', title, message, items })
-    return true
+    // توقف دورة ReAct فعلياً حتى تصبح الموافقة متاحة في الواجهة. إبقاء true
+    // كان يسمح للموديل بمتابعة السرد والاستعلام ثم إعلان حذف غير منفّذ.
+    return false
   }
 
-  const undoBefore = await captureToolUndoBefore(tool, args)
+  const effectiveTool = tool === 'mutate_record' ? mutationInnerTool : tool
+  const effectiveArgs = tool === 'mutate_record' ? mutationInnerArgs : args
+  const undoBefore = await captureToolUndoBefore(effectiveTool, effectiveArgs)
   const { ok, observation, result } = await withAuditCtx({ actor: 'agent', sessionId, tool }, () =>
     runToolWithFeedback(tool, args)
   )
@@ -192,9 +232,9 @@ export async function runRegistryTool(
   if (emitEvents) emit({ type: 'tool', name: tool, args, result: ok ? result : result })
 
   if (ok) {
-    await recordUndo(sessionId, tool, args, result, undoBefore)
+    await recordUndo(sessionId, effectiveTool, effectiveArgs, result, undoBefore)
     // أثر مرئي: بطاقة "افتح" بعد إنشاء/استيراد/نسخ — تعيد المستخدم إلى مكان البيانات الجديدة
-    const link = openLinkFor(tool, args, result)
+    const link = openLinkFor(effectiveTool, effectiveArgs, result)
     if (link) await persistOpenLink(sessionId, link)
   }
   return true
@@ -222,6 +262,40 @@ export async function runGenerateFile(format: string, filename: string, spec: an
   } catch (e: any) {
     return { ok: false, name: filename, uri: '', error: e?.message ?? String(e) }
   }
+}
+
+async function handleRequestConfirmation(sessionId: string, args: Record<string, any>, emitEvents: boolean, call?: ToolCall): Promise<boolean> {
+  const title = String(args.title ?? 'طلب موافقة')
+  const message = String(args.message ?? '')
+  const details = typeof args.details === 'string' ? args.details : undefined
+  // ربط إجراء الحذف بالموافقة إن أرسله الموديل: يُنفَّذ بعد الموافقة فعلياً.
+  let action: { type: 'delete'; tool: string; id: string; args: Record<string, any> } | undefined
+  const act = args.action
+  if (act && typeof act === 'object' && DELETE_CONFIRM_TOOLS.has(String(act.tool ?? ''))) {
+    const id = String(act.id ?? act.row_id ?? act.table_id ?? act.workspace_id ?? act.entity_id ?? '')
+    if (id) {
+      action = {
+        type: 'delete',
+        tool: String(act.tool),
+        id,
+        args: (act.args && typeof act.args === 'object' ? act.args : {}) as Record<string, any>,
+      }
+    }
+  }
+  await setPending({ sessionId, kind: 'confirmation', question: message, title, details, action })
+  const observation = `[طلب موافقة] ${title}\\n${message}`
+  await persistAssistantText(sessionId, observation, 'confirmation', { title, message, details })
+  if (call) {
+    await persistPair(sessionId, call, observation, undefined, {
+      name: 'request_confirmation',
+      args,
+      result: 'awaiting_confirmation',
+      observation,
+      ok: false,
+    })
+  }
+  if (emitEvents) emit({ type: 'confirmation', title, message, details })
+  return false
 }
 
 export async function handleToolCall(
@@ -257,27 +331,7 @@ export async function handleToolCall(
   }
 
   if (name === 'request_confirmation') {
-    const title = String(args.title ?? 'طلب موافقة')
-    const message = String(args.message ?? '')
-    const details = typeof args.details === 'string' ? args.details : undefined
-    // ربط إجراء الحذف بالموافقة إن أرسله الموديل: يُنفَّذ بعد الموافقة فعلياً
-    let action: { type: 'delete'; tool: string; id: string; args: Record<string, any> } | undefined
-    const act = args.action
-    if (act && typeof act === 'object' && DELETE_CONFIRM_TOOLS.has(String(act.tool ?? ''))) {
-      const id = String(act.id ?? act.row_id ?? act.table_id ?? act.workspace_id ?? act.entity_id ?? '')
-      if (id) {
-        action = {
-          type: 'delete',
-          tool: String(act.tool),
-          id,
-          args: (act.args && typeof act.args === 'object' ? act.args : {}) as Record<string, any>,
-        }
-      }
-    }
-    await setPending({ sessionId, kind: 'confirmation', question: message, title, details, action })
-    await persistAssistantText(sessionId, `[طلب موافقة] ${title}\n${message}`, 'confirmation', { title, message, details })
-    if (emitEvents) emit({ type: 'confirmation', title, message, details })
-    return false
+    return await handleRequestConfirmation(sessionId, args, emitEvents, call)
   }
 
   if (name === 'execute') {
@@ -449,7 +503,7 @@ function humanRowPreview(row: any, maxFields = 3): string {
 export async function deletePreview(tool: string, args: Record<string, any>): Promise<string> {
   try {
     const id = String(args.id ?? args.row_id ?? args.table_id ?? args.workspace_id ?? '')
-    if (tool === 'delete') {
+    if (tool === 'delete' || tool === 'mutate_record') {
       const entity = String(args.entity ?? '')
       if (!entity || !id) return ''
       const row = await queryEntityById(entity as any, id)

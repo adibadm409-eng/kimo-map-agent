@@ -16,7 +16,7 @@ import { readModelHistory, messagesToLlm, collapseParallelToolRounds } from './h
 import { handleToolCall, deleteOne, deleteApproved, deleteRefused } from './invokeTools'
 import { performUndo, toolSig } from './undo'
 import { appendTaskEvidence, createTaskRun, getLatestTaskRun, transitionTaskRun } from './store'
-import { emit, subscribeAgent, isAgentBusy, cancelAgent, markRunning, clearRunning, isCancelled, setAborter, clearAborter, type AgentEvent } from './agentRun'
+import { emit, subscribeAgent, isAgentBusy, cancelAgent, markRunning, clearRunning, isCancelled, setAborter, clearAborter, deriveAgentOutcome, type AgentEvent, type AgentOutcome } from './agentRun'
 import { MAX_AGENT_RUNTIME_MS, MAX_REPEATED_TOOL_CALLS, MAX_TOOL_CALLS, MAX_TOOL_ROUNDS } from './constants'
 import * as FileSystem from 'expo-file-system/legacy'
 
@@ -37,19 +37,6 @@ function hashOf(s: string): string {
 function truncate(s: string, n: number): string {
   const t = String(s ?? '')
   return t.length > n ? t.slice(0, n) + '…' : t
-}
-
-function buildPreflightText(goal: string, skill: AgentSkill | null, plan: AgentPlan | null, mode: AgentSettings['mode']): string {
-  const cleanGoal = truncate(goal.replace(/\s+/g, ' ').trim(), 360)
-  const steps = plan?.steps.slice(0, 4).map((step) => step.title).filter(Boolean) ?? []
-  const modeText = mode === 'read'
-    ? 'سأبقى في وضع القراءة: سأفحص وأحلل فقط، ولن أنشئ أو أعدّل أو أحذف أي بيانات.'
-    : 'إذا احتاج الطلب إلى تغيير بيانات، سأتوقف قبل الأثر الجانبي وأعرض ما سيحدث وأطلب موافقتك الصريحة.'
-  if (!plan) {
-    return `وصلت رسالتك وفهمت نطاقها: «${cleanGoal}». سأجيب أولاً على المطلوب مباشرة، ولن أبدأ قراءة أو تغييراً غير لازم قبل أن أحدد الحاجة. ${modeText}`
-  }
-  const route = steps.length ? steps.join(' ← ') : 'فهم المطلوب ثم التحقق من النتيجة'
-  return `فهمت طلبك: «${cleanGoal}». سأتعامل معه كعمل ${skill?.label ? `ضمن مهارة «${skill.label}»` : 'منظم'} عبر المراحل التالية: ${route}. سأبدأ بالقراءة والتحقق، ثم أراجع النتائج قبل صياغة الرد. ${modeText}`
 }
 
 // ---------- الحلقة الرئيسية ----------
@@ -77,13 +64,17 @@ async function runLoop(
     let runtimeEvidenceCount = 0
     let runtimeSuccessfulEvidenceCount = 0
     let runtimeLastEvidenceOk = true
+    let noEvidenceRecoveryAttempts = 0
+    let runtimeCorrection = ''
+    // الحوار الافتتاحي اختياري بالكامل: يقرر النموذج بنفسه إن كان سيشرح أو
+    // يبدأ بأداة. لا تُحجب الأدوات ولا تُحقن رسالة ثابتة قبل قرار الوكيل.
     if (lastUserMsg) {
       const goal = String(lastUserMsg.content ?? '').trim()
       const assessment = assessSkill(goal)
       const match = assessment.match
       const continuationMessage = goal.startsWith('[إجابة المستخدم على سؤالك]') || goal.startsWith('[موافقة المستخدم على') || goal.startsWith('[رفض المستخدم للإجراء]')
-      const resumed = previousTask && continuationMessage && ['proposed', 'awaiting_user', 'running', 'verifying'].includes(previousTask.status)
-      if (resumed) {
+      const resumed = Boolean(previousTask && continuationMessage && ['proposed', 'awaiting_user', 'running', 'verifying'].includes(previousTask.status))
+      if (resumed && previousTask) {
         runtimeTaskId = previousTask.id
         runtimeSkill = getSkillById(previousTask.skillId ?? '') ?? match.skill
         runtimePlan = (previousTask.plan as AgentPlan | undefined) ?? planForSkill(runtimeSkill, goal)
@@ -109,11 +100,6 @@ async function runLoop(
       }
       await addBrainOp(sessionId, 'skill', `المهارة المختارة: ${runtimeSkill.id} — ${runtimeSkill.label}`).catch(() => {})
       if (runtimePlan) await addBrainOp(sessionId, 'plan', runtimePlan.steps.map((step) => step.title).join(' ← ')).catch(() => {})
-    }
-    if (lastUserMsg) {
-      const preflight = buildPreflightText(String(lastUserMsg.content ?? ''), runtimeSkill, runtimePlan, s.mode)
-      if (emitEvents) emit({ type: 'progress', text: preflight })
-      await addBrainOp(sessionId, 'preflight', preflight.slice(0, 600)).catch(() => {})
     }
     if (lastUserMsg) await addBrainOp(sessionId, 'task', `مهمة المستخدم: ${String(lastUserMsg.content ?? '').slice(0, 300)}`).catch(() => {})
     // تحليل النية وسياق المحادثة: يُحقنان في سطر النظام ليتكيف الوكيل ويستمر من حيث توقف المستخدم
@@ -143,15 +129,26 @@ async function runLoop(
       for (let round = 0; round < MAX_TOOL_ROUNDS && Date.now() - startedAt < MAX_AGENT_RUNTIME_MS; round++) {
         if (isCancelled(sessionId)) return
         const brainOps = await listBrain(sessionId, 12).catch(() => [] as BrainOp[])
+        // حارس دورة المزود: قد يعيد Mistral نداء الأداة كنص عادي بدلاً من
+        // tool_calls. إذا طلبنا جولة تصحيح والخيط ينتهي بـassistant، يرفضه
+        // endpoint قبل الوصول للوكيل. نفتح الدور داخلياً دون حفظه أو عرضه.
+        const wireProfile = resolveModelProfile(providerProxy(conn), conn.model)
+        const lastThreadMessage = thread[thread.length - 1]
+        if (wireProfile.wireFamily === 'mistral-chat' && lastThreadMessage?.role === 'assistant' && !lastThreadMessage.tool_calls?.length) {
+          thread.push({ role: 'user', content: 'تابع المهمة من آخر نتيجة، واستخدم الواجهة المنظمة للأدوات عند الحاجة بدلاً من كتابة نداء الأداة كنص.' })
+        }
         const system: ChatMessage = {
           role: 'system',
                       content: buildSystemPrompt(
               s,
               conn.providerName,
               conn.model,
-              runtimeSkill ? [runtimeSkill.systemGuidance, `المهارة الحالية: ${runtimeSkill.label}. اتبع ترتيب الخطة الظاهر للمستخدم، واطلب المعلومات الناقصة بدلاً من التخمين.`] : [],
+              runtimeSkill ? [
+                runtimeSkill.systemGuidance,
+                `المهارة الحالية: ${runtimeSkill.label}. اتبع الخطة داخلياً، وشارك المستخدم منها فقط ما تراه مفيداً للسياق أو القرار، واطلب المعلومات الناقصة بدلاً من التخمين.`,
+              ] : [],
               brainOps,
-            ),
+            ) + runtimeCorrection,
 
         }
         if (emitEvents) emit({ type: 'thinking' })
@@ -263,23 +260,34 @@ async function runLoop(
         }
 
         if (!result.toolCalls.length) {
-          // رد نصي من الوكيل = نهاية الرد مباشرة: يُعرض فوراً دون أي إجبار على الاستمرار
-          // أو اختلاق شارة اكتمال. الوكيل وحده يقرر أنهى الرد أو طلب توضيحاً.
           const finalText = result.content ? String(result.content).trim() : ''
-          if (finalText) {
-            await persistAssistantText(sessionId, finalText, 'text')
-            if (emitEvents) {
-              emit({ type: 'stream', content: finalText })
-              emit({ type: 'stream', content: '', done: true })
-              emit({ type: 'text', content: finalText })
-            }
-          }
           const taskHasEvidence = !runtimeTaskId || (runtimeEvidenceCount > 0 && runtimeSuccessfulEvidenceCount > 0 && runtimeLastEvidenceOk)
           if (runtimeTaskId && !taskHasEvidence) {
-            const noEvidence = 'وصل رد نصي، لكن لم تُثبت خطوة تنفيذ ناجحة؛ لذلك لن أعلِن اكتمال المهمة. راجع الطلب أو أعد المحاولة.'
+            // نص نية التنفيذ ليس نتيجة تنفيذ. احتفظ به كمسودة تقدم غير نهائية،
+            // ثم امنح الوكيل جولة واحدة ليحوّل النية إلى أداة أو سؤال ضروري.
+            if (finalText) {
+              await persistAssistantText(sessionId, finalText, 'progress').catch(() => {})
+              if (emitEvents) emit({ type: 'progress', text: finalText })
+              thread.push({ role: 'assistant', content: finalText })
+            }
+            if (noEvidenceRecoveryAttempts < 1) {
+              noEvidenceRecoveryAttempts += 1
+                            runtimeCorrection = '\\nتعليمات داخلية: ردك السابق عبّر عن نية التنفيذ دون نتيجة موثقة. لا تكتفِ بالقول إنك ستنفذ؛ نفّذ الخطوة المناسبة الآن أو اسأل عن معلومة جوهرية ناقصة. لا تعلن اكتمال المهمة دون ملاحظة تنفيذ قابلة للتحقق.'
+              if (emitEvents) publishRuntimeEvent(sessionId, { type: 'recovery', title: 'أراجع الجولة قبل إغلاقها', detail: 'لم تصل نتيجة تنفيذ قابلة للتحقق بعد؛ سأمنح الوكيل فرصة تصحيح داخلية.', strategy: 'retry' })
+              continue
+            }
+            const noEvidence = 'لم تصل نتيجة تنفيذ قابلة للتحقق، لذلك أوقفت المهمة دون اعتبارها مكتملة.'
             await transitionTaskRun(runtimeTaskId, 'failed', { lastError: noEvidence })
             if (emitEvents) publishRuntimeEvent(sessionId, { type: 'phase', phase: 'error', label: 'تحتاج المهمة إلى معالجة', detail: noEvidence })
           } else {
+            if (finalText) {
+              await persistAssistantText(sessionId, finalText, 'text')
+              if (emitEvents) {
+                emit({ type: 'stream', content: finalText })
+                emit({ type: 'stream', content: '', done: true })
+                emit({ type: 'text', content: finalText })
+              }
+            }
             if (runtimeTaskId) await transitionTaskRun(runtimeTaskId, 'verifying', { plan: runtimePlan ?? undefined })
             if (runtimePlan) runtimePlan = runtimePlan.steps.reduce((current, step) => completePlanStep(current, step.id), runtimePlan)
             if (emitEvents) {
@@ -308,7 +316,7 @@ async function runLoop(
 
           const callArgs0 = parseToolArgs(call.arguments)
           const innerTool = call.name === 'execute' ? String(callArgs0.tool ?? 'execute') : call.name
-          const universalTools = new Set(['ask_user', 'request_confirmation', 'catalog', 'app_screen_catalog', 'list_entities', 'query', 'get', 'search_everything', 'data_snapshot', 'audit_log_query', 'review_my_work', 'generate_file', 'preview_update', 'undo_last', 'project_memory_save', 'project_memory_read', 'list_generated_files', 'review_generated_file', 'current_local_time', 'list_workspaces', 'workspace_get'])
+          const universalTools = new Set(['ask_user', 'request_confirmation', 'catalog', 'schema_inspect', 'app_screen_catalog', 'list_entities', 'query', 'get', 'search_everything', 'data_snapshot', 'audit_log_query', 'review_my_work', 'generate_file', 'preview_update', 'undo_last', 'project_memory_save', 'project_memory_read', 'list_generated_files', 'review_generated_file', 'current_local_time', 'list_workspaces', 'workspace_get'])
           const skillAllowsTool = !runtimeSkill || universalTools.has(innerTool) || runtimeSkill.readTools.includes(innerTool) || runtimeSkill.writeTools.includes(innerTool) || runtimeSkill.preferredTools.includes(innerTool)
           if (!skillAllowsTool) {
             const denied = `[فشل] المهارة «${runtimeSkill?.label ?? 'الحالية'}» لا تستخدم الأداة «${innerTool}» في هذا المسار. سأعود إلى أدوات القراءة أو أسأل عن تغيير الهدف بدلاً من تنفيذ مسار غير مناسب.`
@@ -497,10 +505,18 @@ async function withConfig<T>(fn: (conn: ConnConfig) => Promise<T>): Promise<T> {
   return fn(config)
 }
 
-async function runGuarded(sessionId: string, conn: ConnConfig, emitEvents = true, initialContent?: ChatMessage['content']): Promise<void> {
+async function runGuarded(sessionId: string, conn: ConnConfig, emitEvents = true, initialContent?: ChatMessage['content']): Promise<AgentOutcome> {
+  const startedAt = Date.now()
   markRunning(sessionId)
   try {
     await runLoop(sessionId, conn.settings, conn, emitEvents, initialContent)
+    const task = await getLatestTaskRun(sessionId).catch(() => null)
+    if (task && task.updatedAt >= startedAt - 1000) return deriveAgentOutcome(task.status)
+    const recent = await getMessages(sessionId).catch(() => [])
+    const latestAssistant = [...recent].reverse().find((message) => message.role === 'assistant' && message.createdAt >= startedAt - 1000)
+    return deriveAgentOutcome(undefined, latestAssistant?.kind)
+  } catch {
+    return 'failed'
   } finally {
     clearRunning(sessionId)
   }
@@ -580,8 +596,8 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
 
   await persistUser(sessionId, content)
   // لا رسائل تقدم ثابتة — المساعد نفسه يخاطب المستخدم بما يقرره هو.
-  await runGuarded(sessionId, conn, true, initialContent)
-  emit({ type: 'done' })
+  const outcome = await runGuarded(sessionId, conn, true, initialContent)
+  emit({ type: 'done', outcome })
 }
 
 /** الرد على سؤال سابق (ask_user) ومواصلة عمل الوكيل. */
@@ -599,8 +615,8 @@ export async function answerAsk(sessionId: string, answer: string): Promise<void
   }
   await clearPending(sessionId)
   await persistUser(sessionId, `[إجابة المستخدم على سؤالك] ${answer}`)
-  await runGuarded(sessionId, conn)
-  emit({ type: 'done' })
+  const outcome = await runGuarded(sessionId, conn)
+  emit({ type: 'done', outcome })
 }
 
 /** الموافقة أو الرفض على طلب تأكيد (حذف...) ومواصلة عمل الوكيل. */
@@ -641,8 +657,8 @@ export async function answerConfirmation(sessionId: string, approve: boolean, se
     await persistUser(sessionId, '[رفض المستخدم للإجراء]')
     await deleteRefused(sessionId)
   }
-  await runGuarded(sessionId, conn)
-  emit({ type: 'done' })
+  const outcome = await runGuarded(sessionId, conn)
+  emit({ type: 'done', outcome })
 }
 
 export { createSession as newSession, listUndo }

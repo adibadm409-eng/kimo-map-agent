@@ -38,11 +38,19 @@ import {
   genId,
 } from '../database/projects'
 import { getEntityDef, type EntityKey } from './catalog'
+import { queryEntityById } from './query'
 import { logChange } from '../database/audit'
 
 export type CreateSpec = { entity: EntityKey; data: Record<string, any> }
 export type UpdateSpec = { entity: EntityKey; id: string; data: Record<string, any> }
 export type DeleteSpec = { entity: EntityKey; id: string }
+
+function assertExistingRecord(entity: EntityKey, id: string): Promise<Record<string, any>> {
+  return queryEntityById(entity, String(id)).then((row) => {
+    if (!row) throw new Error(`السجل ${entity} بالمعرف ${id} غير موجود؛ لم تتم أي كتابة.`)
+    return row as Record<string, any>
+  })
+}
 
 function normalized(value: unknown): string {
   return String(value ?? '').trim().toLocaleLowerCase('ar')
@@ -81,6 +89,12 @@ function pickData(fields: { name: string }[], data: Record<string, any>): Record
     }
   }
   return out
+}
+
+function assertKnownPatchFields(entity: EntityKey, fields: { name: string }[], data: Record<string, any>): void {
+  const allowed = new Set(fields.map((field) => field.name))
+  const unknown = Object.keys(data ?? {}).filter((key) => !allowed.has(key))
+  if (unknown.length) throw new Error(`حقول غير معروفة في ${entity}: ${unknown.join('، ')}. لم تتم أي كتابة.`)
 }
 
 function assertNonEmptyPatch(entity: string, data: Record<string, any>): void {
@@ -267,39 +281,43 @@ export async function agentCreate(spec: CreateSpec): Promise<{ id: string; plot_
   }
 }
 
-export async function agentUpdate(spec: UpdateSpec): Promise<{ id: string }> {
+export async function agentUpdate(spec: UpdateSpec): Promise<{ id: string; changedFields: string[] }> {
   const entity = getEntityDef(spec.entity)
   if (!entity) throw new Error(`Unknown entity: ${spec.entity}`)
+  const before = await assertExistingRecord(spec.entity, spec.id)
+  assertKnownPatchFields(spec.entity, entity.fields, spec.data)
   const d = pickData(entity.fields, spec.data)
+  const changedFields = Object.keys(d).filter((key) => JSON.stringify(before[key]) !== JSON.stringify(d[key]))
+  if (changedFields.length === 0) throw new Error(`لا توجد تغييرات فعلية في ${spec.entity} بالمعرف ${spec.id}. لم تتم أي كتابة.`)
 
   switch (spec.entity) {
     case 'properties':
       assertNonEmptyPatch(spec.entity, d)
       await updateProperty(spec.id, d as any)
-      return { id: spec.id }
+      return { id: spec.id, changedFields }
     case 'clients':
       assertNonEmptyPatch(spec.entity, d)
       await updateClient(spec.id, d as any)
-      return { id: spec.id }
+      return { id: spec.id, changedFields }
     case 'offers':
       assertNonEmptyPatch(spec.entity, d)
       await updateOffer(spec.id, d as any)
-      return { id: spec.id }
+      return { id: spec.id, changedFields }
     case 'waypoints':
       assertNonEmptyPatch(spec.entity, d)
       await updateWaypoint(spec.id, d as any)
-      return { id: spec.id }
+      return { id: spec.id, changedFields }
     case 'areas':
       assertNonEmptyPatch(spec.entity, d)
       await updateArea(spec.id, d as any)
-      return { id: spec.id }
+      return { id: spec.id, changedFields }
     case 'projects': {
       const projectPatch: { name?: string; description?: string } = {}
       if (Object.prototype.hasOwnProperty.call(d, 'name')) projectPatch.name = str(d.name)
       if (Object.prototype.hasOwnProperty.call(d, 'description')) projectPatch.description = str(d.description)
       assertNonEmptyPatch(spec.entity, projectPatch)
       await updateProject(spec.id, projectPatch)
-      return { id: spec.id }
+      return { id: spec.id, changedFields }
     }
     case 'blocks':
       {
@@ -310,7 +328,7 @@ export async function agentUpdate(spec: UpdateSpec): Promise<{ id: string }> {
         if (d.notes != null) blockPatch.notes = str(d.notes)
         await updateBlock(spec.id, blockPatch)
       }
-      return { id: spec.id }
+      return { id: spec.id, changedFields }
     case 'plots': {
       const normalized = normalizePlotFields(d)
       if (Object.prototype.hasOwnProperty.call(normalized, 'paid_amount') || Object.prototype.hasOwnProperty.call(normalized, 'remaining_amount')) {
@@ -319,17 +337,18 @@ export async function agentUpdate(spec: UpdateSpec): Promise<{ id: string }> {
       const patch = plotPatch(normalized)
       assertNonEmptyPatch(spec.entity, patch)
       await savePlot(spec.id, patch as any)
-      return { id: spec.id }
+      return { id: spec.id, changedFields }
     }
     case 'custom_fields':
       assertNonEmptyPatch(spec.entity, d)
       await updateCustomField(spec.id, d as any)
-      return { id: spec.id }
+      return { id: spec.id, changedFields }
     case 'custom_field_values':
       await dbCustomValueUpsert(d)
-      return { id: str(d.id) || spec.id }
+      return { id: str(d.id) || spec.id, changedFields }
     default:
-      return await dbGenericUpdate(spec.entity, spec.id, d)
+      await dbGenericUpdate(spec.entity, spec.id, d)
+      return { id: spec.id, changedFields }
   }
 }
 

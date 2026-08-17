@@ -44,6 +44,10 @@ export interface EntityDef {
   namesJoin?: {
     select: string
     join: string
+    search?: {
+      sql: string
+      paramCount: number
+    }
   }
 }
 
@@ -179,6 +183,7 @@ export const ALL_ENTITIES: EntityDef[] = [
     namesJoin: {
       select: ', p.name as property_name, c.name as client_name',
       join: ' LEFT JOIN properties p ON e.property_id = p.id LEFT JOIN clients c ON e.client_id = c.id',
+      search: { sql: '(p.name LIKE ? OR c.name LIKE ?)', paramCount: 2 },
     },
   },
   {
@@ -217,6 +222,7 @@ export const ALL_ENTITIES: EntityDef[] = [
     namesJoin: {
       select: ', p.name as property_name, c.name as client_name',
       join: ' LEFT JOIN properties p ON e.property_id = p.id LEFT JOIN clients c ON e.client_id = c.id',
+      search: { sql: '(p.name LIKE ? OR c.name LIKE ?)', paramCount: 2 },
     },
   },
   {

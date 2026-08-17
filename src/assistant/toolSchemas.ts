@@ -46,6 +46,17 @@ export function buildToolSchemas(): Record<string, { type: 'object'; properties:
       schema.properties.entity.description = 'اسم الكيان: ' + ALL_ENTITIES.map((e) => `${e.key} (${ENTITY_LABELS[e.key]})`).join('، ')
     }
   }
+  if (out.mutate_record) {
+    out.mutate_record.properties.operation = {
+      type: 'string',
+      enum: ['create', 'update', 'delete'],
+      description: 'create للإنشاء، update لتعديل جزئي، delete لطلب حذف مع موافقة المستخدم',
+    }
+    out.mutate_record.properties.entity.enum = ALL_ENTITIES.map((e) => e.key)
+    out.mutate_record.properties.entity.description = 'كيان السجل الأساسي؛ استخدم الكتالوج قبل الكتابة عند عدم وضوح الحقول'
+    out.mutate_record.properties.id.description = 'مطلوب مع update أو delete، ويُترك فارغاً مع create'
+    out.mutate_record.properties.data.description = 'مطلوب مع create؛ مع update أرسل الحقول المراد تغييرها فقط؛ مع delete لا ترسل data'
+  }
   for (const name of ['project_tree', 'project_financials']) {
     if (out[name]?.properties.project_id) out[name].properties.project_id.description = 'معرف المشروع (اجلِبه بمنتج query على الكيان projects)'
   }
@@ -133,7 +144,14 @@ export function adaptToolArgs(tool: string, raw: Record<string, any>): Record<st
   const args: Record<string, any> = {}
   if (raw && typeof raw === 'object') for (const [k, v] of Object.entries(raw)) args[k] = v
 
-  if (args.data && typeof args.data === 'object') {
+  // طبّع اسم الكيان قبل أي تحويل يعتمد على مخططه؛ لا تلوث عقاراً أو عميلاً
+  // بحقول خاصة بالمشاريع/القطع لمجرد أن النموذج أرسل أسماء عامة مثل project أو area.
+  if (args.entity != null) {
+    const key = ENTITY_ALIASES[String(args.entity).trim().toLowerCase()] ?? ENTITY_ALIASES[String(args.entity).trim()]
+    if (key) args.entity = key
+  }
+  const projectEntities = new Set(['projects', 'blocks', 'plots', 'plot_payments'])
+  if (args.data && typeof args.data === 'object' && projectEntities.has(String(args.entity ?? ''))) {
     const d = args.data
     if (!d.project_id) d.project_id = d.project ?? d.projectId ?? d.project_name
     if (!d.block_id) d.block_id = d.block ?? d.blockId ?? d.block_name ?? d.parent_id ?? d.parentId
@@ -144,9 +162,13 @@ export function adaptToolArgs(tool: string, raw: Record<string, any>): Record<st
     if (!d.buyer_name) d.buyer_name = d.buyer ?? d.client_name ?? d.client
     if (!d.buyer_contact) d.buyer_contact = d.buyer_phone ?? d.phone ?? d.contact ?? d.mobile
   }
-  if (args.entity != null) {
-    const key = ENTITY_ALIASES[String(args.entity).trim().toLowerCase()] ?? ENTITY_ALIASES[String(args.entity).trim()]
-    if (key) args.entity = key
+  if (tool === 'mutate_record') {
+    const rawOperation = args.operation ?? args.action ?? args.mode
+    if (rawOperation != null) args.operation = String(rawOperation).trim().toLowerCase()
+    if (args.operation === 'add' || args.operation === 'insert' || args.operation === 'write') args.operation = 'create'
+    if (args.operation === 'edit' || args.operation === 'patch' || args.operation === 'modify') args.operation = 'update'
+    if (args.operation === 'remove') args.operation = 'delete'
+    if (args.data == null && args.values != null) args.data = args.values
   }
   // قطعة مفردة: يربط اسم الموديل بالرقم (قرأنا الكيان هنا بعد تطبيع الأسماء)
   if (args.entity === 'plots' && args.data && typeof args.data === 'object') {
@@ -253,12 +275,19 @@ export async function verifyDataExists(tool: string, args: Record<string, any>, 
       const id = String(args.id ?? result.id)
       const row = await queryEntityById(args.entity as EntityKey, id)
       if (!row) return `السجل (المعرف ${id}) غير موجود في قاعدة البيانات رغم نجاح العملية — أعد فحصه الآن بأداة get.`
+      if (tool === 'update' && args.data && typeof args.data === 'object') {
+        const mismatches = Object.entries(args.data as Record<string, any>)
+          .filter(([key, expected]) => JSON.stringify((row as Record<string, any>)[key]) !== JSON.stringify(expected))
+          .map(([key, expected]) => `${key}: المتوقع ${JSON.stringify(expected)}، الفعلي ${JSON.stringify((row as Record<string, any>)[key])}`)
+        if (mismatches.length) return `فشل التحقق الذري: السجل ${args.entity} بالمعرف ${id} موجود، لكن قيم patch لا تطابق القراءة الأخيرة (${mismatches.join('؛ ')}). لم يُثبت التعديل؛ أوقف الإعلان عن النجاح وأعد القراءة قبل أي محاولة أخرى.`
+      }
       const total = await countEntity(args.entity)
       const title =
         args.entity && typeof row === 'object'
           ? (row[getEntityDef(args.entity as any)?.titleField ?? 'id'] ?? id)
           : id
-      return `تحقّقت فعلاً من قاعدة البيانات: سجل ${args.entity} "${title}" موجود (إجمالي سجلات القسم الآن ${total}). مسؤوليتك إبلاغ المستخدم بهذه الأرقام الفعلية دون غيرها.`
+      const changed = tool === 'update' && result?.changedFields ? ` الحقول التي أبلغ عنها المنفذ: ${JSON.stringify(result.changedFields)}.` : ''
+      return `تحقّقت فعلاً من قاعدة البيانات: سجل ${args.entity} "${title}" موجود${changed} (إجمالي سجلات القسم الآن ${total}). مسؤوليتك إبلاغ المستخدم بهذه الأرقام الفعلية دون غيرها.`
     }
     if (tool === 'delete' && args.entity && args.id) {
       const row = await queryEntityById(args.entity as EntityKey, String(args.id))
@@ -404,9 +433,13 @@ export async function runToolWithFeedback(tool: string, rawArgs: Record<string, 
     'workspace_duplicate_table', 'workspace_duplicate_workspace',
     'import_project_file', 'remove_attachment',
   ])
-  if (res.ok && VERIFYABLE.has(tool)) {
+  const verificationTool = tool === 'mutate_record' ? String(args.operation ?? '') : tool
+  const verificationArgs = tool === 'mutate_record'
+    ? { entity: args.entity, id: args.id, data: args.data }
+    : args
+  if (res.ok && VERIFYABLE.has(verificationTool)) {
     try {
-      verification = await verifyDataExists(tool, args, res.result)
+      verification = await verifyDataExists(verificationTool, verificationArgs, res.result)
     } catch {
       verification = undefined
     }
