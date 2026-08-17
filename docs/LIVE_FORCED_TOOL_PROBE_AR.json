@@ -1,0 +1,340 @@
+{
+  "generatedAt": "2026-08-17T00:05:57.046855+00:00",
+  "results": [
+    {
+      "provider": "gemini",
+      "model": "models/gemini-3-flash-preview",
+      "startedAt": "2026-08-17T00:04:50.106865+00:00",
+      "initial": {
+        "http": 200,
+        "body": {
+          "choices": [
+            {
+              "finish_reason": "tool_calls",
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "tool_calls": [
+                  {
+                    "extra_content": {
+                      "google": {
+                        "thought_signature": "EmUKYwERTTIPlEsdTr0DhTmnZjsgy7eAVd9oL8Gx6apykaBamR7bm7NvPoj5lyQD4sutBi+LFyl/nAnhBvBrJ96VrE44LJwlmKuSWgTMhcwW+cJJKH+SpY6B61i7Ljpuq6ZPkOnDQw=="
+                      }
+                    },
+                    "function": {
+                      "arguments": "{\"timezone\":\"UTC\"}",
+                      "name": "current_local_time"
+                    },
+                    "id": "call_58845",
+                    "type": "function"
+                  }
+                ]
+              }
+            }
+          ],
+          "created": 1786925102,
+          "id": "IlCCatKKD4ihz7IP8-j0oQo",
+          "model": "models/gemini-3-flash-preview",
+          "object": "chat.completion",
+          "usage": {
+            "completion_tokens": 18,
+            "prompt_tokens": 87,
+            "total_tokens": 105
+          }
+        },
+        "toolCallCount": 1
+      },
+      "followup": {
+        "http": 200,
+        "body": {
+          "choices": [
+            {
+              "finish_reason": "stop",
+              "index": 0,
+              "message": {
+                "content": "The current local time is 2026-08-17T12:00:00+03:00.",
+                "extra_content": {
+                  "google": {
+                    "thought_signature": "EmUKYwERTTIPNlNnJDWIqDh9MuN0ZfNwukB3flCiQgveZgfgIGJQHBYvjCO2iE6+duGSXN31FamOq/Qwl9b9gupgbjTag6zQbI4YYtPzAwCh1i2hDSqW8xeAebFYglu3MNGQ5buRxw=="
+                  }
+                },
+                "role": "assistant"
+              }
+            }
+          ],
+          "created": 1786925114,
+          "id": "LlCCarTsHq3tz7IP09fmqQ0",
+          "model": "models/gemini-3-flash-preview",
+          "object": "chat.completion",
+          "usage": {
+            "completion_tokens": 32,
+            "prompt_tokens": 167,
+            "total_tokens": 199
+          }
+        }
+      },
+      "stream": {
+        "http": 200,
+        "firstEvents": [
+          "data: {\"choices\":[{\"delta\":{\"content\":\"K\",\"role\":\"assistant\"},\"index\":0}],\"created\":1786925128,\"id\":\"OlCCau2FK5OgjrEPhtysiQ8\",\"model\":\"models/gemini-3-flash-preview\",\"object\":\"chat.completion.chunk\"}",
+          "data: {\"choices\":[{\"delta\":{\"extra_content\":{\"google\":{\"thought_signature\":\"EuABCt0BARFNMg8rGzokZfIWWBCsGkksgo6DDFPvxyriVn1b+tWjUFfjtjGZZFw/eAibGeEhNaE/KPtfiQUqo7GDph7oBV+U1WCWDiGZ7xHOiiRrl75+KeK1XrWbF2e+lIbJC1xtP8bYG19DVvMx9ibcIA0dbfLgdirHIaoWCG3wn8qfIVW+UUkIvMwSwa+OcJfE/fDeW+LovEGPZr7BHgn+g9RfF/BbRPUszVxnp3Csa351gpEBajKFwrgsHvKsSJc+TDzzHyebDLV2VnbEmtsZfggrBTBnKw6G0Xlgf/awohc=\"}},\"role\":\"assistant\"},\"finish_reason\":\"length\",\"index\":0}],\"created\":1786925128,\"id\":\"OlCCau2FK5OgjrEPhtysiQ8\",\"model\"",
+          "data: [DONE]"
+        ]
+      },
+      "status": "PASS"
+    },
+    {
+      "provider": "mistral",
+      "model": "mistral-medium-2505",
+      "startedAt": "2026-08-17T00:05:28.819852+00:00",
+      "initial": {
+        "http": 200,
+        "body": {
+          "id": "cce9ff81a8064c00b3dc22b3fe224d45",
+          "created": 1786925131,
+          "model": "mistral-medium-2505",
+          "usage": {
+            "prompt_tokens": 114,
+            "total_tokens": 127,
+            "completion_tokens": 13,
+            "prompt_tokens_details": {
+              "cached_tokens": 0
+            },
+            "service_tier": "standard"
+          },
+          "object": "chat.completion",
+          "choices": [
+            {
+              "index": 0,
+              "finish_reason": "tool_calls",
+              "message": {
+                "role": "assistant",
+                "tool_calls": [
+                  {
+                    "id": "eQYeDw5rc",
+                    "type": "function",
+                    "function": {
+                      "name": "current_local_time",
+                      "arguments": "{\"timezone\": \"UTC\"}"
+                    },
+                    "index": 0
+                  }
+                ],
+                "content": ""
+              }
+            }
+          ]
+        },
+        "toolCallCount": 1
+      },
+      "followup": {
+        "http": 200,
+        "body": {
+          "id": "7e6f616a88e142f8a3fd85b9f8ce8424",
+          "created": 1786925134,
+          "model": "mistral-medium-2505",
+          "usage": {
+            "prompt_tokens": 186,
+            "total_tokens": 217,
+            "completion_tokens": 31,
+            "prompt_tokens_details": {
+              "cached_tokens": 0
+            },
+            "service_tier": "standard"
+          },
+          "object": "chat.completion",
+          "choices": [
+            {
+              "index": 0,
+              "finish_reason": "stop",
+              "message": {
+                "role": "assistant",
+                "tool_calls": null,
+                "content": "The current local time in Asia/Riyadh is 2026-08-17 at 12:00 PM."
+              }
+            }
+          ]
+        }
+      },
+      "stream": {
+        "http": 200,
+        "firstEvents": [
+          "data: {\"id\":\"8741c59203fb47458b87bcdbde928cea\",\"object\":\"chat.completion.chunk\",\"created\":1786925138,\"model\":\"mistral-medium-2505\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"finish_reason\":null}]}",
+          "data: {\"id\":\"8741c59203fb47458b87bcdbde928cea\",\"object\":\"chat.completion.chunk\",\"created\":1786925138,\"model\":\"mistral-medium-2505\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"K\"},\"finish_reason\":null}],\"p\":\"abcdefghijklmnopq\"}",
+          "data: {\"id\":\"8741c59203fb47458b87bcdbde928cea\",\"object\":\"chat.completion.chunk\",\"created\":1786925138,\"model\":\"mistral-medium-2505\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"IMO\"},\"finish_reason\":null}],\"p\":\"abcdefghij\"}",
+          "data: {\"id\":\"8741c59203fb47458b87bcdbde928cea\",\"object\":\"chat.completion.chunk\",\"created\":1786925138,\"model\":\"mistral-medium-2505\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"_STREAM\"},\"finish_reason\":null}],\"p\":\"abcdefghijkl\"}"
+        ]
+      },
+      "status": "PASS"
+    },
+    {
+      "provider": "mistral",
+      "model": "mistral-medium-2508",
+      "startedAt": "2026-08-17T00:05:38.514266+00:00",
+      "initial": {
+        "http": 200,
+        "body": {
+          "id": "ba3207b9aa044621921b231a3f449275",
+          "created": 1786925140,
+          "model": "mistral-medium-2508",
+          "usage": {
+            "prompt_tokens": 114,
+            "total_tokens": 127,
+            "completion_tokens": 13,
+            "prompt_tokens_details": {
+              "cached_tokens": 0
+            },
+            "service_tier": "standard"
+          },
+          "object": "chat.completion",
+          "choices": [
+            {
+              "index": 0,
+              "finish_reason": "tool_calls",
+              "message": {
+                "role": "assistant",
+                "tool_calls": [
+                  {
+                    "id": "ThlhOPrku",
+                    "type": "function",
+                    "function": {
+                      "name": "current_local_time",
+                      "arguments": "{\"timezone\": \"UTC\"}"
+                    },
+                    "index": 0
+                  }
+                ],
+                "content": ""
+              }
+            }
+          ]
+        },
+        "toolCallCount": 1
+      },
+      "followup": {
+        "http": 200,
+        "body": {
+          "id": "d7ba6fd4f177476fa54f5f35023481d9",
+          "created": 1786925143,
+          "model": "mistral-medium-2508",
+          "usage": {
+            "prompt_tokens": 170,
+            "total_tokens": 212,
+            "completion_tokens": 42,
+            "prompt_tokens_details": {
+              "cached_tokens": 0
+            },
+            "service_tier": "standard"
+          },
+          "object": "chat.completion",
+          "choices": [
+            {
+              "index": 0,
+              "finish_reason": "stop",
+              "message": {
+                "role": "assistant",
+                "tool_calls": null,
+                "content": "The local time in **Asia/Riyadh** is **2026-08-17 12:00:00 (UTC+03:00)**."
+              }
+            }
+          ]
+        }
+      },
+      "stream": {
+        "http": 200,
+        "firstEvents": [
+          "data: {\"id\":\"3c1b6fae9fbc413295958e4bb02615e2\",\"object\":\"chat.completion.chunk\",\"created\":1786925147,\"model\":\"mistral-medium-2508\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"finish_reason\":null}]}",
+          "data: {\"id\":\"3c1b6fae9fbc413295958e4bb02615e2\",\"object\":\"chat.completion.chunk\",\"created\":1786925147,\"model\":\"mistral-medium-2508\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"K\"},\"finish_reason\":null}],\"p\":\"abcdefghi\"}",
+          "data: {\"id\":\"3c1b6fae9fbc413295958e4bb02615e2\",\"object\":\"chat.completion.chunk\",\"created\":1786925147,\"model\":\"mistral-medium-2508\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"IMO\"},\"finish_reason\":null}],\"p\":\"abcdefghij\"}",
+          "data: {\"id\":\"3c1b6fae9fbc413295958e4bb02615e2\",\"object\":\"chat.completion.chunk\",\"created\":1786925147,\"model\":\"mistral-medium-2508\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"_STREAM\"},\"finish_reason\":null}],\"p\":\"abcdefghijklmnopqr\"}"
+        ]
+      },
+      "status": "PASS"
+    },
+    {
+      "provider": "mistral",
+      "model": "devstral-2512",
+      "startedAt": "2026-08-17T00:05:47.941298+00:00",
+      "initial": {
+        "http": 200,
+        "body": {
+          "id": "2324b653ac30461da002012c1c4b9c53",
+          "created": 1786925150,
+          "model": "devstral-2512",
+          "usage": {
+            "prompt_tokens": 114,
+            "total_tokens": 127,
+            "completion_tokens": 13,
+            "prompt_tokens_details": {
+              "cached_tokens": 0
+            },
+            "service_tier": "standard"
+          },
+          "object": "chat.completion",
+          "choices": [
+            {
+              "index": 0,
+              "finish_reason": "tool_calls",
+              "message": {
+                "role": "assistant",
+                "tool_calls": [
+                  {
+                    "id": "ZQux6fCej",
+                    "type": "function",
+                    "function": {
+                      "name": "current_local_time",
+                      "arguments": "{\"timezone\": \"UTC\"}"
+                    },
+                    "index": 0
+                  }
+                ],
+                "content": ""
+              }
+            }
+          ]
+        },
+        "toolCallCount": 1
+      },
+      "followup": {
+        "http": 200,
+        "body": {
+          "id": "b26b6dfe68f042d482728f3ae5d94624",
+          "created": 1786925153,
+          "model": "devstral-2512",
+          "usage": {
+            "prompt_tokens": 170,
+            "total_tokens": 208,
+            "completion_tokens": 38,
+            "prompt_tokens_details": {
+              "cached_tokens": 0
+            },
+            "service_tier": "standard"
+          },
+          "object": "chat.completion",
+          "choices": [
+            {
+              "index": 0,
+              "finish_reason": "stop",
+              "message": {
+                "role": "assistant",
+                "tool_calls": null,
+                "content": "The current local time in Asia/Riyadh is 2026-08-17T12:00:00+03:00."
+              }
+            }
+          ]
+        }
+      },
+      "stream": {
+        "http": 200,
+        "firstEvents": [
+          "data: {\"id\":\"d768955109604d8fa8197b54735d87ae\",\"object\":\"chat.completion.chunk\",\"created\":1786925156,\"model\":\"devstral-2512\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"finish_reason\":null}]}",
+          "data: {\"id\":\"d768955109604d8fa8197b54735d87ae\",\"object\":\"chat.completion.chunk\",\"created\":1786925156,\"model\":\"devstral-2512\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"K\"},\"finish_reason\":null}],\"p\":\"abcdef\"}",
+          "data: {\"id\":\"d768955109604d8fa8197b54735d87ae\",\"object\":\"chat.completion.chunk\",\"created\":1786925156,\"model\":\"devstral-2512\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"IMO\"},\"finish_reason\":null}],\"p\":\"abcdefghijklmnopqrstuvwxyz012345\"}",
+          "data: {\"id\":\"d768955109604d8fa8197b54735d87ae\",\"object\":\"chat.completion.chunk\",\"created\":1786925156,\"model\":\"devstral-2512\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"_STREAM\"},\"finish_reason\":null}],\"p\":\"abcdefghijklmnopqr\"}"
+        ]
+      },
+      "status": "PASS"
+    }
+  ],
+  "secretsStored": false
+}

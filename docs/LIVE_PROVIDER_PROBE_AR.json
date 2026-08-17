@@ -1,0 +1,1101 @@
+{
+  "generatedAt": "2026-08-17T00:04:07.591815+00:00",
+  "discovered": {
+    "gemini": [
+      {
+        "id": "models/gemini-2.5-flash",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-2.5-pro",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-2.5-flash-preview-tts",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-2.5-pro-preview-tts",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemma-4-26b-a4b-it",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemma-4-31b-it",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-flash-latest",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-flash-lite-latest",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-pro-latest",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-2.5-flash-lite",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-2.5-flash-image",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-3-flash-preview",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-3.1-pro-preview",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-3.1-pro-preview-customtools",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-3.1-flash-lite-preview",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-3.1-flash-lite",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-3-pro-image-preview",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-3-pro-image",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/nano-banana-pro-preview",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-3.1-flash-image-preview",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-3.1-flash-image",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-3.1-flash-lite-image",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-3.5-flash",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-3.5-flash-lite",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-omni-flash-preview",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-3.6-flash",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-3.7-flash",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/lyria-3-clip-preview",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/lyria-3-pro-preview",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-3.1-flash-tts-preview",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-robotics-er-1.6-preview",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-robotics-er-2-preview",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-2.5-computer-use-preview-10-2025",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/antigravity-preview-05-2026",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/deep-research-max-preview-04-2026",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/deep-research-preview-04-2026",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/deep-research-pro-preview-12-2025",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-embedding-001",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-embedding-2-preview",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-embedding-2",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/aqa",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/imagen-4.0-generate-001",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/imagen-4.0-ultra-generate-001",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/imagen-4.0-fast-generate-001",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/veo-3.1-generate-preview",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/veo-3.1-fast-generate-preview",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/veo-3.1-lite-generate-preview",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-2.5-flash-native-audio-latest",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-2.5-flash-native-audio-preview-09-2025",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-2.5-flash-native-audio-preview-12-2025",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-3.1-flash-live-preview",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-robotics-er-2-streaming-preview",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/gemini-3.5-live-translate-preview",
+        "created": null,
+        "owned_by": "google"
+      },
+      {
+        "id": "models/lyria-realtime-exp",
+        "created": null,
+        "owned_by": "google"
+      }
+    ],
+    "mistral": [
+      {
+        "id": "mistral-medium-2505",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-medium-2508",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "codestral-2508",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "codestral-latest",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-code-latest",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-code-fim-latest",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "devstral-2512",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "devstral-medium-latest",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "devstral-latest",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-code-agent-latest",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-small-2603",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-small-latest",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-vibe-cli-fast",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "magistral-small-latest",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "voxtral-small-2507",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "voxtral-small-latest",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "labs-leanstral-1-5-1",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "labs-leanstral-1-5",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-large-2512",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-large-latest",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "ministral-3b-2512",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "ministral-3b-latest",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "ministral-8b-2512",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "ministral-8b-latest",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "ministral-14b-2512",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "ministral-14b-latest",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-medium-latest",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-medium",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-medium-3-5",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-medium-3.5",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-medium-3",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-medium-2604",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-vibe-cli-latest",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-vibe-cli-with-tools",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "glm-5-2",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "zai-glm-5-2",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-embed-2312",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-embed",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "codestral-embed",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "codestral-embed-2505",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-moderation-2603",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-ocr-2512",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-ocr-3-0",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-ocr-3",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-ocr-4-0",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-ocr-latest",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-ocr-4",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "mistral-ocr-4-1",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "voxtral-mini-2602",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "voxtral-mini-latest",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "voxtral-mini-transcribe-realtime-2602",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "voxtral-mini-realtime-2602",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "voxtral-mini-realtime-latest",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "voxtral-mini-tts-2603",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      },
+      {
+        "id": "voxtral-mini-tts-latest",
+        "created": 1786925006,
+        "owned_by": "mistralai"
+      }
+    ]
+  },
+  "selected": {
+    "gemini": [
+      "models/gemini-3-flash-preview",
+      "models/gemini-3.1-pro-preview",
+      "models/gemini-3.1-pro-preview-customtools"
+    ],
+    "mistral": [
+      "mistral-large-2512",
+      "mistral-large-latest",
+      "mistral-medium-2505"
+    ]
+  },
+  "results": [
+    {
+      "provider": "gemini",
+      "model": "models/gemini-3-flash-preview",
+      "text": {
+        "http": 200,
+        "body": {
+          "choices": [
+            {
+              "finish_reason": "length",
+              "index": 0,
+              "message": {
+                "content": "K",
+                "extra_content": {
+                  "google": {
+                    "thought_signature": "EsoBCscBARFNMg8aXUHXaB0z+cJT9vzsjSQudjREygTfzpJnaUvUitZ7+7ZrqqsUf1jTR2M1fT59Nx1QQeduArqhPmh+dZOLtV5RZ9C3qYXKN5rKlJ1Dca3cMCEVSDmzMiYwTDq+r7sjsOTCoUN5BDNgYAYOguXNmVs8Z3NsKvPsRiAaYTFwLnOHmDpDY/wo1ETDtJSVch97b9WvbXRmJlPC6zmKqv+P0Pk6F0Lvp56kc7o9ksPAHJk4kMfS956nvYr67k2AOxyjzM+9SA=="
+                  }
+                },
+                "role": "assistant"
+              }
+            }
+          ],
+          "created": 1786925019,
+          "id": "z0-CapyCGriQjrEPn--twQE",
+          "model": "models/gemini-3-flash-preview",
+          "object": "chat.completion",
+          "usage": {
+            "completion_tokens": 1,
+            "prompt_tokens": 11,
+            "total_tokens": 39
+          }
+        }
+      },
+      "tools": {
+        "initial": {
+          "http": 200,
+          "body": {
+            "choices": [
+              {
+                "finish_reason": "tool_calls",
+                "index": 0,
+                "message": {
+                  "role": "assistant",
+                  "tool_calls": [
+                    {
+                      "extra_content": {
+                        "google": {
+                          "thought_signature": "EtMDCtADARFNMg999gireyLID8zJjYP6Mu8rIqz8L9UOTuEOkv5TrJr5PaavDt/1leB86B2uiFoaoLUa0n54hfQpQEOypfq5pVzTEaZPDU0osBu2s2XPm+brdLf8BvFsx9NSnWLchVq+gp9TAKatF9VT31YabkmR4Tr6cm6WICias1yQ7V4QhPr0p+b+OObtbkbF8E6Lo1PkFlAFobVCYJ6h62PJuEgOnV1ScXor/G/BQZ7pL9BhuAtwEbctQlA8MrP3fQCLA3AJ2fGXNy8Vehxm3W6rG/AdogmAQUSpk18QnlLSdOVat3Yhuy3OKQ3Q1ciTtrF06AmMDZ0kPUTPXeWBl+rVdxf5P20AloWreEaXLTy58fYQJsZxzc1G5hMFf+i5ge567j45thc1kMAVH7Dtiaz615QHzS0dbpHSc0TwtORwXyEp3HOdSolVlgy8ioi0m/eosmLBjF2pPfijwcD4xyym70HpavF6ezUoVdflerMWFQvzTmdiIThGTIybN2pawQwYpTtzlZMua0GRaMOXUJ3G4cJHz+F8LRYt291LQGrW5IHCBErCRebmbqeVupBOX321Q3Qw+obgDQH3DWnXzKgJikoVIQrWFZJva3JuNe7wZ/Q="
+                        }
+                      },
+                      "function": {
+                        "arguments": "{\"timezone\":\"Asia/Riyadh\"}",
+                        "name": "current_local_time"
+                      },
+                      "id": "call_1629669",
+                      "type": "function"
+                    }
+                  ]
+                }
+              }
+            ],
+            "created": 1786925033,
+            "id": "20-Caoq2N_jgz7IPgpO0oQs",
+            "model": "models/gemini-3-flash-preview",
+            "object": "chat.completion",
+            "usage": {
+              "completion_tokens": 22,
+              "prompt_tokens": 91,
+              "total_tokens": 213
+            }
+          }
+        },
+        "followup": {
+          "http": 200,
+          "body": {
+            "choices": [
+              {
+                "finish_reason": "stop",
+                "index": 0,
+                "message": {
+                  "content": "OK. The current local time in Riyadh (Asia/Riyadh) is August 17, 2026, at 12:00 PM.",
+                  "role": "assistant"
+                }
+              }
+            ],
+            "created": 1786925047,
+            "id": "6U-CaozMINac-8YPo_76mA4",
+            "model": "models/gemini-3-flash-preview",
+            "object": "chat.completion",
+            "usage": {
+              "completion_tokens": 36,
+              "prompt_tokens": 275,
+              "total_tokens": 311
+            }
+          }
+        },
+        "calls": 1
+      },
+      "stream": {
+        "http": 429,
+        "body": "[{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota e",
+        "status": "BLOCKED"
+      },
+      "status": "PASS",
+      "startedAt": "2026-08-17T00:03:27.225255+00:00"
+    },
+    {
+      "provider": "gemini",
+      "model": "models/gemini-3.1-pro-preview",
+      "text": {
+        "http": 429,
+        "body": [
+          {
+            "error": {
+              "code": 429,
+              "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-3.1-pro\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-3.1-pro\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-3.1-pro\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-3.1-pro\nPlease retry in 32.607683582s.",
+              "status": "RESOURCE_EXHAUSTED",
+              "details": [
+                {
+                  "@type": "type.googleapis.com/google.rpc.Help",
+                  "links": [
+                    {
+                      "description": "Learn more about Gemini API quotas",
+                      "url": "https://ai.google.dev/gemini-api/docs/rate-limits"
+                    }
+                  ]
+                },
+                {
+                  "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+                  "violations": [
+                    {
+                      "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count",
+                      "quotaId": "GenerateContentInputTokensPerModelPerDay-FreeTier",
+                      "quotaDimensions": {
+                        "location": "global",
+                        "model": "gemini-3.1-pro"
+                      }
+                    },
+                    {
+                      "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count",
+                      "quotaId": "GenerateContentInputTokensPerModelPerMinute-FreeTier",
+                      "quotaDimensions": {
+                        "location": "global",
+                        "model": "gemini-3.1-pro"
+                      }
+                    },
+                    {
+                      "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",
+                      "quotaId": "GenerateRequestsPerMinutePerProjectPerModel-FreeTier",
+                      "quotaDimensions": {
+                        "model": "gemini-3.1-pro",
+                        "location": "global"
+                      }
+                    },
+                    {
+                      "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",
+                      "quotaId": "GenerateRequestsPerDayPerProjectPerModel-FreeTier",
+                      "quotaDimensions": {
+                        "location": "global",
+                        "model": "gemini-3.1-pro"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "@type": "type.googleapis.com/google.rpc.RetryInfo",
+                  "retryDelay": "32s"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "tools": {},
+      "stream": {},
+      "status": "FAIL",
+      "startedAt": "2026-08-17T00:03:27.226018+00:00"
+    },
+    {
+      "provider": "gemini",
+      "model": "models/gemini-3.1-pro-preview-customtools",
+      "text": {
+        "http": 429,
+        "body": [
+          {
+            "error": {
+              "code": 429,
+              "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-3.1-pro\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-3.1-pro\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-3.1-pro\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-3.1-pro\nPlease retry in 32.606400867s.",
+              "status": "RESOURCE_EXHAUSTED",
+              "details": [
+                {
+                  "@type": "type.googleapis.com/google.rpc.Help",
+                  "links": [
+                    {
+                      "description": "Learn more about Gemini API quotas",
+                      "url": "https://ai.google.dev/gemini-api/docs/rate-limits"
+                    }
+                  ]
+                },
+                {
+                  "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+                  "violations": [
+                    {
+                      "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count",
+                      "quotaId": "GenerateContentInputTokensPerModelPerDay-FreeTier",
+                      "quotaDimensions": {
+                        "location": "global",
+                        "model": "gemini-3.1-pro"
+                      }
+                    },
+                    {
+                      "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count",
+                      "quotaId": "GenerateContentInputTokensPerModelPerMinute-FreeTier",
+                      "quotaDimensions": {
+                        "location": "global",
+                        "model": "gemini-3.1-pro"
+                      }
+                    },
+                    {
+                      "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",
+                      "quotaId": "GenerateRequestsPerMinutePerProjectPerModel-FreeTier",
+                      "quotaDimensions": {
+                        "model": "gemini-3.1-pro",
+                        "location": "global"
+                      }
+                    },
+                    {
+                      "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",
+                      "quotaId": "GenerateRequestsPerDayPerProjectPerModel-FreeTier",
+                      "quotaDimensions": {
+                        "location": "global",
+                        "model": "gemini-3.1-pro"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "@type": "type.googleapis.com/google.rpc.RetryInfo",
+                  "retryDelay": "32s"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "tools": {},
+      "stream": {},
+      "status": "FAIL",
+      "startedAt": "2026-08-17T00:03:27.226520+00:00"
+    },
+    {
+      "provider": "mistral",
+      "model": "mistral-large-2512",
+      "text": {
+        "http": 429,
+        "body": {
+          "object": "error",
+          "message": "Rate limit exceeded",
+          "type": "rate_limited",
+          "param": null,
+          "code": "1300",
+          "raw_status_code": 429
+        }
+      },
+      "tools": {},
+      "stream": {},
+      "status": "FAIL",
+      "startedAt": "2026-08-17T00:03:27.226890+00:00"
+    },
+    {
+      "provider": "mistral",
+      "model": "mistral-large-latest",
+      "text": {
+        "http": 429,
+        "body": {
+          "object": "error",
+          "message": "Rate limit exceeded",
+          "type": "rate_limited",
+          "param": null,
+          "code": "1300",
+          "raw_status_code": 429
+        }
+      },
+      "tools": {},
+      "stream": {},
+      "status": "FAIL",
+      "startedAt": "2026-08-17T00:03:27.403811+00:00"
+    },
+    {
+      "provider": "mistral",
+      "model": "mistral-medium-2505",
+      "text": {
+        "http": 200,
+        "body": {
+          "id": "5398898c2c3b4bec9a6b4503f89c869d",
+          "created": 1786925009,
+          "model": "mistral-medium-2505",
+          "usage": {
+            "prompt_tokens": 11,
+            "total_tokens": 16,
+            "completion_tokens": 5,
+            "prompt_tokens_details": {
+              "cached_tokens": 0
+            },
+            "service_tier": "standard"
+          },
+          "object": "chat.completion",
+          "choices": [
+            {
+              "index": 0,
+              "finish_reason": "stop",
+              "message": {
+                "role": "assistant",
+                "tool_calls": null,
+                "content": "KIMO_TEXT_OK"
+              }
+            }
+          ]
+        }
+      },
+      "tools": {
+        "initial": {
+          "http": 200,
+          "body": {
+            "id": "42b45cca55804583846e153484ea81ff",
+            "created": 1786925012,
+            "model": "mistral-medium-2505",
+            "usage": {
+              "prompt_tokens": 112,
+              "total_tokens": 159,
+              "completion_tokens": 47,
+              "prompt_tokens_details": {
+                "cached_tokens": 0
+              },
+              "service_tier": "standard"
+            },
+            "object": "chat.completion",
+            "choices": [
+              {
+                "index": 0,
+                "finish_reason": "stop",
+                "message": {
+                  "role": "assistant",
+                  "tool_calls": null,
+                  "content": "Here's the summary of the current local time in Asia/Riyadh:\n\nThe current local time in Asia/Riyadh is 2023-09-19T19:30:00."
+                }
+              }
+            ]
+          }
+        },
+        "calls": 0,
+        "note": "Model answered without a tool call; no contract failure by itself."
+      },
+      "stream": {
+        "http": 200,
+        "parsed": {
+          "content": "KIMO_STREAM_OK",
+          "tool_calls": [],
+          "events": 6
+        },
+        "status": "PASS"
+      },
+      "status": "PASS",
+      "startedAt": "2026-08-17T00:03:27.405616+00:00"
+    }
+  ],
+  "failures": [
+    {
+      "provider": "gemini",
+      "model": "models/gemini-3.1-pro-preview",
+      "error": {
+        "http": 429,
+        "body": [
+          {
+            "error": {
+              "code": 429,
+              "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-3.1-pro\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-3.1-pro\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-3.1-pro\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-3.1-pro\nPlease retry in 32.607683582s.",
+              "status": "RESOURCE_EXHAUSTED",
+              "details": [
+                {
+                  "@type": "type.googleapis.com/google.rpc.Help",
+                  "links": [
+                    {
+                      "description": "Learn more about Gemini API quotas",
+                      "url": "https://ai.google.dev/gemini-api/docs/rate-limits"
+                    }
+                  ]
+                },
+                {
+                  "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+                  "violations": [
+                    {
+                      "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count",
+                      "quotaId": "GenerateContentInputTokensPerModelPerDay-FreeTier",
+                      "quotaDimensions": {
+                        "location": "global",
+                        "model": "gemini-3.1-pro"
+                      }
+                    },
+                    {
+                      "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count",
+                      "quotaId": "GenerateContentInputTokensPerModelPerMinute-FreeTier",
+                      "quotaDimensions": {
+                        "location": "global",
+                        "model": "gemini-3.1-pro"
+                      }
+                    },
+                    {
+                      "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",
+                      "quotaId": "GenerateRequestsPerMinutePerProjectPerModel-FreeTier",
+                      "quotaDimensions": {
+                        "model": "gemini-3.1-pro",
+                        "location": "global"
+                      }
+                    },
+                    {
+                      "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",
+                      "quotaId": "GenerateRequestsPerDayPerProjectPerModel-FreeTier",
+                      "quotaDimensions": {
+                        "location": "global",
+                        "model": "gemini-3.1-pro"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "@type": "type.googleapis.com/google.rpc.RetryInfo",
+                  "retryDelay": "32s"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "provider": "gemini",
+      "model": "models/gemini-3.1-pro-preview-customtools",
+      "error": {
+        "http": 429,
+        "body": [
+          {
+            "error": {
+              "code": 429,
+              "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-3.1-pro\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-3.1-pro\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-3.1-pro\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-3.1-pro\nPlease retry in 32.606400867s.",
+              "status": "RESOURCE_EXHAUSTED",
+              "details": [
+                {
+                  "@type": "type.googleapis.com/google.rpc.Help",
+                  "links": [
+                    {
+                      "description": "Learn more about Gemini API quotas",
+                      "url": "https://ai.google.dev/gemini-api/docs/rate-limits"
+                    }
+                  ]
+                },
+                {
+                  "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+                  "violations": [
+                    {
+                      "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count",
+                      "quotaId": "GenerateContentInputTokensPerModelPerDay-FreeTier",
+                      "quotaDimensions": {
+                        "location": "global",
+                        "model": "gemini-3.1-pro"
+                      }
+                    },
+                    {
+                      "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count",
+                      "quotaId": "GenerateContentInputTokensPerModelPerMinute-FreeTier",
+                      "quotaDimensions": {
+                        "location": "global",
+                        "model": "gemini-3.1-pro"
+                      }
+                    },
+                    {
+                      "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",
+                      "quotaId": "GenerateRequestsPerMinutePerProjectPerModel-FreeTier",
+                      "quotaDimensions": {
+                        "model": "gemini-3.1-pro",
+                        "location": "global"
+                      }
+                    },
+                    {
+                      "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",
+                      "quotaId": "GenerateRequestsPerDayPerProjectPerModel-FreeTier",
+                      "quotaDimensions": {
+                        "location": "global",
+                        "model": "gemini-3.1-pro"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "@type": "type.googleapis.com/google.rpc.RetryInfo",
+                  "retryDelay": "32s"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "provider": "mistral",
+      "model": "mistral-large-2512",
+      "error": {
+        "http": 429,
+        "body": {
+          "object": "error",
+          "message": "Rate limit exceeded",
+          "type": "rate_limited",
+          "param": null,
+          "code": "1300",
+          "raw_status_code": 429
+        }
+      }
+    },
+    {
+      "provider": "mistral",
+      "model": "mistral-large-latest",
+      "error": {
+        "http": 429,
+        "body": {
+          "object": "error",
+          "message": "Rate limit exceeded",
+          "type": "rate_limited",
+          "param": null,
+          "code": "1300",
+          "raw_status_code": 429
+        }
+      }
+    }
+  ],
+  "secretsStored": false
+}

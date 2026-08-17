@@ -1,0 +1,163 @@
+{
+  "generatedAt": "2026-08-17T00:06:27.184766+00:00",
+  "models": [
+    {
+      "provider": "gemini",
+      "model": "models/gemini-3-flash-preview",
+      "http": 200,
+      "body": {
+        "id": "models/gemini-3-flash-preview",
+        "object": "model",
+        "owned_by": "google",
+        "display_name": "Gemini 3 Flash Preview"
+      }
+    },
+    {
+      "provider": "mistral",
+      "model": "mistral-medium-2505",
+      "http": 200,
+      "body": {
+        "id": "mistral-medium-2505",
+        "object": "model",
+        "created": 1786925189,
+        "owned_by": "mistralai",
+        "capabilities": {
+          "completion_chat": true,
+          "function_calling": true,
+          "reasoning": false,
+          "completion_fim": false,
+          "fine_tuning": true,
+          "vision": true,
+          "ocr": false,
+          "classification": false,
+          "moderation": false,
+          "audio": false,
+          "audio_transcription": false,
+          "audio_transcription_realtime": false,
+          "audio_speech": false,
+          "unified_resources": false
+        },
+        "name": "mistral-medium-2505",
+        "description": "Our frontier-class multimodal model released May 2025.",
+        "max_context_length": 131072,
+        "aliases": [],
+        "deprecation": "2026-08-31T12:00:00Z",
+        "deprecation_replacement_model": "mistral-medium-3-5",
+        "default_model_temperature": 0.3,
+        "type": "base"
+      }
+    },
+    {
+      "provider": "mistral",
+      "model": "mistral-medium-2508",
+      "http": 200,
+      "body": {
+        "id": "mistral-medium-2508",
+        "object": "model",
+        "created": 1786925192,
+        "owned_by": "mistralai",
+        "capabilities": {
+          "completion_chat": true,
+          "function_calling": true,
+          "reasoning": false,
+          "completion_fim": false,
+          "fine_tuning": true,
+          "vision": true,
+          "ocr": false,
+          "classification": false,
+          "moderation": false,
+          "audio": false,
+          "audio_transcription": false,
+          "audio_transcription_realtime": false,
+          "audio_speech": false,
+          "unified_resources": false
+        },
+        "name": "mistral-medium-2508",
+        "description": "Update on Mistral Medium 3 with improved capabilities.",
+        "max_context_length": 131072,
+        "aliases": [],
+        "deprecation": "2026-08-31T12:00:00Z",
+        "deprecation_replacement_model": "mistral-medium-3-5",
+        "default_model_temperature": 0.3,
+        "type": "base"
+      }
+    },
+    {
+      "provider": "mistral",
+      "model": "devstral-2512",
+      "http": 200,
+      "body": {
+        "id": "devstral-2512",
+        "object": "model",
+        "created": 1786925195,
+        "owned_by": "mistralai",
+        "capabilities": {
+          "completion_chat": true,
+          "function_calling": true,
+          "reasoning": false,
+          "completion_fim": false,
+          "fine_tuning": false,
+          "vision": false,
+          "ocr": false,
+          "classification": false,
+          "moderation": false,
+          "audio": false,
+          "audio_transcription": false,
+          "audio_transcription_realtime": false,
+          "audio_speech": false,
+          "unified_resources": false
+        },
+        "name": "devstral-2512",
+        "description": "Official devstral-2512 Mistral AI model",
+        "max_context_length": 262144,
+        "aliases": [
+          "devstral-medium-latest",
+          "devstral-latest",
+          "mistral-code-agent-latest"
+        ],
+        "deprecation": "2026-08-31T12:00:00Z",
+        "deprecation_replacement_model": "mistral-medium-3-5",
+        "default_model_temperature": 0.2,
+        "type": "base"
+      }
+    },
+    {
+      "provider": "mistral",
+      "model": "voxtral-small-latest",
+      "http": 200,
+      "body": {
+        "id": "voxtral-small-latest",
+        "object": "model",
+        "created": 1786925197,
+        "owned_by": "mistralai",
+        "capabilities": {
+          "completion_chat": true,
+          "function_calling": true,
+          "reasoning": false,
+          "completion_fim": false,
+          "fine_tuning": false,
+          "vision": false,
+          "ocr": false,
+          "classification": false,
+          "moderation": false,
+          "audio": true,
+          "audio_transcription": false,
+          "audio_transcription_realtime": false,
+          "audio_speech": false,
+          "unified_resources": false
+        },
+        "name": "voxtral-small-2507",
+        "description": "A small audio understanding model released in July 2025",
+        "max_context_length": 32768,
+        "aliases": [
+          "voxtral-small-2507"
+        ],
+        "deprecation": null,
+        "deprecation_replacement_model": null,
+        "default_model_temperature": 0.2,
+        "type": "base"
+      }
+    }
+  ],
+  "secretsStored": false
+}

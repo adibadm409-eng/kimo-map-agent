@@ -1,0 +1,140 @@
+{
+  "generatedAt": "2026-08-17T00:07:34.173007+00:00",
+  "results": [
+    {
+      "provider": "gemini",
+      "model": "models/gemini-3-flash-preview",
+      "media": "vision",
+      "status": "PASS",
+      "http": 200,
+      "body": {
+        "choices": [
+          {
+            "finish_reason": "length",
+            "index": 0,
+            "message": {
+              "content": "IMAGE",
+              "extra_content": {
+                "google": {
+                  "thought_signature": "EokDCoYDARFNMg8Ttssa/+GN7vEyLWr9wHUaKhM3a1j+I0mTIyfz419JXeAVElqQzWMApJ/e1+HqiKDHn8Wlvghbtbnjlrsv+n+3TS2ciAnjF0obUDEnOLzba8VbsEGA9HVS43KD9xHAYRUpFInWO0uF/7V0Bp3375n0gx6YBmuyiCoZotMSe7yf6rhFtIKCfqzXqf0wp67uvsl9nqpuKjENbcbDP5Mriu+NqNduApthq6z05qy1kwkcmmW97qi3buWcrUOtz9eTp1fBIZDzH3FNaIcIhBgdMP4NrKA5qhsjP4Mba8Uyzbt0kjxymQcKl1eABn6caT88hXK0u4scCXZV3+J63LPEi1uwrA7CrDrL39aA+WzqbBGXL9WRzAUPOCFrUofBC5u1veg9L2VdcJinBFe9hZb+uBfyGLTwIoQQx3tGzEnsioCwyTUcXXSvo8wZjHv0b/6IA3eGvxdhsyaIGzowJ7Pn9mlPVuiyHtDUwKWQm31FsKQpIhwhWFiJ9Wv9ESSoEFE3gm+0"
+                }
+              },
+              "role": "assistant"
+            }
+          }
+        ],
+        "created": 1786925235,
+        "id": "pVCCapKYLKH2jrEPhvzP6AI",
+        "model": "models/gemini-3-flash-preview",
+        "object": "chat.completion",
+        "usage": {
+          "completion_tokens": 1,
+          "prompt_tokens": 1109,
+          "total_tokens": 1185
+        }
+      }
+    },
+    {
+      "provider": "gemini",
+      "model": "models/gemini-3-flash-preview",
+      "media": "audio-gemini",
+      "status": "PASS",
+      "http": 200,
+      "body": {
+        "choices": [
+          {
+            "finish_reason": "length",
+            "index": 0,
+            "message": {
+              "content": "AUDIO_INPUT",
+              "extra_content": {
+                "google": {
+                  "thought_signature": "EvMCCvACARFNMg88XFtRH86DlhhuCstax1jdCcpdMMulTx+TesTS2ZgHy0Y7L7x+dr7WMt2tXqScHOF3+UDfS7P/g2+OLdpab8rqp/avavmmbo5AyCQZ824EEf+CD7YNtu6XAjYhv3IZc5j4Zs4PmbIIMzpbDUHOAreuF1t4O0o2zuSsdEFSkM9wqNOGhdB9BvTAYgNC3uWuponvQOIv6iosAgXLv6DosrFBuaXaCrPFp9gVxs0JxrAOodIcBDKdf7ijqO4+p5h4bgZN95zcxcuMQ2Y+1UKrIyvKOjGorQktCKHibqQRL0/nPbLUwsYLOS1Ih35SzDvnE8iPkYAZ/JUZZV/Z8S2+HVRPe80fEQDAG1mqpbFtUgwnASHZYDIII/Bj+3AeWjcI8KiH2LEdfqrHv+wm8Oca6pRRO31gb4iihJQVC840RZEbTStXoxm34KgcbwsPJJ5A7L+qyy1Srz5jo0p2t6ZZv+C8iiNZsG7zFHdy3FI="
+                }
+              },
+              "role": "assistant"
+            }
+          }
+        ],
+        "created": 1786925247,
+        "id": "s1CCau6dJ9uez7IPvP-LgQM",
+        "model": "models/gemini-3-flash-preview",
+        "object": "chat.completion",
+        "usage": {
+          "completion_tokens": 3,
+          "prompt_tokens": 26,
+          "total_tokens": 102
+        }
+      }
+    },
+    {
+      "provider": "mistral",
+      "model": "mistral-medium-2508",
+      "media": "vision",
+      "status": "PASS",
+      "http": 200,
+      "body": {
+        "id": "ab9001da88e1429a9ad9177a117aa22f",
+        "created": 1786925250,
+        "model": "mistral-medium-2508",
+        "usage": {
+          "prompt_tokens": 23,
+          "total_tokens": 27,
+          "completion_tokens": 4,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "service_tier": "standard"
+        },
+        "object": "chat.completion",
+        "choices": [
+          {
+            "index": 0,
+            "finish_reason": "stop",
+            "message": {
+              "role": "assistant",
+              "tool_calls": null,
+              "content": "IMAGE_INPUT_OK"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "provider": "mistral",
+      "model": "voxtral-small-latest",
+      "media": "audio-mistral",
+      "status": "PASS",
+      "http": 200,
+      "body": {
+        "id": "473765920d4446a7863b2f7168481823",
+        "created": 1786925253,
+        "model": "voxtral-small-latest",
+        "usage": {
+          "prompt_audio_seconds": 0,
+          "prompt_tokens": 26,
+          "total_tokens": 406,
+          "completion_tokens": 5,
+          "prompt_tokens_details": {
+            "cached_tokens": 0,
+            "audio_tokens": 375
+          },
+          "service_tier": "standard"
+        },
+        "object": "chat.completion",
+        "choices": [
+          {
+            "index": 0,
+            "finish_reason": "stop",
+            "message": {
+              "role": "assistant",
+              "tool_calls": null,
+              "content": "AUDIO_INPUT_OK"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "secretsStored": false
+}

@@ -23,6 +23,66 @@ const STATUSES = [
   { key: 'countered', label: 'عرض مضاد' },
 ]
 
+function Picker({ label, value, options, onChange, placeholder }: {
+  label: string
+  value: string
+  options: { id: string; label: string; subtitle?: string }[]
+  onChange: (v: string) => void
+  placeholder?: string
+}) {
+  const { colors } = useTheme()
+  return (
+    <View style={styles.field}>
+      <Text style={[styles.label, { color: colors.textSecondary }]}>{label}</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pickerScroll} contentContainerStyle={styles.pickerContent}>
+        {options.length === 0 ? (
+          <Text style={[styles.pickerEmpty, { color: colors.textMuted }]}>{placeholder || 'لا توجد عناصر'}</Text>
+        ) : (
+          options.map((o) => (
+            <Pressable
+              key={o.id}
+              onPress={() => { Haptics.selectionAsync(); onChange(o.id) }}
+              style={({ pressed }) => [
+                styles.pickerItem,
+                value === o.id ? { backgroundColor: colors.accent, borderColor: colors.accent } : { backgroundColor: colors.surface, borderColor: colors.border },
+                pressed && { opacity: 0.7 },
+              ]}
+            >
+              <Text style={{ fontSize: fontSize.sm, fontWeight: '600', fontFamily: 'Tajawal_700Bold', color: value === o.id ? '#FFF' : colors.textSecondary }}>{o.label}</Text>
+              {o.subtitle ? <Text style={{ fontSize: fontSize.xs, fontFamily: 'Tajawal_400Regular', color: value === o.id ? '#FFF' : colors.textMuted, marginTop: 2 }}>{o.subtitle}</Text> : null}
+            </Pressable>
+          ))
+        )}
+      </ScrollView>
+    </View>
+  )
+}
+
+function FormInput({ label, value, onChange, placeholder, keyboardType, multiline }: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  placeholder?: string
+  keyboardType?: 'default' | 'numeric'
+  multiline?: boolean
+}) {
+  const { colors } = useTheme()
+  return (
+    <View style={styles.field}>
+      <Text style={[styles.label, { color: colors.textSecondary }]}>{label}</Text>
+      <TextInput
+        value={value}
+        onChangeText={onChange}
+        placeholder={placeholder}
+        placeholderTextColor={colors.textMuted}
+        keyboardType={keyboardType || 'default'}
+        multiline={multiline}
+        style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.textPrimary, minHeight: multiline ? 80 : 48, textAlignVertical: multiline ? 'top' : 'center' }]}
+      />
+    </View>
+  )
+}
+
 export default function OfferForm() {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
@@ -112,65 +172,6 @@ export default function OfferForm() {
 
   if (loading) {
     return <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: colors.textMuted, fontFamily: 'Tajawal_400Regular' }}>جاري التحميل...</Text></View>
-  }
-
-  function Picker({ label, value, options, onChange, placeholder }: {
-    label: string
-    value: string
-    options: { id: string; label: string; subtitle?: string }[]
-    onChange: (v: string) => void
-    placeholder?: string
-  }) {
-    const { colors } = useTheme()
-    return (
-      <View style={styles.field}>
-        <Text style={[styles.label, { color: colors.textSecondary }]}>{label}</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pickerScroll} contentContainerStyle={styles.pickerContent}>
-          {options.length === 0 ? (
-            <Text style={[styles.pickerEmpty, { color: colors.textMuted }]}>{placeholder || 'لا توجد عناصر'}</Text>
-          ) : (
-            options.map((o) => (
-              <Pressable
-                key={o.id}
-                onPress={() => { Haptics.selectionAsync(); onChange(o.id) }}
-                style={({ pressed }) => [
-                  styles.pickerItem,
-                  value === o.id ? { backgroundColor: colors.accent, borderColor: colors.accent } : { backgroundColor: colors.surface, borderColor: colors.border },
-                  pressed && { opacity: 0.7 },
-                ]}
-              >
-                <Text style={{ fontSize: fontSize.sm, fontWeight: '600', fontFamily: 'Tajawal_700Bold', color: value === o.id ? '#FFF' : colors.textSecondary }}>{o.label}</Text>
-                {o.subtitle ? <Text style={{ fontSize: fontSize.xs, fontFamily: 'Tajawal_400Regular', color: value === o.id ? '#FFF' : colors.textMuted, marginTop: 2 }}>{o.subtitle}</Text> : null}
-              </Pressable>
-            ))
-          )}
-        </ScrollView>
-      </View>
-    )
-  }
-
-  function FormInput({ label, value, onChange, placeholder, keyboardType, multiline }: {
-    label: string
-    value: string
-    onChange: (v: string) => void
-    placeholder?: string
-    keyboardType?: 'default' | 'numeric'
-    multiline?: boolean
-  }) {
-    return (
-      <View style={styles.field}>
-        <Text style={[styles.label, { color: colors.textSecondary }]}>{label}</Text>
-        <TextInput
-          value={value}
-          onChangeText={onChange}
-          placeholder={placeholder}
-          placeholderTextColor={colors.textMuted}
-          keyboardType={keyboardType || 'default'}
-          multiline={multiline}
-          style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.textPrimary, minHeight: multiline ? 80 : 48, textAlignVertical: multiline ? 'top' : 'center' }]}
-        />
-      </View>
-    )
   }
 
   return (
