@@ -700,23 +700,32 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
 
   const audioAsset = assets.find((asset) => asset.kind === 'audio')
   if (opts?.audio && audioAsset) {
-    const profile = resolveModelProfile(providerProxy(conn), conn.model)
     const voiceLabel = audioAsset?.name ?? opts.audio.name ?? 'تسجيل صوتي'
-    if (!profile.supports.inputAudio) {
-      const message = `الموديل ${conn.model} لا يثبت دعماً للإدخال الصوتي عبر ${conn.providerName}. حفظت التسجيل محلياً ولم أرسل طلباً غير متوافق.`
-      await persistUser(sessionId, content || `رسالة صوتية: ${voiceLabel}`)
-      await persistAssistantText(sessionId, message, 'error')
-      emitForSession(sessionId, { type: 'error', message })
-      return
-    }
     try {
       const audio = await readAudioInput(opts.audio.uri, opts.audio.format ?? 'm4a')
-      const voiceText = text.trim() || 'أرسل المستخدم تسجيلاً صوتياً. استمع إليه وافهم المطلوب ثم تعامل معه وفق مهاراتك وأدواتك.'
-      initialContent = [
-        { type: 'text', text: voiceText },
-        { type: 'input_audio', input_audio: { data: audio.base64, format: audio.format } },
-      ] satisfies ChatContentPart[]
-      content = `${content}\n\n[الصوت الجاهز للإرسال: ${audioAsset.id} — ${voiceLabel}]`.trim()
+      let voiceText = text.trim()
+      try {
+        // نحوّل الصوت إلى نص قبل الإرسال كي يعمل مع أي موديل دون خطأ 400
+        // الناتج عن input_audio غير المدعوم، ونبقي التجربة موثوقة دائماً.
+        const transcript = await transcribeAudio({
+          providerId: conn.providerId,
+          baseUrl: conn.baseUrl,
+          apiKey: conn.apiKey,
+          model: conn.model,
+          audioUri: opts.audio.uri,
+          audioBase64: audio.base64,
+          format: audio.format,
+        })
+        voiceText = transcript || voiceText
+      } catch (err: any) {
+        const note =
+          err instanceof TranscribeError && err.supported
+            ? ' (تعذّر فهم التسجيل الصوتي تلقائياً هذه المرة)'
+            : ' (المزوّد الحالي لا يدعم فهم الصوت تلقائياً)'
+        voiceText = (voiceText ? voiceText + ' ' : '') + note
+      }
+      const spoken = voiceText.trim() || 'أرسل المستخدم تسجيلاً صوتياً. استمع إليه وفهم المطلوب ثم تعامل معه.'
+      content = `${content ? content + '\n\n' : ''}[رسالة صوتية محوّلة إلى نص] ${spoken}`.trim()
     } catch (error: any) {
       const message = error?.message ?? 'تعذر تجهيز التسجيل الصوتي محلياً.'
       await persistUser(sessionId, content || `رسالة صوتية: ${voiceLabel}`)
