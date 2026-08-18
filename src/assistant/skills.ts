@@ -84,7 +84,7 @@ export const AGENT_SKILLS: AgentSkill[] = [
     questionPolicy: 'ask_on_missing',
     verificationTools: ['get', 'query'],
     recoveryPolicy: 'ask_user',
-    systemGuidance: 'للعرض اقرأ العقار والعميل أولاً ثم أنشئ العرض واضبط تنبيهه. إذا كانت هناك وسائط في الطلب، اقرأ list_attachments وحدد العرض ثم استخدم attach_media_to_entity، ولا تحذف الأصل. أما التذكير العام فاجمع نص المهمة والموعد فقط. اقرأ الوقت المحلي عند كل موعد نسبي، وأعد قراءة النتيجة للتحقق. لا تضبط موعداً منتهياً ولا تدّعِ إرسال إشعار سحابي؛ هذه تنبيهات محلية على جهاز المستخدم.',
+    systemGuidance: 'لإنشاء عرض: اقرأ العقار والعميل أولاً، ثم استخدم create_offer_with_reminder مباشرة. إذا لم يطلب المستخدم تنبيهاً فلا تستدعِ current_local_time ولا تكرر ضوابط التنبيه؛ أرسل reminders=[] أو اتركه فارغاً. بعد نجاح الإنشاء أعد قراءة العرض بالمعرف نفسه للتحقق. إذا كانت هناك وسائط في الطلب، اقرأ list_attachments وحدد العرض ثم استخدم attach_media_to_entity، ولا تحذف الأصل. أما التذكير العام فاجمع نص المهمة والموعد فقط. اقرأ الوقت المحلي عند كل موعد نسبي، وأعد قراءة النتيجة للتحقق. لا تضبط موعداً منتهياً ولا تدّعِ إرسال إشعار سحابي؛ هذه تنبيهات محلية على جهاز المستخدم.',
   },
   {
     id: 'data_search',
@@ -182,6 +182,7 @@ export function matchSkill(text: string): SkillMatch {
   const hasOfferFlow = /عرض\s*(شراء|بيع)|تنبيه|تذكير|ذكرني|موعد متابعة|إشعار|اشعار/.test(normalized)
   const hasClientFlow = /عميل|عميلة|مشتري|بائع|جهة اتصال|هاتف العميل|رقم العميل/.test(normalized)
   const hasPropertyFlow = /عقار|عقارات|بيت|فندق|عمارة|برج سكني|مزرعة|قطعة أرض|هنجر|محل/.test(normalized)
+  const hasPropertyMutation = hasPropertyFlow && /أنشئ|انشئ|إنشاء|انشاء|أضف|اضف|عدّل|عدل|حدّث|حدث|غيّر|غير|صحّح|صحح|احذف|حذف/.test(normalized)
   const hasProjectImportFlow = /استيراد|استورد|جدول|صفوف|بلوكات|قطع|ملف مشروع/.test(normalized)
   const hasPaymentFlow = /دفعة|دفع|قسط|أقساط|تحصيل|متبقي|سند|تدفق نقدي|دفتر نقد/.test(normalized)
   const hasProjectUpdateFlow = /(?:عدّل|عدل|حدّث|حدث|غيّر|غير|صحّح|صحح)[^.!؟\n]{0,100}(?:المشروع|القطعة|البلوك|الوحدة|التقسيط|القسط|نوع التقسيط)/.test(normalized)
@@ -216,6 +217,28 @@ export function matchSkill(text: string): SkillMatch {
     if (hasProjectImportFlow && !hasProjectUpdateFlow && !hasOfferFlow && !hasPaymentFlow && skill.id === 'project_import') {
       score = Math.max(score, 0.96)
       reasons.push('مسار مشروع/استيراد هرمي')
+    }
+    // فعل كتابة مع نطاق عقاري يجب أن يبقى في مهارة العقارات؛ لا يجوز لمهارة البحث
+    // أن تحجبه لمجرد أن كلمة «عقار» موجودة في triggers المهارتين.
+    if (hasPropertyMutation && !hasOfferFlow && !hasProjectUpdateFlow && !hasPaymentFlow) {
+      if (skill.id === 'property_management') {
+        score = Math.max(score, 0.97)
+        reasons.push('مسار كتابة داخل سجل العقار')
+      } else if (skill.id === 'data_search') {
+        score = Math.min(score, 0.25)
+      }
+    }
+    // كلمات «تحقق/مراجعة» عامة لا يجب أن تطغى على نطاق العميل المحدد.
+    // إذا لم توجد علاقة بعرض أو عقار أو مشروع أو دفعة، فعمليات العميل (قراءة/كتابة)
+    // تُوجّه إلى client_relationship حتى لا تُحجب mutate_record بمهارة المشروع.
+    const isolatedClientFlow = hasClientFlow && !hasOfferFlow && !hasPropertyFlow && !hasProjectImportFlow && !hasPaymentFlow
+    if (isolatedClientFlow) {
+      if (skill.id === 'client_relationship') {
+        score = Math.max(score, 0.96)
+        reasons.push('نطاق العميل معزول عن مسارات المشروع والعرض')
+      } else if (['project_review', 'project_operations', 'project_import', 'cashflow'].includes(skill.id)) {
+        score = Math.min(score, 0.25)
+      }
     }
     return { skill, score, missingInputs: [], reasons }
   }).sort((a, b) => b.score - a.score)

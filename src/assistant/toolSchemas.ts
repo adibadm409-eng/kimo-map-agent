@@ -132,7 +132,7 @@ const ID_ALIASES: Record<string, string> = {
   workspace_delete_row: 'row_id',
 }
 
-const NUMERIC_FIELDS = new Set(['limit', 'offset', 'max_rows_per_sheet', 'amount', 'price', 'area', 'lots'])
+const NUMERIC_FIELDS = new Set(['limit', 'offset', 'max_rows_per_sheet', 'amount', 'price', 'area', 'area_sqm', 'lots'])
 
 /**
  * طبقة التكيُّف: تطبيع المعاملات قبل التنفيذ حتى تقبل الوسيلة ما يفعله الوكيل
@@ -152,6 +152,11 @@ export function adaptToolArgs(tool: string, raw: Record<string, any>): Record<st
     if (key) args.entity = key
   }
   const projectEntities = new Set(['projects', 'blocks', 'plots', 'plot_payments'])
+  if (args.data && typeof args.data === 'object' && String(args.entity ?? '') === 'properties') {
+    const d = args.data
+    if (d.area == null && d.area_sqm != null) d.area = d.area_sqm
+    if (d.area_sqm == null && d.area != null) d.area_sqm = d.area
+  }
   if (args.data && typeof args.data === 'object' && projectEntities.has(String(args.entity ?? ''))) {
     const d = args.data
     // لا تضف مفاتيح undefined إلى patch؛ agentUpdate يتحقق من أسماء الحقول
@@ -420,8 +425,40 @@ export async function verifyDataExists(tool: string, args: Record<string, any>, 
   return undefined
 }
 
+/** تحقق مباشر خاص ببوابة mutate_record عندما تكون نتيجة الأداة مغلفة داخل execute. */
+async function verifyMutationPostcondition(args: Record<string, any>, result: any): Promise<string | undefined> {
+  const operation = String(args.operation ?? '').trim().toLowerCase()
+  const entity = String(args.entity ?? '').trim()
+  if (!entity || !['create', 'update', 'delete'].includes(operation)) return undefined
+  const id = String(args.id ?? result?.id ?? '').trim()
+  if (!id) return undefined
+  const row = await queryEntityById(entity as EntityKey, id)
+  if (operation === 'delete') {
+    return row
+      ? `تنبيه: السجل (${id}) لا يزال موجوداً في ${entity} بعد الحذف؛ لم يثبت postcondition.`
+      : `تحقّقت فعلاً: السجل (${id}) لم يعد موجوداً في ${entity} بعد الحذف.`
+  }
+  if (!row) return `تنبيه: السجل (${id}) غير موجود في ${entity} بعد ${operation}; لم يثبت postcondition.`
+  if (operation === 'update' && args.data && typeof args.data === 'object') {
+    const mismatches = Object.entries(args.data as Record<string, any>)
+      .filter(([key, expected]) => JSON.stringify((row as Record<string, any>)[key]) !== JSON.stringify(expected))
+      .map(([key, expected]) => `${key}: المتوقع ${JSON.stringify(expected)}، الفعلي ${JSON.stringify((row as Record<string, any>)[key])}`)
+    if (mismatches.length) return `فشل التحقق الذري: patch السجل ${entity} لا يطابق القراءة الأخيرة (${mismatches.join('؛ ')}).`
+  }
+  return `تحقّقت فعلاً من قاعدة البيانات: السجل ${entity} بالمعرف ${id} موجود بعد ${operation} والـpostcondition مطابق.`
+}
+
+/** يترجم نتيجة التحقق النصية إلى عقد machine-readable دون قبول رسائل التحذير كنجاح. */
+function verificationPassed(verification?: string): boolean {
+  const text = String(verification ?? '').trim()
+  if (!text) return false
+  if (/^(?:تنبيه|فشل|خطأ)\s*[:：]/u.test(text)) return false
+  if (/(?:غير موجود|لا يزال موجود|لا تطابق|فشل التحقق|لم تظهر|أعد فحصه|راجع الحالة)/u.test(text)) return false
+  return /(?:تحق|محفوظ|موجود|حالي|نجح|مطابق)/u.test(text)
+}
+
 /** منفّذ موحّد: تكييف + تنفيذ + حالة صريحة + تحقق من الوجود الفعلي، ويعيد الملاحظة الجاهزة للموديل. */
-export async function runToolWithFeedback(tool: string, rawArgs: Record<string, any>): Promise<{ ok: boolean; args: Record<string, any>; observation: string; result: any }> {
+export async function runToolWithFeedback(tool: string, rawArgs: Record<string, any>): Promise<{ ok: boolean; args: Record<string, any>; observation: string; result: any; verified: boolean; verification?: string }> {
   const args = adaptToolArgs(tool, rawArgs ?? {})
   let res: { ok: boolean; result?: any; error?: string }
   try {
@@ -429,6 +466,11 @@ export async function runToolWithFeedback(tool: string, rawArgs: Record<string, 
   } catch (error: any) {
     res = { ok: false, result: { error: 'tool_exception' }, error: error?.message ?? String(error) }
   }
+  // update idempotent: إعادة نفس patch بعد نجاح سابق ليست فشلاً جديداً إذا أثبتت
+  // القراءة أن القيمة المطلوبة موجودة بالفعل. نتحقق أولاً ثم نعيد نتيجة آلية واضحة.
+  const idempotentUpdate = tool === 'mutate_record'
+    && String(args.operation ?? '').toLowerCase() === 'update'
+    && /لا توجد تغييرات فعلية|no changes|unchanged/i.test(String(res.error ?? ''))
   let verification: string | undefined
   const VERIFYABLE = new Set([
     'create', 'update', 'delete',
@@ -446,13 +488,24 @@ export async function runToolWithFeedback(tool: string, rawArgs: Record<string, 
   const verificationArgs = tool === 'mutate_record'
     ? { entity: args.entity, id: args.id, data: args.data }
     : args
-  if (res.ok && VERIFYABLE.has(verificationTool)) {
+  if ((res.ok || idempotentUpdate) && VERIFYABLE.has(verificationTool)) {
     try {
       verification = await verifyDataExists(verificationTool, verificationArgs, res.result)
     } catch {
       verification = undefined
     }
   }
+  if ((res.ok || idempotentUpdate) && tool === 'mutate_record' && !verification) {
+    try {
+      verification = await verifyMutationPostcondition(args, res.result)
+    } catch {
+      verification = undefined
+    }
+  }
+  if (idempotentUpdate && verificationPassed(verification)) {
+    res = { ok: true, result: { id: args.id, changedFields: [], idempotent: true } }
+  }
   const observation = buildToolObservation(tool, res, args, verification)
-  return { ok: res.ok, args, observation, result: res.ok ? res.result : { error: res.error } }
+  const verified = res.ok && verificationPassed(verification)
+  return { ok: res.ok, args, observation, result: res.ok ? res.result : { error: res.error }, verified, verification }
 }

@@ -229,11 +229,12 @@ export async function runRegistryTool(
   const executionArgs = tool === 'audit_log_query' && args.current_session === true && !args.session_id
     ? { ...args, session_id: sessionId }
     : args
-  const { ok, observation, result } = await withAuditCtx({ actor: 'agent', sessionId, tool }, () =>
+  const { ok, observation, result, verified, verification } = await withAuditCtx({ actor: 'agent', sessionId, tool }, () =>
     runToolWithFeedback(tool, executionArgs)
   )
-  // الملاحظة التي تعود للموديل: نص عربي واضح الحالة [نجاح]/[فشل] + سطر [تحقق]
-  await persistPair(sessionId, call, observation, undefined, { name: tool, args, result, observation, ok })
+  // الملاحظة التي تعود للموديل: نص عربي واضح الحالة [نجاح]/[فشل] + سطر [تحقق].
+  // verified حقل آلي مستقل؛ لا يعتمد verifier على مطابقة النص المعروض للمستخدم.
+  await persistPair(sessionId, call, observation, undefined, { name: tool, args, result, observation, ok, verified, verification })
   if (emitEvents) emitForSession(sessionId, { type: 'tool', name: tool, args, result: ok ? result : result })
 
   if (ok) {

@@ -7,6 +7,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import * as DocumentPicker from 'expo-document-picker'
+import * as ImagePicker from 'expo-image-picker'
 import * as Clipboard from 'expo-clipboard'
 import { AudioModule, RecordingPresets, setAudioModeAsync, useAudioRecorder, useAudioRecorderState } from 'expo-audio'
 import { useTheme } from '../../theme/ThemeContext'
@@ -41,6 +42,9 @@ import { restoreRuntimeEvents } from '../../assistant/runtimeEvents'
 interface AttachItem {
   uri: string
   name: string
+  mime?: string
+  size?: number
+  kind?: 'image' | 'audio' | 'video' | 'document' | 'spreadsheet' | 'text' | 'unknown'
 }
 
 interface AudioDraft {
@@ -362,7 +366,7 @@ export default function AssistantScreen({ navigation }: any) {
     // أظهر رسالة المستخدم محلياً فوراً حتى لا تختفي لحظة كتحضير الإرسال
     setMessages((prev) => [
       ...prev,
-      { id: `local-user-${Date.now()}`, sessionId: sid, role: 'user', kind: 'text', content: audio ? `رسالة صوتية: ${audio.name}` : trimmed, createdAt: Date.now() },
+      { id: `local-user-${Date.now()}`, sessionId: sid, role: 'user', kind: 'text', content: audio ? `رسالة صوتية: ${audio.name}` : trimmed || (attachments.length ? `أرسلت ${attachments.length} مرفقات للمراجعة` : ''), createdAt: Date.now() },
     ])
     const atts = attachments.length ? [...attachments] : undefined
     setAttachments([])
@@ -444,9 +448,42 @@ export default function AssistantScreen({ navigation }: any) {
     try {
       const res = await DocumentPicker.getDocumentAsync({ multiple: true, copyToCacheDirectory: true })
       if (res.canceled || !res.assets?.length) return
-      const items = res.assets.map((a) => ({ uri: a.uri, name: a.name ?? 'ملف' }))
+      const items = res.assets.map((a) => ({
+        uri: a.uri,
+        name: a.name ?? 'ملف',
+        mime: a.mimeType ?? undefined,
+        size: a.size ?? undefined,
+        kind: /^(xlsx?|csv)$/i.test(a.name ?? '') ? 'spreadsheet' as const : undefined,
+      }))
       setAttachments((prev) => [...prev, ...items])
     } catch {}
+  }
+
+  async function pickImages() {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
+      if (!permission.granted) {
+        Alert.alert('الوصول إلى الصور غير متاح', 'اسمح للتطبيق بالوصول إلى الصور ثم أعد المحاولة.')
+        return
+      }
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        quality: 1,
+        exif: false,
+      })
+      if (res.canceled || !res.assets?.length) return
+      const items = res.assets.map((a) => ({
+        uri: a.uri,
+        name: a.fileName ?? `صورة-${Date.now()}.jpg`,
+        mime: a.mimeType ?? 'image/jpeg',
+        size: a.fileSize ?? undefined,
+        kind: 'image' as const,
+      }))
+      setAttachments((prev) => [...prev, ...items])
+    } catch (error: any) {
+      Alert.alert('تعذر اختيار الصور', error?.message ?? 'تعذر قراءة الصور من الجهاز.')
+    }
   }
 
   async function handleVoice() {
@@ -1119,6 +1156,9 @@ export default function AssistantScreen({ navigation }: any) {
           <View style={styles.inputRow}>
             <Pressable accessibilityRole="button" accessibilityLabel="إرفاق ملفات" onPress={pickFiles} disabled={busy || recorderState.isRecording} style={[styles.attachBtn, { backgroundColor: colors.surface, opacity: busy || recorderState.isRecording ? 0.4 : 1 }]}>
               <Ionicons name="attach-outline" size={20} color={colors.textSecondary} />
+            </Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="إرفاق صور" onPress={pickImages} disabled={busy || recorderState.isRecording} style={[styles.attachBtn, { backgroundColor: colors.surface, opacity: busy || recorderState.isRecording ? 0.4 : 1 }]}>
+              <Ionicons name="image-outline" size={20} color={colors.textSecondary} />
             </Pressable>
             <Pressable
               accessibilityRole="button"

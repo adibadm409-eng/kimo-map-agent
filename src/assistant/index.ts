@@ -64,6 +64,55 @@ export {
   type SendOptions,
 } from './executor'
 export {
+  createUserTurn,
+  hasPayload,
+  summarizeAssetForModel,
+  type AssetRef,
+  type InputAssetDraft,
+  type InputAssetKind,
+  type InputAssetState,
+  type UserTurn,
+} from './inputEnvelope'
+export {
+  saveAsset,
+  getAsset,
+  listAssets,
+  updateAssetState,
+  addAssetDerivative,
+  listAssetDerivatives,
+  type AssetDerivative,
+  type AssetDerivativeInput,
+} from './assetStore'
+export {
+  getIngestionJob,
+  queueIngestionJob,
+  runAssetIngestion,
+  resumeIngestionJob,
+  readTextChunkPreview,
+  type IngestionJob,
+  type IngestionKind,
+  type IngestionStatus,
+  type TextChunkPreview,
+} from './ingestion'
+export {
+  createDurableTaskStep,
+  listDurableTaskSteps,
+  updateDurableTaskStep,
+  recordDurableCheckpoint,
+  getLatestDurableCheckpoint,
+  recordDurableOperation,
+  updateDurableOperation,
+  createDurableArtifact,
+  listDurableArtifacts,
+  recordDurableUserTurn,
+  getLatestDurableUserTurn,
+  type DurableTaskStep,
+  type DurableCheckpoint,
+  type DurableOperation,
+  type DurableArtifact,
+  type DurableUserTurn,
+} from './durableStore'
+export {
   generateExcelFile,
   generateWordFile,
   generatePdfFile,

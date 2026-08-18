@@ -385,9 +385,11 @@ export async function getProperty(id: string): Promise<any | null> {
 export async function createProperty(p: Partial<Property>): Promise<string> {
   const db = await getDB()
   const id = genId()
+  const area = p.area ?? (p as any).area_sqm ?? 0
+  const areaSqm = (p as any).area_sqm ?? p.area ?? 0
   await db.runAsync(
           'INSERT INTO properties (id,name,description,price,area,latitude,longitude,address,status,type,owner_name,owner_phone,owner_email,broker_name,broker_phone,icon_uri,media,geojson,category,area_sqm) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-      [id, p.name || '', p.description || '', p.price || 0, p.area || 0, p.latitude || 0, p.longitude || 0, p.address || '', p.status || 'for_sale', p.type || 'apartment', p.owner_name || '', p.owner_phone || '', p.owner_email || '', (p as any).broker_name || '', (p as any).broker_phone || '', (p as any).icon_uri || '', (p as any).media || '[]', (p as any).geojson || '', (p as any).category || 'general', (p as any).area_sqm || 0]
+      [id, p.name || '', p.description || '', p.price || 0, area, p.latitude || 0, p.longitude || 0, p.address || '', p.status || 'for_sale', p.type || 'apartment', p.owner_name || '', p.owner_phone || '', p.owner_email || '', (p as any).broker_name || '', (p as any).broker_phone || '', (p as any).icon_uri || '', (p as any).media || '[]', (p as any).geojson || '', (p as any).category || 'general', areaSqm]
 
   )
   await logChange({ action: 'create', scope: 'properties', scopeId: id, after: p, summary: `إنشاء عقار "${p.name || ''}"` })
@@ -400,7 +402,10 @@ export async function updateProperty(id: string, p: Partial<Property>): Promise<
   if (!before) throw new Error(`العقار (${id}) غير موجود.`)
   const allowed = new Set(['name', 'description', 'price', 'area', 'latitude', 'longitude', 'address', 'status', 'type', 'owner_name', 'owner_phone', 'owner_email', 'broker_name', 'broker_phone', 'icon_uri', 'media', 'geojson', 'category', 'area_sqm'
 ])
-  const entries = Object.entries(p).filter(([key]) => allowed.has(key))
+  const normalized = { ...p } as Record<string, any>
+  if (normalized.area == null && normalized.area_sqm != null) normalized.area = normalized.area_sqm
+  if (normalized.area_sqm == null && normalized.area != null) normalized.area_sqm = normalized.area
+  const entries = Object.entries(normalized).filter(([key]) => allowed.has(key))
   if (!entries.length) return
   await db.runAsync(`UPDATE properties SET ${entries.map(([key]) => `${key} = ?`).join(', ')} WHERE id = ?`, [...entries.map(([, value]) => value), id])
   await logChange({ action: 'update', scope: 'properties', scopeId: id, before, after: Object.fromEntries(entries), summary: `تعديل عقار (${id})` })

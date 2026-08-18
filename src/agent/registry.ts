@@ -38,12 +38,26 @@ import {
   removeAttachment,
 } from '../database/workspace'
 import { queryChangeLog, changeLogStats, dailyActorStats } from '../database/audit'
-import { searchEntities, setCustomValue } from '../database/projects'
+import { setCustomValue } from '../database/projects'
 import { DOMAIN_TOOLS } from './domainTools'
 import { getScreenCatalog } from './screenCatalog'
 import type { EntityKey } from './catalog'
+import { getAsset, listAssetDerivatives, listAssets } from '../assistant/assetStore'
+import { runAssetIngestion } from '../assistant/ingestion'
 
 type QueryFilterInput = { field?: string; op?: string; value?: any; value2?: any }
+
+const SEARCH_EVERYTHING_ENTITIES: EntityKey[] = ['properties', 'clients', 'offers', 'campaigns', 'viewings', 'waypoints', 'areas', 'projects', 'blocks', 'plots']
+
+async function searchEverything(query: string): Promise<Record<string, any[]>> {
+  const needle = query.trim()
+  const result: Record<string, any[]> = {}
+  await Promise.all(SEARCH_EVERYTHING_ENTITIES.map(async (entity) => {
+    const page = await queryEntities({ entity, search: needle, limit: 100, offset: 0, withCustomValues: false })
+    result[entity] = page.rows
+  }))
+  return result
+}
 
 async function resolveOfferRelationFilters(filters: QueryFilterInput[] | undefined): Promise<QueryFilterInput[] | undefined> {
   if (!Array.isArray(filters) || !filters.length) return filters
@@ -464,12 +478,12 @@ export const TOOLS: ToolDef[] = [
   },
   {
     name: 'search_everything',
-    description: 'بحث نصي شامل في مشاريع التطبيق (مشاريع+بلوكات+قطع) — يعيد تصنيفات منفصلة لكل نوع',
+    description: 'بحث نصي شامل في بيانات التطبيق الأساسية (عقارات وعملاء وعروض ومشاريع وبلوكات وقطع وغيرها) — يعيد تصنيفات منفصلة لكل نوع',
     args: [
       { name: 'query', type: 'string', required: true, description: 'النص المراد البحث عنه' },
     ],
     handler: async (args) => {
-      return await searchEntities(String(args.query ?? ''))
+      return await searchEverything(String(args.query ?? ''))
     },
   },
   {
@@ -751,9 +765,39 @@ export const TOOLS: ToolDef[] = [
   },
   {
     name: 'list_attachments',
-    description: 'قائمة الملفات المرفوعة في كل الجلسات (Excel/CSV/نصوص...)',
+    description: 'قائمة الملفات المرفوعة في كل الجلسات (Excel/CSV/نصوص...) مع معرف الأصل وحالته إن كان مسجلاً في Asset Store.',
     args: [],
     handler: async () => listAttachments(),
+  },
+  {
+    name: 'inspect_asset',
+    description: 'فحص أصل محلي موحد قبل أي قراءة أو استيراد: يعيد kind وMIME والحجم والحالة والمشتقات والتحذيرات دون تحميل الملف كاملاً إلى سياق النموذج.',
+    args: [
+      { name: 'asset_id', type: 'string', description: 'معرف الأصل أو المرفق' },
+      { name: 'name', type: 'string', description: 'اسم الملف عند عدم توفر المعرف' },
+    ],
+    handler: async (args) => {
+      const assetId = args.asset_id ? String(args.asset_id) : ''
+      const asset = assetId ? await getAsset(assetId) : null
+      const fallback = !asset && args.name
+        ? (await listAssets()).find((candidate) => candidate.name === String(args.name).trim()) ?? null
+        : null
+      const target = asset ?? fallback
+      if (!target) return { ok: false, error: 'الأصل المطلوب غير موجود في Asset Store. استخدم list_attachments أولاً.' }
+      const ingestion = await runAssetIngestion(target.id, 'manifest')
+      const refreshed = await getAsset(target.id)
+      const derivatives = await listAssetDerivatives(target.id)
+      return {
+        ok: ingestion.status === 'completed',
+        asset: refreshed ?? target,
+        ingestion,
+        derivatives,
+        warnings: [
+          ...(target.state === 'failed' ? ['فشل أحد مسارات المعالجة؛ لا تعتبر الأصل جاهزاً للاستيراد.'] : []),
+          ...(target.state === 'stored' ? ['الأصل محفوظ محلياً ولم يكتمل التحليل الدلالي بعد.'] : []),
+        ],
+      }
+    },
   },
   {
     name: 'read_uploaded_file',

@@ -14,7 +14,23 @@ vi.mock('expo-sqlite', () => ({
     getEachAsync: vi.fn(async function* () {}),
   })),
 }))
-vi.mock('expo-file-system/legacy', () => ({ getInfoAsync: vi.fn(async () => ({ exists: false, size: 0 })) }))
+vi.mock('expo-file-system', () => ({
+  File: class File {
+    uri: string
+    constructor(uri: string) { this.uri = uri }
+    async text() { return '' }
+    async arrayBuffer() { return new ArrayBuffer(0) }
+    async base64() { return '' }
+  },
+  Directory: class Directory {},
+  Paths: { cache: '', document: '' },
+}))
+vi.mock('expo-file-system/legacy', () => ({
+  cacheDirectory: 'file:///cache/',
+  documentDirectory: 'file:///documents/',
+  EncodingType: { Base64: 'base64' },
+  getInfoAsync: vi.fn(async () => ({ exists: false, size: 0 })),
+}))
 vi.mock('expo-notifications', () => ({
   AndroidImportance: { DEFAULT: 3, HIGH: 4 },
   setNotificationHandler: vi.fn(),

@@ -91,6 +91,13 @@ function pickData(fields: { name: string }[], data: Record<string, any>): Record
   return out
 }
 
+function normalizePropertyPatch(data: Record<string, any>): Record<string, any> {
+  const out = { ...data }
+  if (out.area == null && out.area_sqm != null) out.area = out.area_sqm
+  if (out.area_sqm == null && out.area != null) out.area_sqm = out.area
+  return out
+}
+
 function assertKnownPatchFields(entity: EntityKey, fields: { name: string }[], data: Record<string, any>): void {
   const allowed = new Set(fields.map((field) => field.name))
   const unknown = Object.keys(data ?? {}).filter((key) => !allowed.has(key))
@@ -286,7 +293,8 @@ export async function agentUpdate(spec: UpdateSpec): Promise<{ id: string; chang
   if (!entity) throw new Error(`Unknown entity: ${spec.entity}`)
   const before = await assertExistingRecord(spec.entity, spec.id)
   assertKnownPatchFields(spec.entity, entity.fields, spec.data)
-  const d = pickData(entity.fields, spec.data)
+  const picked = pickData(entity.fields, spec.data)
+  const d = spec.entity === 'properties' ? normalizePropertyPatch(picked) : picked
   const changedFields = Object.keys(d).filter((key) => JSON.stringify(before[key]) !== JSON.stringify(d[key]))
   if (changedFields.length === 0) throw new Error(`لا توجد تغييرات فعلية في ${spec.entity} بالمعرف ${spec.id}. لم تتم أي كتابة.`)
 

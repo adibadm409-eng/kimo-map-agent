@@ -14,7 +14,23 @@ vi.mock('expo-sqlite', () => ({
     getEachAsync: vi.fn(async function* () {}),
   })),
 }))
-vi.mock('expo-file-system/legacy', () => ({ getInfoAsync: vi.fn(async () => ({ exists: false, size: 0 })) }))
+vi.mock('expo-file-system', () => ({
+  File: class File {
+    uri: string
+    constructor(uri: string) { this.uri = uri }
+    async text() { return '' }
+    async arrayBuffer() { return new ArrayBuffer(0) }
+    async base64() { return '' }
+  },
+  Directory: class Directory {},
+  Paths: { cache: '', document: '' },
+}))
+vi.mock('expo-file-system/legacy', () => ({
+  cacheDirectory: 'file:///cache/',
+  documentDirectory: 'file:///documents/',
+  EncodingType: { Base64: 'base64' },
+  getInfoAsync: vi.fn(async () => ({ exists: false, size: 0 })),
+}))
 vi.mock('expo-notifications', () => ({
   AndroidImportance: { DEFAULT: 3, HIGH: 4 },
   setNotificationHandler: vi.fn(),
@@ -53,9 +69,8 @@ describe('unified mutation contract', () => {
       id: 'property-1',
       data: { price: 19500000, area: 2600, project: 'wrong-project', block: 'wrong-block', plot: 'wrong-plot' },
     })
-    expect(property.data).toEqual({ price: 19500000, area: 2600, project: 'wrong-project', block: 'wrong-block', plot: 'wrong-plot' })
+    expect(property.data).toEqual({ price: 19500000, area: 2600, area_sqm: 2600, project: 'wrong-project', block: 'wrong-block', plot: 'wrong-plot' })
     expect(property.data).not.toHaveProperty('project_id')
-    expect(property.data).not.toHaveProperty('area_sqm')
 
     const client = adaptToolArgs('mutate_record', {
       operation: 'update',
@@ -81,6 +96,16 @@ describe('unified mutation contract', () => {
   it('routes existing-project field updates to project_operations', () => {
     const match = matchSkill('عدّل نوع التقسيط للقطعة A-01 في مشروع QA-LAND-PROJECT-2026 إلى monthly')
     expect(match.skill.id).toBe('project_operations')
+  })
+
+  it('normalizes property area aliases at the tool boundary', () => {
+    const patch = adaptToolArgs('mutate_record', {
+      operation: 'update',
+      entity: 'properties',
+      id: 'property-1',
+      data: { area_sqm: '420' },
+    })
+    expect(patch.data).toMatchObject({ area_sqm: '420', area: '420' })
   })
 
   it('does not inject undefined project aliases into a minimal plot patch', () => {

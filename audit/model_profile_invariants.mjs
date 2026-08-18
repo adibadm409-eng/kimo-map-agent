@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { defaultProvider } from '../src/assistant/providers.ts'
+import { defaultProvider, filterChatModels, providerCapabilities } from '../src/assistant/providers.ts'
 import { resolveModelProfile, profileAllowsParam } from '../src/assistant/modelProfiles.ts'
 
 const openrouter = resolveModelProfile(defaultProvider('openrouter'), 'openai/gpt-5.5')
@@ -16,6 +16,9 @@ assert.equal(custom.supports.tools, false)
 assert.equal(custom.supports.streaming, false)
 assert.equal(custom.supports.parallelTools, false)
 assert.equal(custom.maxTokensField, 'unknown')
+const declaredAudio = providerCapabilities(defaultProvider('openai'), 'gpt-4o-audio-preview')
+assert.equal(declaredAudio.supportsInputAudio, true)
+assert.deepEqual(filterChatModels(['gpt-4o-audio-preview', 'text-embedding-3-small', 'whisper-1', 'gpt-5.4-mini']), ['gpt-4o-audio-preview', 'gpt-5.4-mini'])
 
 const catalog = resolveModelProfile(defaultProvider('openrouter'), 'qwen/qwen3.5', {
   id: 'qwen/qwen3.5',

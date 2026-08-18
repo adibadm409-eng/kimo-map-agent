@@ -35,6 +35,7 @@ export interface ProviderDef {
   modelsKind: 'openai' | 'gemini' | 'anthropic' | 'none'
   hint?: string
   note?: string
+  capabilityOverrides?: Record<string, Partial<ProviderCapabilities>>
 }
 
 export interface CustomProviderDef {
@@ -155,6 +156,15 @@ export const PROVIDERS: ProviderDef[] = [
   },
 ]
 
+const DECLARED_MODEL_CAPABILITIES: Record<string, Partial<ProviderCapabilities>> = {
+  'gemini:gemini-2.5-flash': { supportsChat: true, supportsVision: true, supportsTools: true, supportsInputAudio: true },
+  'gemini:gemini-3.5-flash': { supportsChat: true, supportsVision: true, supportsTools: true, supportsInputAudio: true },
+  'openai:gpt-4o-audio-preview': { supportsChat: true, supportsVision: true, supportsTools: true, supportsInputAudio: true },
+  'openai:gpt-4o-mini-audio-preview': { supportsChat: true, supportsVision: true, supportsTools: true, supportsInputAudio: true },
+  'mistral:voxtral-small-latest': { supportsChat: true, supportsVision: false, supportsTools: true, supportsInputAudio: true, audioFormats: ['wav', 'mp3', 'm4a', 'webm'] },
+  'mistral:mistral-small-3.1-24b-instruct-2503': { supportsChat: true, supportsVision: true, supportsTools: true, supportsInputAudio: false },
+}
+
 function providerKey(id: ProviderId, customId?: string): string {
   return id === 'custom' && customId ? `custom:${customId}` : id
 }
@@ -194,6 +204,7 @@ function isKnownAudioModel(def: ProviderDef, model: string): boolean {
 
 export function providerCapabilities(def: ProviderDef, model = ''): ProviderCapabilities {
   const normalizedModel = model.toLowerCase()
+  const declared = def.capabilityOverrides?.[normalizedModel] ?? DECLARED_MODEL_CAPABILITIES[`${def.id}:${normalizedModel}`]
   const newerOpenAiStyle = (
     /^(?:gpt-5|o[1-9])/.test(normalizedModel) && ['openai', 'openrouter', 'custom'].includes(def.id)
   ) || (
@@ -208,17 +219,17 @@ export function providerCapabilities(def: ProviderDef, model = ''): ProviderCapa
   const supportsStreaming = def.id !== 'custom'
   const supportsStreamOptions = ['openai', 'deepseek', 'openrouter'].includes(def.id)
   return {
-    supportsChat,
-    supportsVision,
-    supportsTools,
-    supportsParallelTools,
-    supportsStreaming,
+    supportsChat: declared?.supportsChat ?? supportsChat,
+    supportsVision: declared?.supportsVision ?? supportsVision,
+    supportsTools: declared?.supportsTools ?? supportsTools,
+    supportsParallelTools: declared?.supportsParallelTools ?? supportsParallelTools,
+    supportsStreaming: declared?.supportsStreaming ?? supportsStreaming,
     // stream_options ليس جزءاً مضموناً من كل بوابات OpenAI-compatible.
-    supportsStreamOptions,
-    maxTokensField: newerOpenAiStyle ? 'max_completion_tokens' : 'max_tokens',
-    preservesThoughtSignatures: geminiFamily,
-    supportsInputAudio,
-    audioFormats: supportsInputAudio ? ['wav', 'mp3', 'm4a', 'webm'] : [],
+    supportsStreamOptions: declared?.supportsStreamOptions ?? supportsStreamOptions,
+    maxTokensField: declared?.maxTokensField ?? (newerOpenAiStyle ? 'max_completion_tokens' : 'max_tokens'),
+    preservesThoughtSignatures: declared?.preservesThoughtSignatures ?? geminiFamily,
+    supportsInputAudio: declared?.supportsInputAudio ?? supportsInputAudio,
+    audioFormats: declared?.audioFormats ?? (supportsInputAudio ? ['wav', 'mp3', 'm4a', 'webm'] : []),
   }
 }
 
@@ -298,7 +309,9 @@ export function normalizeBaseUrl(url: string): string {
 
 /** مصفاة أسماء الموديلات غير القابلة للاستخدام في الدردشة. */
 export function filterChatModels(models: string[]): string[] {
-  const excluded = /embed|rerank|image|whisper|audio|speech|tts|transcribe|moderation|search-preview|realtime/i
+  // الصوت/vision قد يكونان نمطي محادثة صالحين؛ لا نحجبهما من القائمة لمجرد الاسم.
+  // نحجب فقط النماذج التي لا تمثل محادثة عادةً، ثم يطبق ModelProfile بوابة القدرة عند الإرسال.
+  const excluded = /embed|rerank|image-generation|image-preview|whisper|tts|transcribe|moderation|search-preview|realtime/i
   return models.filter((m) => !excluded.test(m))
 }
 

@@ -47,6 +47,7 @@ export const UNIVERSAL_TOOLS = new Set([
   'generate_file', 'preview_update', 'undo_last', 'project_memory_save', 'project_memory_read',
   'list_generated_files', 'review_generated_file', 'current_local_time', 'project_profile_get', 'project_nodes_list',
   'project_tree', 'project_financials', 'installment_schedule', 'buyer_summary', 'payment_ledger',
+  'list_attachments', 'inspect_asset', 'read_uploaded_file',
   'dashboard_kpis', 'project_cashflow', 'project_integrity_check', 'list_workspaces', 'workspace_get',
 ])
 
@@ -84,7 +85,7 @@ ${modeNote}
 - بروتوكول الإثبات قبل الكلام: إذا طلب المستخدم قراءة شجرة مشروع أو أرقاماً مالية أو أقساطاً أو مؤشرات أو حالة محلية محددة، يجب أن تستدعي أداة القراءة المناسبة أولاً (مثل project_tree أو project_nodes_list أو project_financials أو installment_schedule أو project_cashflow أو data_snapshot بحسب النطاق)، ثم تبني الإجابة من الملاحظة الفعلية فقط. لا تكتب جدولاً أو رقماً أو اسماً تفصيلياً من الذاكرة، ولا تستخدم مثالاً تخمينياً على أنه نتيجة التطبيق. إذا لم تُرجع الأداة نتيجة ناجحة، قل إن القراءة لم تكتمل بدلاً من اختلاق بديل.
 - جدول التقسيط تحديداً: عند ذكر «جدول التقسيط» أو «الدفعة القادمة» أو «قسط قطعة»، استخدم أداة installment_schedule بعد تحديد القطعة، وأرسل رقم القطعة الظاهر للمستخدم مثل A-01 في الحقل plot_id واسم المشروع أو مرجعه في الحقل project_id عند توفره. لا تبنِ تواريخ أو مبالغ أو حالات دفع من الذاكرة. إذا أعادت الأداة أن القطعة ليست قيد التقسيط، انقل هذه النتيجة كما هي ولا تستبدلها بجدول افتراضي.
 - مساحات العمل المرنة: workspace_* — المشاريع الحرة بجداول وأعمدة مخصصة (منشأة من الصفر أو مستوردة من ملفات).
-- الملفات المرفوعة: list_attachments ثم read_uploaded_file (معاينة دائماً أولاً) ثم import_project_file إن كان منظماً — عندما يذكر الطلب ملفاً مرفوعاً أو استيراداً.
+- الملفات والأصول المرفوعة: list_attachments ثم inspect_asset لفحص الهوية والحالة والمشتقات، ثم read_uploaded_file لمعاينة المحتوى فعلياً قبل import_project_file أو ربط الوسيط. لا تعتبر الأصل جاهزاً لمجرد حفظه في Asset Store؛ إذا كانت الحالة processing/failed فاذكر ذلك أو عالج المشتق المناسب أولاً.
 - الملفات المولّدة: بعد توليد أي ملف بـ generate_file راجِعه بنفسك للتأكد من سلامته ومحتواه بـ list_generated_files ثم review_generated_file (يقرأ المحتوى الفعلي)، وإذا طلب المستخدم مراجعة تقرير وُلّد سابقاً فاستخدمها فوراً بدل افتراض سلامته.
 - سجل التدقيق: audit_log_query (فلاتر: من نفّذ، الأداة، النطاق، الفترة) و audit_log_summary (إحصائيات) — عندما يسأل المستخدم عن من غيّر ماذا ومتى، أو عمليات جرت في جلسة أو فترة معينة، أو تقييم ما نُفّذ. عند عبارة «في هذه الجلسة» أرسل current_session=true ولا تخترع أو تطلب session_id؛ التطبيق يحقن معرف الجلسة محلياً. يمكنك أيضاً التحقق بنفسك من أي عملية سابقة نفّذتها بقراءة سجل التدقيق.
 - البحث الشامل: search_everything — عندما لا يحدد الطلب قسماً واضحاً: ابحث شاملاً أولاً ثم ضيّق بناءً على النتائج.

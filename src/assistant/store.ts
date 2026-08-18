@@ -3,6 +3,7 @@ import { defaultProvider, PROVIDERS, type CustomProviderDef, type ProviderId } f
 import * as SQLite from 'expo-sqlite'
 import * as SecureStore from 'expo-secure-store'
 import { Platform } from 'react-native'
+import { createDurableTaskStep, ensureDurableSchema, recordDurableCheckpoint, type DurableStepStatus } from './durableStore'
 
 export type AgentMode = 'read' | 'edit'
 export type MessageKind = 'text' | 'tool' | 'tool_call' | 'ask_user' | 'confirmation' | 'file' | 'link' | 'error' | 'system' | 'progress'
@@ -124,6 +125,7 @@ function db(): Promise<SQLite.SQLiteDatabase> {
         -- ترحيل قواعد البيانات التي أنشئت قبل إضافة صورة after لسجل التراجع.
       `)
       try { await d.runAsync('ALTER TABLE agent_undo ADD COLUMN after TEXT') } catch {}
+      await ensureDurableSchema(d)
       return d
     })()
   }
@@ -167,6 +169,32 @@ export async function createTaskRun(input: Pick<AgentTaskRun, 'sessionId' | 'use
   const task: AgentTaskRun = { id: `task-${genId()}`, sessionId: input.sessionId, userRequest: input.userRequest, skillId: input.skillId, intent: input.intent, confidence: input.confidence, status: 'proposed', plan: input.plan, evidence: [], startedAt: now, updatedAt: now }
   await d.runAsync('INSERT INTO agent_task_runs (id, session_id, user_request, skill_id, intent, confidence, status, plan, evidence, started_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', task.id, task.sessionId, task.userRequest, task.skillId ?? null, task.intent ?? null, task.confidence ?? null, task.status, task.plan ? JSON.stringify(task.plan) : null, '[]', now, now)
   await appendTaskEvent(task.id, undefined, 'proposed', { userRequest: task.userRequest })
+  const planSteps = Array.isArray(input.plan?.steps) ? input.plan.steps : []
+  for (const [index, step] of planSteps.entries()) {
+    const status: DurableStepStatus = step.status === 'done'
+      ? 'verified'
+      : step.status === 'blocked'
+        ? 'blocked'
+        : step.status === 'skipped'
+          ? 'cancelled'
+          : step.status === 'active'
+            ? 'running'
+            : 'pending'
+    await createDurableTaskStep({
+      taskId: task.id,
+      ordinal: index,
+      title: String(step.title ?? ''),
+      operation: {
+        planStepId: step.id,
+        detail: step.detail ?? '',
+        requiresVerification: !['understand', 'plan', 'answer', 'present', 'decide'].includes(step.id),
+      },
+      status,
+      verificationStatus: status === 'verified' ? 'verified' : status === 'blocked' ? 'blocked' : 'pending',
+      resultRef: step.resultSummary,
+      lastError: step.error,
+    })
+  }
   return task
 }
 
@@ -186,13 +214,29 @@ export function canTransitionTask(from: AgentTaskStatus, to: AgentTaskStatus): b
 
 export async function transitionTaskRun(taskId: string, status: AgentTaskStatus, patch: Partial<Pick<AgentTaskRun, 'currentStepId' | 'evidence' | 'lastError' | 'plan'>> = {}): Promise<void> {
   const d = await db()
-  const row = await d.getFirstAsync<{ status: AgentTaskStatus }>('SELECT status FROM agent_task_runs WHERE id = ?', taskId)
+  const row = await d.getFirstAsync<{ status: AgentTaskStatus; evidence?: string }>('SELECT status, evidence FROM agent_task_runs WHERE id = ?', taskId)
   if (!row || !canTransitionTask(row.status, status)) return
   if (status === 'completed' && (!patch.evidence || patch.evidence.length === 0)) return
   const now = Date.now()
   const completedAt = ['completed', 'failed', 'cancelled'].includes(status) ? now : null
-  await d.runAsync('UPDATE agent_task_runs SET status = ?, current_step_id = COALESCE(?, current_step_id), evidence = COALESCE(?, evidence), last_error = COALESCE(?, last_error), plan = COALESCE(?, plan), updated_at = ?, completed_at = ? WHERE id = ?', status, patch.currentStepId ?? null, patch.evidence ? JSON.stringify(patch.evidence) : null, patch.lastError ?? null, patch.plan ? JSON.stringify(patch.plan) : null, now, completedAt, taskId)
+  let currentEvidence: any[] = []
+  try { currentEvidence = JSON.parse(row.evidence || '[]') } catch {}
+  const mergedEvidence = patch.evidence ? [...currentEvidence, ...patch.evidence].slice(-100) : null
+  await d.runAsync('UPDATE agent_task_runs SET status = ?, current_step_id = COALESCE(?, current_step_id), evidence = COALESCE(?, evidence), last_error = COALESCE(?, last_error), plan = COALESCE(?, plan), updated_at = ?, completed_at = ? WHERE id = ?', status, patch.currentStepId ?? null, mergedEvidence ? JSON.stringify(mergedEvidence) : null, patch.lastError ?? null, patch.plan ? JSON.stringify(patch.plan) : null, now, completedAt, taskId)
   await appendTaskEvent(taskId, row.status, status, patch)
+  await recordDurableCheckpoint({
+    taskId,
+    stepId: patch.currentStepId,
+    state: status,
+    nextAction: status === 'awaiting_user' ? 'await_user' : status === 'completed' ? 'done' : status === 'failed' ? 'stop' : 'continue',
+    payload: {
+      status,
+      currentStepId: patch.currentStepId,
+      evidenceCount: patch.evidence?.length,
+      hasPlan: !!patch.plan,
+      lastError: patch.lastError,
+    },
+  })
 }
 
 async function appendTaskEvent(taskId: string, fromStatus: AgentTaskStatus | undefined, toStatus: AgentTaskStatus, payload: any): Promise<void> {
@@ -209,6 +253,12 @@ export async function appendTaskEvidence(taskId: string, evidence: any): Promise
   const next = [...current, { ...evidence, recordedAt: Date.now() }].slice(-100)
   await d.runAsync('UPDATE agent_task_runs SET evidence = ?, updated_at = ? WHERE id = ?', JSON.stringify(next), Date.now(), taskId)
   await d.runAsync('INSERT INTO agent_task_events (id, task_id, event_type, from_status, to_status, payload, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)', genId(), taskId, 'evidence', null, null, JSON.stringify(next[next.length - 1]), Date.now())
+  await recordDurableCheckpoint({
+    taskId,
+    state: 'evidence',
+    nextAction: 'continue',
+    payload: { evidence: next[next.length - 1], evidenceCount: next.length },
+  })
 }
 
 export async function getLatestTaskRun(sessionId: string): Promise<AgentTaskRun | null> {

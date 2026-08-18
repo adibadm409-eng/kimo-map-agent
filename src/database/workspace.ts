@@ -67,6 +67,9 @@ export interface WorkspaceRow {
 
 export type MediaTargetType = 'property' | 'offer'
 
+export type AssetKind = 'image' | 'audio' | 'video' | 'document' | 'spreadsheet' | 'text' | 'unknown'
+export type AssetState = 'captured' | 'stored' | 'inspected' | 'parsed' | 'indexed' | 'linked' | 'failed' | 'purged'
+
 export interface AttachmentRecord {
   id: string
   sessionId: string
@@ -75,6 +78,11 @@ export interface AttachmentRecord {
   size: number
   mime: string | null
   createdAt: number
+  assetKind?: AssetKind
+  state?: AssetState
+  sha256?: string
+  metadata?: Record<string, unknown>
+  updatedAt?: number
 }
 
 export interface EntityMediaLink {
@@ -115,11 +123,61 @@ function db(): Promise<SQLite.SQLiteDatabase> {
         CREATE TABLE IF NOT EXISTS agent_attachments (
           id TEXT PRIMARY KEY, session_id TEXT, name TEXT, uri TEXT, size INTEGER, mime TEXT, created_at INTEGER
         );
+        CREATE TABLE IF NOT EXISTS agent_assets (
+          id TEXT PRIMARY KEY,
+          attachment_id TEXT NOT NULL UNIQUE,
+          session_id TEXT NOT NULL,
+          kind TEXT NOT NULL DEFAULT 'unknown',
+          name TEXT NOT NULL,
+          mime TEXT DEFAULT '',
+          byte_size INTEGER NOT NULL DEFAULT 0,
+          local_uri TEXT NOT NULL,
+          sha256 TEXT DEFAULT '',
+          state TEXT NOT NULL DEFAULT 'captured',
+          source TEXT DEFAULT 'user',
+          metadata TEXT DEFAULT '{}',
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          FOREIGN KEY (attachment_id) REFERENCES agent_attachments (id) ON DELETE CASCADE
+        );
+        CREATE TABLE IF NOT EXISTS agent_asset_derivatives (
+          id TEXT PRIMARY KEY,
+          asset_id TEXT NOT NULL,
+          kind TEXT NOT NULL,
+          uri TEXT,
+          mime TEXT DEFAULT '',
+          byte_size INTEGER DEFAULT 0,
+          checksum TEXT DEFAULT '',
+          state TEXT NOT NULL DEFAULT 'available',
+          summary TEXT DEFAULT '',
+          metadata TEXT DEFAULT '{}',
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          FOREIGN KEY (asset_id) REFERENCES agent_assets (id) ON DELETE CASCADE
+        );
         CREATE TABLE IF NOT EXISTS project_memory (
           id TEXT PRIMARY KEY, workspace_id TEXT, kind TEXT, body TEXT, created_at INTEGER, updated_at INTEGER
         );
         CREATE TABLE IF NOT EXISTS agent_generated_files (
           id TEXT PRIMARY KEY, session_id TEXT, name TEXT, uri TEXT, format TEXT, size INTEGER, created_at INTEGER
+        );
+        CREATE TABLE IF NOT EXISTS workspace_import_jobs (
+          id TEXT PRIMARY KEY,
+          attachment_id TEXT NOT NULL,
+          workspace_id TEXT NOT NULL,
+          workspace_name TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'running',
+          sheet_index INTEGER NOT NULL DEFAULT 0,
+          current_row INTEGER NOT NULL DEFAULT 0,
+          total_rows INTEGER NOT NULL DEFAULT 0,
+          inserted INTEGER NOT NULL DEFAULT 0,
+          skipped INTEGER NOT NULL DEFAULT 0,
+          errors INTEGER NOT NULL DEFAULT 0,
+          error_message TEXT DEFAULT '',
+          metadata TEXT DEFAULT '{}',
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          UNIQUE(attachment_id, workspace_name)
         );
         CREATE INDEX IF NOT EXISTS idx_prj_mem_ws ON project_memory (workspace_id);
         CREATE INDEX IF NOT EXISTS idx_ws_tables ON workspace_tables (workspace_id);
@@ -128,7 +186,13 @@ function db(): Promise<SQLite.SQLiteDatabase> {
         CREATE INDEX IF NOT EXISTS idx_ws_rows_created ON workspace_rows (table_id, created_at);
         CREATE INDEX IF NOT EXISTS idx_ws_attach_session ON agent_attachments (session_id);
         CREATE INDEX IF NOT EXISTS idx_ws_attach_created ON agent_attachments (created_at);
+        CREATE INDEX IF NOT EXISTS idx_agent_assets_session ON agent_assets (session_id, created_at);
+        CREATE INDEX IF NOT EXISTS idx_agent_assets_state ON agent_assets (state, updated_at);
+        CREATE INDEX IF NOT EXISTS idx_agent_assets_checksum ON agent_assets (sha256);
+        CREATE INDEX IF NOT EXISTS idx_agent_asset_derivatives_asset ON agent_asset_derivatives (asset_id, created_at);
         CREATE INDEX IF NOT EXISTS idx_gen_files_session ON agent_generated_files (session_id);
+        CREATE INDEX IF NOT EXISTS idx_workspace_import_jobs_asset ON workspace_import_jobs (attachment_id, updated_at);
+        CREATE INDEX IF NOT EXISTS idx_workspace_import_jobs_status ON workspace_import_jobs (status, updated_at);
       `)
       return d
     })()
@@ -688,7 +752,13 @@ export async function saveAttachment(data: { sessionId: string; name: string; ur
 
 export async function listAttachments(): Promise<AttachmentRecord[]> {
   const d = await db()
-  const rows = await d.getAllAsync<any>('SELECT * FROM agent_attachments ORDER BY created_at DESC LIMIT 100')
+  const rows = await d.getAllAsync<any>(`
+    SELECT a.*, r.kind AS asset_kind, r.state AS asset_state, r.sha256 AS asset_sha256,
+           r.metadata AS asset_metadata, r.updated_at AS asset_updated_at
+    FROM agent_attachments a
+    LEFT JOIN agent_assets r ON r.attachment_id = a.id
+    ORDER BY a.created_at DESC LIMIT 100
+  `)
   return rows.map((r: any) => ({
     id: r.id,
     sessionId: r.session_id,
@@ -697,7 +767,22 @@ export async function listAttachments(): Promise<AttachmentRecord[]> {
     size: r.size ?? 0,
     mime: r.mime ?? null,
     createdAt: r.created_at ?? 0,
+    assetKind: r.asset_kind ?? undefined,
+    state: r.asset_state ?? undefined,
+    sha256: r.asset_sha256 ?? undefined,
+    metadata: parseMetadata(r.asset_metadata),
+    updatedAt: r.asset_updated_at ?? undefined,
   }))
+}
+
+function parseMetadata(value: unknown): Record<string, unknown> {
+  if (!value) return {}
+  try {
+    const parsed = JSON.parse(String(value))
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
 }
 
 function parseMediaList(value: unknown): Record<string, any>[] {
@@ -866,6 +951,67 @@ export interface ImportResult {
   workspaceId: string
   workspaceName: string
   tables: { name: string; rowCount: number; columns: string[] }[]
+  jobId?: string
+  status?: 'completed' | 'failed' | 'resumed'
+}
+
+type ImportTableProgress = { id: string; name: string; rowCount: number; columns: string[] }
+type ImportJobMetadata = { ext: string; tables: ImportTableProgress[] }
+
+async function getImportJob(attachmentId: string, workspaceName: string): Promise<any | null> {
+  const d = await db()
+  return d.getFirstAsync<any>('SELECT * FROM workspace_import_jobs WHERE attachment_id = ? AND workspace_name = ?', attachmentId, workspaceName)
+}
+
+async function createOrResumeImportJob(attachmentId: string, workspaceName: string, workspaceId: string, ext: string): Promise<any> {
+  const d = await db()
+  const existing = await getImportJob(attachmentId, workspaceName)
+  if (existing) return existing
+  const now = Date.now()
+  const jobId = `import-${genId()}`
+  await d.runAsync(
+    `INSERT INTO workspace_import_jobs
+      (id, attachment_id, workspace_id, workspace_name, status, metadata, created_at, updated_at)
+     VALUES (?, ?, ?, ?, 'running', ?, ?, ?)`,
+    jobId,
+    attachmentId,
+    workspaceId,
+    workspaceName,
+    JSON.stringify({ ext, tables: [] } satisfies ImportJobMetadata),
+    now,
+    now,
+  )
+  return (await getImportJob(attachmentId, workspaceName)) as any
+}
+
+async function updateImportJob(jobId: string, patch: Record<string, unknown>): Promise<any> {
+  const d = await db()
+  const current = await d.getFirstAsync<any>('SELECT * FROM workspace_import_jobs WHERE id = ?', jobId)
+  if (!current) throw new Error(`مهمة الاستيراد (${jobId}) غير موجودة.`)
+  const allowed = ['status', 'sheet_index', 'current_row', 'total_rows', 'inserted', 'skipped', 'errors', 'error_message', 'metadata']
+  const entries = Object.entries(patch).filter(([key]) => allowed.includes(key))
+  if (entries.length) {
+    await d.runAsync(
+      `UPDATE workspace_import_jobs SET ${entries.map(([key]) => `${key} = ?`).join(', ')}, updated_at = ? WHERE id = ?`,
+      ...entries.map(([, value]) => {
+        if (value === undefined) return null
+        if (value !== null && typeof value === 'object') return JSON.stringify(value)
+        if (typeof value === 'number' || typeof value === 'string') return value
+        return value === null ? null : String(value)
+      }),
+      Date.now(),
+      jobId,
+    )
+  }
+  return d.getFirstAsync<any>('SELECT * FROM workspace_import_jobs WHERE id = ?', jobId)
+}
+
+function importMetadata(job: any): ImportJobMetadata {
+  return safeJson<ImportJobMetadata>(job?.metadata, { ext: '', tables: [] })
+}
+
+function rowsImported(job: any): number {
+  return Number(job?.inserted ?? 0) + Number(job?.skipped ?? 0)
 }
 
 export async function importProjectFile(name: string, opts?: { workspaceName?: string; maxRowsPerSheet?: number }): Promise<ImportResult> {
@@ -873,66 +1019,129 @@ export async function importProjectFile(name: string, opts?: { workspaceName?: s
   if (!att) throw new Error(`لا يوجد مرفق باسم "${name}"`)
   const ext = extensionOf(att.name)
   const base = String(opts?.workspaceName ?? att.name).replace(/\.[a-z0-9]+$/i, '')
-  const workspaceId = await createWorkspace({
-    name: base,
-    description: `مستورد من الملف "${att.name}"`,
-    origin: 'import',
-    sourceFile: att.name,
-  })
-
-  const tables: ImportResult['tables'] = []
-
-  if (ext === 'xlsx' || ext === 'xls') {
-    const base64 = await FileSystem.readAsStringAsync(att.uri, { encoding: FileSystem.EncodingType.Base64 })
-    const wb = await workbookFromBase64(base64)
-    for (const ws of wb.worksheets) {
-      const data = sheetToTableData(ws, opts?.maxRowsPerSheet ?? 8000)
-      if (!data) continue
-      const tableId = await createTable(workspaceId, data.name ?? 'جدول', data.columns.map((c) => c || 'عمود'))
-      await bulkInsertRows(tableId, data.rows)
-      tables.push({ name: data.name ?? 'جدول', rowCount: data.rows.length, columns: data.columns })
-    }
-    if (!tables.length) throw new Error('لم يتم العثور على بيانات قابلة للاستيراد في ملف الـ Excel')
-  } else if (ext === 'csv') {
-    const b64 = await FileSystem.readAsStringAsync(att.uri, { encoding: FileSystem.EncodingType.Base64 })
-    const lines = atob(b64).split(/\r?\n/).filter((l) => l.trim().length > 0)
-    if (lines.length < 1) throw new Error('ملف CSV فارغ')
-    const parseLine = (line: string): string[] => {
-      const out: string[] = []
-      let cur = ''
-      let inQ = false
-      for (let i = 0; i < line.length; i++) {
-        const ch = line[i]
-        if (inQ) {
-          if (ch === '"') {
-            if (line[i + 1] === '"') {
-              cur += '"'
-              i++
-            } else inQ = false
-          } else cur += ch
-        } else if (ch === '"') {
-          inQ = true
-        } else if (ch === ',') {
-          out.push(cur.trim())
-          cur = ''
-        } else cur += ch
-      }
-      out.push(cur.trim())
-      return out
-    }
-    const header = parseLine(lines[0]).map((c) => c || 'عمود')
-    const tableId = await createTable(workspaceId, 'الملف', header.map((c) => c || 'عمود'))
-    const rows = lines.slice(1, (opts?.maxRowsPerSheet ?? 8000) + 1).map(parseLine)
-    await bulkInsertRows(tableId, rows)
-    tables.push({ name: 'الملف', rowCount: rows.length, columns: header })
-  } else {
-    await deleteWorkspace(workspaceId)
+  const maxRows = opts?.maxRowsPerSheet ?? 8000
+  const maxSafeFullParseBytes = 20 * 1024 * 1024
+  let job = await getImportJob(att.id, base)
+  let workspaceId = job?.workspace_id as string | undefined
+  let createdWorkspace = false
+  if (!workspaceId) {
+    workspaceId = await createWorkspace({
+      name: base,
+      description: `مستورد من الملف "${att.name}"`,
+      origin: 'import',
+      sourceFile: att.name,
+    })
+    createdWorkspace = true
+    job = await createOrResumeImportJob(att.id, base, workspaceId, ext)
+  }
+  if (!job) job = await createOrResumeImportJob(att.id, base, workspaceId, ext)
+  if (job.status === 'completed') {
+    const metadata = importMetadata(job)
+    return { workspaceId, workspaceName: base, tables: metadata.tables, jobId: job.id, status: 'completed' }
+  }
+  if (ext !== 'xlsx' && ext !== 'xls' && ext !== 'csv') {
+    if (createdWorkspace) await deleteWorkspace(workspaceId)
+    await updateImportJob(job.id, { status: 'failed', error_message: 'صيغة غير مدعومة للاستيراد — ارفع ملف Excel (.xlsx) أو CSV' })
     throw new Error('صيغة غير مدعومة للاستيراد — ارفع ملف Excel (.xlsx) أو CSV')
   }
+  if (att.size > maxSafeFullParseBytes) {
+    const message = `الملف كبير (${(att.size / 1024 / 1024).toFixed(1)} ميغابايت) على parser الهاتف الحالي؛ لم أحمّله كاملاً ولم أعلن الاستيراد. استخدم CSV على دفعات أو parser أصلياً يدعم streaming.`
+    await updateImportJob(job.id, { status: 'failed', error_message: message })
+    throw new Error(message)
+  }
 
-  await logChange({ action: 'import', scope: 'workspace', scopeId: workspaceId, after: { tables: tables.map((t) => ({ name: t.name, rowCount: t.rowCount })) }, summary: `استيراد مشروع "${base}" من الملف "${att.name}" (${tables.length} جدول، ${tables.reduce((s, t) => s + t.rowCount, 0)} صف)` })
+  const resumed = Number(job.current_row ?? 0) > 0 || Number(job.sheet_index ?? 0) > 0 || rowsImported(job) > 0
+  const metadata = importMetadata(job)
+  try {
+    if (ext === 'xlsx' || ext === 'xls') {
+      const base64 = await FileSystem.readAsStringAsync(att.uri, { encoding: FileSystem.EncodingType.Base64 })
+      const wb = await workbookFromBase64(base64)
+      for (let sheetIndex = Number(job.sheet_index ?? 0); sheetIndex < wb.worksheets.length; sheetIndex++) {
+        const ws = wb.worksheets[sheetIndex]
+        const data = sheetToTableData(ws, maxRows)
+        if (!data) {
+          job = await updateImportJob(job.id, { sheet_index: sheetIndex + 1, current_row: 0 })
+          continue
+        }
+        let table = metadata.tables[sheetIndex]
+        const tableId = table?.id ?? await createTable(workspaceId, data.name ?? 'جدول', data.columns.map((c) => c || 'عمود'))
+        if (!table) {
+          table = { id: tableId, name: data.name ?? 'جدول', rowCount: 0, columns: data.columns }
+          metadata.tables[sheetIndex] = table
+        }
+        let offset = sheetIndex === Number(job.sheet_index ?? 0) ? Number(job.current_row ?? 0) : 0
+        await updateImportJob(job.id, { status: 'running', sheet_index: sheetIndex, current_row: offset, total_rows: data.rows.length, metadata })
+        while (offset < data.rows.length) {
+          const chunk = data.rows.slice(offset, offset + 250)
+          const result = await bulkInsertRows(tableId, chunk)
+          table.rowCount += result.inserted
+          offset += chunk.length
+          job = await updateImportJob(job.id, {
+            current_row: offset,
+            total_rows: data.rows.length,
+            inserted: Number(job.inserted ?? 0) + result.inserted,
+            skipped: Number(job.skipped ?? 0) + result.skipped,
+            metadata,
+          })
+        }
+        job = await updateImportJob(job.id, { sheet_index: sheetIndex + 1, current_row: 0, metadata })
+      }
+    } else {
+      const b64 = await FileSystem.readAsStringAsync(att.uri, { encoding: FileSystem.EncodingType.Base64 })
+      const lines = atob(b64).split(/\r?\n/).filter((l) => l.trim().length > 0)
+      if (lines.length < 1) throw new Error('ملف CSV فارغ')
+      const parseLine = (line: string): string[] => {
+        const out: string[] = []
+        let cur = ''
+        let inQ = false
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i]
+          if (inQ) {
+            if (ch === '"') {
+              if (line[i + 1] === '"') { cur += '"'; i++ } else inQ = false
+            } else cur += ch
+          } else if (ch === '"') inQ = true
+          else if (ch === ',') { out.push(cur.trim()); cur = '' }
+          else cur += ch
+        }
+        out.push(cur.trim())
+        return out
+      }
+      const header = parseLine(lines[0]).map((c) => c || 'عمود')
+      let table = metadata.tables[0]
+      const tableId = table?.id ?? await createTable(workspaceId, 'الملف', header)
+      if (!table) {
+        table = { id: tableId, name: 'الملف', rowCount: 0, columns: header }
+        metadata.tables[0] = table
+      }
+      let offset = Number(job.current_row ?? 0)
+      const rows = lines.slice(1, maxRows + 1)
+      await updateImportJob(job.id, { status: 'running', sheet_index: 0, current_row: offset, total_rows: rows.length, metadata })
+      while (offset < rows.length) {
+        const chunk = rows.slice(offset, offset + 250).map(parseLine)
+        const result = await bulkInsertRows(tableId, chunk)
+        table.rowCount += result.inserted
+        offset += chunk.length
+        job = await updateImportJob(job.id, {
+          current_row: offset,
+          total_rows: rows.length,
+          inserted: Number(job.inserted ?? 0) + result.inserted,
+          skipped: Number(job.skipped ?? 0) + result.skipped,
+          metadata,
+        })
+      }
+    }
+    if (!metadata.tables.length) throw new Error('لم يتم العثور على بيانات قابلة للاستيراد في الملف')
+    job = await updateImportJob(job.id, { status: 'completed', current_row: 0, metadata })
+  } catch (error: any) {
+    const message = error?.message ?? 'فشل استيراد الملف.'
+    await updateImportJob(job.id, { status: 'failed', error_message: message, metadata }).catch(() => {})
+    throw new Error(message)
+  }
 
-  return { workspaceId, workspaceName: base, tables }
+  const tables = metadata.tables.map(({ id: _id, ...table }) => table)
+  await logChange({ action: 'import', scope: 'workspace', scopeId: workspaceId, after: { tables, jobId: job.id }, summary: `استيراد مشروع "${base}" من الملف "${att.name}" (${tables.length} جدول، ${tables.reduce((s, t) => s + t.rowCount, 0)} صف)` })
+  return { workspaceId, workspaceName: base, tables, jobId: job.id, status: resumed ? 'resumed' : 'completed' }
 }
 
 /** حذف مرفق باسمه. */

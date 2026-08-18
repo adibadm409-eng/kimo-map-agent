@@ -1,5 +1,17 @@
 import { getMessages, getSettings, createSession, listUndo, activeConfig, updateSessionMeta, getPending, clearPending, addBrainOp, listBrain, clearBrain, type Message, type BrainOp, type AgentSettings } from './store'
-import { saveAttachment } from '../database/workspace'
+import { saveAsset } from './assetStore'
+import { createUserTurn, hasPayload, summarizeAssetForModel, type InputAssetKind } from './inputEnvelope'
+import {
+  findDurableTaskStep,
+  ensureDurablePlanSteps,
+  getDurableOperationSummary,
+  getDurableVerificationSummary,
+  markLatestPendingWriteVerified,
+  recordDurableOperation,
+  recordDurableUserTurn,
+  updateDurableOperation,
+  updateDurableTaskStep,
+} from './durableStore'
 import { readAudioInput } from './files'
 import { chatWithRetry, parseToolArgs, toWireToolCall, type ChatContentPart, type ChatMessage, type ToolCall } from './llm'
 import { parseToolArgumentsStrict } from './toolValidation'
@@ -7,7 +19,7 @@ import { defaultProvider, type ProviderDef, type ProviderId } from './providers'
 import { resolveModelProfile } from './modelProfiles'
 import { validateToolCallAgainstDefinitions, validateToolCallBatch } from './toolValidation'
 import { analyzeIntent, buildContextSummary } from './intent'
-import { persistUser, persistAssistantText, persistAssistantToolCalls, persistToolResult, mimeOf } from './persist'
+import { persistUser, persistAssistantText, persistAssistantToolCalls, persistToolResult } from './persist'
 import { buildSystemPrompt, getAgentFunctions, UNIVERSAL_TOOLS } from './prompts'
 import { assessSkill, getSkillById, planForSkill } from './skills'
 import { completePlanStep, type AgentPlan, type AgentSkill } from './agentContract'
@@ -18,7 +30,6 @@ import { performUndo, toolSig } from './undo'
 import { appendTaskEvidence, createTaskRun, getLatestTaskRun, transitionTaskRun } from './store'
 import { emitForSession, subscribeAgent, isAgentBusy, cancelAgent, markRunning, clearRunning, isCancelled, setAborter, clearAborter, deriveAgentOutcome, type AgentEvent, type AgentOutcome } from './agentRun'
 import { MAX_AGENT_RUNTIME_MS, MAX_REPEATED_TOOL_CALLS, MAX_TOOL_CALLS, MAX_TOOL_ROUNDS } from './constants'
-import * as FileSystem from 'expo-file-system/legacy'
 
 function providerProxy(conn: { providerId: string; baseUrl: string; providerName: string }): ProviderDef {
   if (conn.providerId.startsWith('custom:')) {
@@ -37,6 +48,24 @@ function hashOf(s: string): string {
 function truncate(s: string, n: number): string {
   const t = String(s ?? '')
   return t.length > n ? t.slice(0, n) + '…' : t
+}
+
+const NON_EVIDENCE_PLAN_STEPS = new Set(['understand', 'plan', 'answer', 'present', 'decide'])
+
+function isVerificationToolName(toolName: string, skill?: AgentSkill | null): boolean {
+  if (skill?.verificationTools.includes(toolName)) return true
+  if (['preview_update', 'property_change_preview', 'project_import_preview', 'inspect_asset', 'file_preview', 'read_uploaded_file'].includes(toolName)) return true
+  return /(?:^|_)(?:get|query|list|read|inspect|search|review|verify|integrity|snapshot|summary|tree|schedule|cashflow|financial|schema)(?:$|_)/i.test(toolName)
+}
+
+function advanceNonEvidencePlan(plan: AgentPlan): AgentPlan {
+  let current = plan
+  while (current.currentStepId) {
+    const active = current.steps.find((step) => step.id === current.currentStepId)
+    if (!active || !NON_EVIDENCE_PLAN_STEPS.has(active.id) || active.status === 'done') break
+    current = completePlanStep(current, active.id, 'تم تحديد هذه المرحلة ضمن قرار الوكيل، وتبقى مراحل التنفيذ مرتبطة بالأدلة.')
+  }
+  return current
 }
 
 // ---------- الحلقة الرئيسية ----------
@@ -104,6 +133,14 @@ async function runLoop(
           const task = await createTaskRun({ sessionId, userRequest: goal, skillId: runtimeSkill.id, intent: assessment.intent, confidence: assessment.confidence, plan: runtimePlan })
           runtimeTaskId = task.id
           await transitionTaskRun(runtimeTaskId, 'running', { plan: runtimePlan })
+        }
+      }
+      if (runtimeTaskId && runtimePlan) {
+        await ensureDurablePlanSteps(runtimeTaskId, runtimePlan.steps).catch(() => {})
+        const advancedPlan = advanceNonEvidencePlan(runtimePlan)
+        if (advancedPlan !== runtimePlan) {
+          runtimePlan = advancedPlan
+          await transitionTaskRun(runtimeTaskId, 'running', { plan: runtimePlan, currentStepId: runtimePlan.currentStepId })
         }
       }
       const shouldPlan = !!runtimeTaskId && !!runtimePlan
@@ -284,7 +321,14 @@ async function runLoop(
           const finalText = result.content ? String(result.content).trim() : ''
           const taskHasEvidence = !runtimeTaskId || (runtimeEvidenceCount > 0 && runtimeSuccessfulEvidenceCount > 0 && runtimeLastEvidenceOk)
           const readEvidenceMissing = readIntentRequiresEvidence && !(runtimeEvidenceCount > 0 && runtimeSuccessfulEvidenceCount > 0 && runtimeLastEvidenceOk)
-          if ((runtimeTaskId && !taskHasEvidence) || readEvidenceMissing) {
+          const verificationSummary = runtimeTaskId ? await getDurableVerificationSummary(runtimeTaskId).catch(() => null) : null
+          const operationSummary = runtimeTaskId ? await getDurableOperationSummary(runtimeTaskId).catch(() => null) : null
+          const durableWorkVerified = !runtimeTaskId || Boolean(
+            verificationSummary?.complete
+            && operationSummary?.complete
+            && operationSummary.pendingWrites === 0
+          )
+          if ((runtimeTaskId && (!taskHasEvidence || !durableWorkVerified)) || readEvidenceMissing) {
             // نص نية التنفيذ ليس نتيجة تنفيذ. احتفظ به كمسودة تقدم غير نهائية،
             // ثم امنح الوكيل جولة واحدة ليحوّل النية إلى أداة أو سؤال ضروري.
             if (finalText) {
@@ -322,12 +366,21 @@ async function runLoop(
               }
             }
             if (runtimeTaskId) await transitionTaskRun(runtimeTaskId, 'verifying', { plan: runtimePlan ?? undefined })
-            if (runtimePlan) runtimePlan = runtimePlan.steps.reduce((current, step) => completePlanStep(current, step.id), runtimePlan)
+            if (runtimePlan) runtimePlan = advanceNonEvidencePlan(runtimePlan)
             if (emitEvents) {
               publishRuntimeEvent(sessionId, { type: 'phase', phase: 'complete', label: 'اكتملت المهمة', detail: 'وصلت إلى رد نهائي بعد تنفيذ الخطوات المتاحة.' })
               if (runtimePlan) publishRuntimeEvent(sessionId, { type: 'plan', plan: runtimePlan })
             }
-            if (runtimeTaskId) await transitionTaskRun(runtimeTaskId, 'completed', { plan: runtimePlan ?? undefined, evidence: [{ type: 'assistant_response', summary: finalText.slice(0, 500) }] })
+            if (runtimeTaskId) {
+              await transitionTaskRun(runtimeTaskId, 'completed', {
+                plan: runtimePlan ?? undefined,
+                currentStepId: runtimePlan?.currentStepId,
+                evidence: [
+                  { type: 'assistant_response', summary: finalText.slice(0, 500) || 'تم التحقق من العمليات المطلوبة.' },
+                  { type: 'verification_summary', summary: JSON.stringify({ verificationSummary, operationSummary }) },
+                ],
+              })
+            }
           }
           finished = true
           break
@@ -423,6 +476,29 @@ async function runLoop(
               if (active) publishRuntimeEvent(sessionId, { type: 'plan_step', step: { ...active, detail: `جار تنفيذ المرحلة عبر ${innerTool}` } })
             }
           }
+          const activePlanStep = runtimeTaskId && runtimePlan?.currentStepId
+            ? await findDurableTaskStep(runtimeTaskId, runtimePlan.currentStepId).catch(() => null)
+            : null
+          const operationId = call.id
+          const idempotencyKey = `${runtimeTaskId ?? sessionId}:${call.id}`
+          if (runtimeTaskId) {
+            await recordDurableOperation({
+              operationId,
+              taskId: runtimeTaskId,
+              stepId: activePlanStep?.id,
+              idempotencyKey,
+              toolName: innerTool,
+              argsHash: hashOf(call.arguments),
+              status: 'started',
+            }).catch(() => {})
+            if (activePlanStep) {
+              await updateDurableTaskStep(activePlanStep.id, {
+                status: 'running',
+                toolCallId: call.id,
+                attempt: activePlanStep.attempt + 1,
+              }).catch(() => {})
+            }
+          }
           let cont = true
           try {
             cont = await handleToolCall(sessionId, s, call, emitEvents)
@@ -436,6 +512,17 @@ async function runLoop(
               publishRuntimeEvent(sessionId, { type: 'recovery', title: 'أوقفْت إعادة التنفيذ التلقائي', detail: 'يجب التحقق من الحالة الحالية قبل أي محاولة جديدة لتجنب أثر مكرر.', strategy: 'retry' })
             }
             cont = true
+            if (runtimeTaskId) {
+              await updateDurableOperation(operationId, { status: 'failed', errorCode: 'tool_execution_exception', errorMessage: detail }).catch(() => {})
+              if (activePlanStep) {
+                await updateDurableTaskStep(activePlanStep.id, {
+                  status: 'failed',
+                  verificationStatus: 'failed',
+                  lastError: detail,
+                  resultRef: `operation:${operationId}`,
+                }).catch(() => {})
+              }
+            }
           }
           if (cont) {
             const callArgs = parseToolArgs(call.arguments)
@@ -453,7 +540,42 @@ async function runLoop(
               runtimeEvidenceCount++
               runtimeLastEvidenceOk = evidenceOk
               if (evidenceOk) runtimeSuccessfulEvidenceCount++
-              if (runtimeTaskId) await appendTaskEvidence(runtimeTaskId, { tool: innerTool, ok: evidenceOk, summary: String(lastObs.meta.observation ?? lastObs.meta.result ?? '').slice(0, 600) })
+              if (runtimeTaskId) {
+                const operationIsVerification = isVerificationToolName(innerTool, runtimeSkill)
+                const operationVerified = lastObs.meta.verified === true
+                const operationHasPostconditionEvidence = operationIsVerification || operationVerified
+                await updateDurableOperation(operationId, {
+                  status: evidenceOk ? (operationHasPostconditionEvidence ? 'verified' : 'succeeded') : 'failed',
+                  resultRef: `tool:${call.id}`,
+                  affected: lastObs.meta.result,
+                  errorCode: evidenceOk ? undefined : String(lastObs.meta.error ?? 'tool_failed'),
+                  errorMessage: evidenceOk ? undefined : obsText,
+                }).catch(() => {})
+                await appendTaskEvidence(runtimeTaskId, { tool: innerTool, ok: evidenceOk, summary: String(lastObs.meta.observation ?? lastObs.meta.result ?? '').slice(0, 600) })
+                if (activePlanStep) {
+                  await updateDurableTaskStep(activePlanStep.id, {
+                    status: evidenceOk && operationHasPostconditionEvidence ? 'verified' : evidenceOk ? 'running' : 'failed',
+                    verificationStatus: evidenceOk && operationHasPostconditionEvidence ? 'verified' : evidenceOk ? 'pending' : 'failed',
+                    resultRef: `tool:${call.id}`,
+                    lastError: evidenceOk ? undefined : obsText,
+                  }).catch(() => {})
+                }
+                if (evidenceOk && operationHasPostconditionEvidence) {
+                  const planStepId = activePlanStep?.operation && typeof activePlanStep.operation === 'object'
+                    ? String((activePlanStep.operation as Record<string, unknown>).planStepId ?? '')
+                    : ''
+                  if (planStepId && runtimePlan) {
+                    runtimePlan = completePlanStep(runtimePlan, planStepId, obsText.slice(0, 500))
+                    runtimePlan = advanceNonEvidencePlan(runtimePlan)
+                    await transitionTaskRun(runtimeTaskId, 'running', { plan: runtimePlan, currentStepId: runtimePlan.currentStepId })
+                  }
+                  await markLatestPendingWriteVerified(runtimeTaskId, `verified-by:${call.id}`).catch(() => null)
+                }
+                const operationSummary = await getDurableOperationSummary(runtimeTaskId).catch(() => null)
+                if (operationSummary?.pendingWrites && operationHasPostconditionEvidence) {
+                  await markLatestPendingWriteVerified(runtimeTaskId, `verified-by:${call.id}`).catch(() => null)
+                }
+              }
               if (emitEvents) {
                 const ok = lastObs.meta.ok !== false
                 const observationDetail = String(lastObs.meta.observation ?? lastObs.meta.result ?? '').slice(0, 600)
@@ -526,8 +648,8 @@ async function resolveConfig(): Promise<ConnConfig> {
 }
 
 export interface SendOptions {
-  attachments?: { uri: string; name?: string }[]
-  audio?: { uri: string; format?: 'm4a' | 'wav' | 'mp3' | 'webm'; name?: string }
+  attachments?: { uri: string; name?: string; mime?: string; size?: number; kind?: InputAssetKind }[]
+  audio?: { uri: string; format?: 'm4a' | 'wav' | 'mp3' | 'webm'; name?: string; mime?: string; size?: number }
 }
 
 async function withConfig<T>(fn: (conn: ConnConfig) => Promise<T>): Promise<T> {
@@ -567,66 +689,94 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
     return
   }
 
-  let content = text
+  let content = text.trim()
   let initialContent: ChatMessage['content'] | undefined
+  const assets: Awaited<ReturnType<typeof saveAsset>>[] = []
+  const assetErrors: string[] = []
+
   if (opts?.audio) {
+    try {
+      assets.push(await saveAsset(sessionId, {
+        uri: opts.audio.uri,
+        name: opts.audio.name ?? `voice-${Date.now()}.${opts.audio.format ?? 'm4a'}`,
+        mime: opts.audio.mime,
+        size: opts.audio.size,
+        kind: 'audio',
+        source: 'microphone',
+      }))
+    } catch (error: any) {
+      assetErrors.push(error?.message ?? 'تعذر حفظ التسجيل الصوتي محلياً.')
+    }
+  }
+
+  for (const att of opts?.attachments ?? []) {
+    try {
+      assets.push(await saveAsset(sessionId, {
+        uri: att.uri,
+        name: att.name,
+        mime: att.mime,
+        size: att.size,
+        kind: att.kind,
+        source: 'document_picker',
+      }))
+    } catch (error: any) {
+      assetErrors.push(error?.message ?? `تعذر حفظ المرفق «${att.name ?? 'ملف'}».`)
+    }
+  }
+
+  const turn = createUserTurn(sessionId, text, assets)
+  const assetText = assets.map((asset) => {
+    const summary = summarizeAssetForModel(asset)
+    return `\n\n[أصل محلي جاهز للمعالجة: ${JSON.stringify(summary)} — استخدم inspect_asset أو الأدوات المناسبة قبل أي قرار.]`
+  }).join('')
+  content = `${content}${assetText}`.trim()
+  if (!content && assets.length) content = `أرسل المستخدم ${assets.length} أصلاً للمراجعة.`
+  if (assetErrors.length) content += `\n\n[فشل حفظ بعض الأصول: ${assetErrors.join(' | ')}]`
+
+  await recordDurableUserTurn({
+    id: turn.id,
+    sessionId,
+    text: turn.text,
+    assetIds: assets.map((asset) => asset.id),
+    state: assetErrors.length ? 'failed' : 'ready',
+  })
+
+  const audioAsset = assets.find((asset) => asset.kind === 'audio')
+  if (opts?.audio && audioAsset) {
     const profile = resolveModelProfile(providerProxy(conn), conn.model)
-    const voiceLabel = opts.audio.name ?? 'تسجيل صوتي'
+    const voiceLabel = audioAsset?.name ?? opts.audio.name ?? 'تسجيل صوتي'
     if (!profile.supports.inputAudio) {
-      const message = `الموديل ${conn.model} لا يثبت دعماً للإدخال الصوتي عبر ${conn.providerName}. اختر موديل صوتياً معلناً من إعدادات كيمو؛ لم أرسل طلباً غير متوافق.`
-      await persistUser(sessionId, `رسالة صوتية: ${voiceLabel}`)
+      const message = `الموديل ${conn.model} لا يثبت دعماً للإدخال الصوتي عبر ${conn.providerName}. حفظت التسجيل محلياً ولم أرسل طلباً غير متوافق.`
+      await persistUser(sessionId, content || `رسالة صوتية: ${voiceLabel}`)
       await persistAssistantText(sessionId, message, 'error')
       emitForSession(sessionId, { type: 'error', message })
       return
     }
     try {
       const audio = await readAudioInput(opts.audio.uri, opts.audio.format ?? 'm4a')
-      const name = opts.audio.name ?? audio.name
-      await saveAttachment({
-        sessionId,
-        name,
-        uri: audio.uri,
-        size: audio.size,
-        mime: audio.format === 'm4a' ? 'audio/mp4' : `audio/${audio.format}`,
-      }).catch(() => {})
       const voiceText = text.trim() || 'أرسل المستخدم تسجيلاً صوتياً. استمع إليه وافهم المطلوب ثم تعامل معه وفق مهاراتك وأدواتك.'
       initialContent = [
         { type: 'text', text: voiceText },
         { type: 'input_audio', input_audio: { data: audio.base64, format: audio.format } },
       ] satisfies ChatContentPart[]
-      content = `رسالة صوتية: ${name}`
+      content = `${content}\n\n[الصوت الجاهز للإرسال: ${audioAsset.id} — ${voiceLabel}]`.trim()
     } catch (error: any) {
       const message = error?.message ?? 'تعذر تجهيز التسجيل الصوتي محلياً.'
-      await persistUser(sessionId, `رسالة صوتية: ${voiceLabel}`)
+      await persistUser(sessionId, content || `رسالة صوتية: ${voiceLabel}`)
       await persistAssistantText(sessionId, message, 'error')
       emitForSession(sessionId, { type: 'error', message })
       return
-    }
-  }
-  if (opts?.attachments?.length) {
-    for (const att of opts.attachments) {
-      try {
-        let size = 0
-        let mime: string | undefined
-        try {
-          const fsInfo = await FileSystem.getInfoAsync(att.uri)
-          if (fsInfo.exists && 'size' in fsInfo) size = fsInfo.size ?? 0
-        } catch {}
-        const name = att.name ?? (att.uri.split('/').pop() ?? 'ملف')
-        mime = mimeOf(name)
-        const attachmentId = await saveAttachment({ sessionId, name, uri: att.uri, size, mime })
-        content += `\n\n[ملف مرفق من المستخدم: "${name}" — المعرف: ${attachmentId} — الحجم ${(size / 1024).toFixed(0)} كيلوبايت. يمكنك معاينته بـ read_uploaded_file أو فحصه ضمن property_change_preview ثم ربطه بـ attach_media_to_entity]`
-      } catch {}
     }
   }
 
   await updateSessionMeta(sessionId, { providerLabel: conn.providerName, model: conn.model })
   const first = await getMessages(sessionId).catch(() => [])
   if (!first.length) {
-    const title = text.replace(/\s+/g, ' ').slice(0, 40) || 'محادثة جديدة'
+    const title = text.replace(/\s+/g, ' ').slice(0, 40) || (assets[0]?.name ?? 'محادثة جديدة')
     await updateSessionMeta(sessionId, { title })
   }
 
+  if (!hasPayload(turn) && !assetErrors.length) return
   await persistUser(sessionId, content)
   // لا رسائل تقدم ثابتة — المساعد نفسه يخاطب المستخدم بما يقرره هو.
   const outcome = await runGuarded(sessionId, conn, true, initialContent)

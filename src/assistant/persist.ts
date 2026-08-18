@@ -49,6 +49,8 @@ export async function persistToolResult(sessionId: string, call: ToolCall, resul
       result: capped,
       observation,
       ok: inferredOk,
+      verified: metaExtra?.verified === true,
+      verification: metaExtra?.verification,
     },
   })
   return observation ?? capped
