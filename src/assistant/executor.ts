@@ -13,6 +13,7 @@ import {
 } from './durableStore'
 import { readAudioInput } from './files'
 import { chatWithRetry, parseToolArgs, toWireToolCall, type ChatContentPart, type ChatMessage, type ToolCall } from './llm'
+import { transcribeAudio, TranscribeError } from './transcribe'
 import { parseToolArgumentsStrict } from './toolValidation'
 import { defaultProvider, type ProviderDef, type ProviderId } from './providers'
 import { resolveModelProfile } from './modelProfiles'
