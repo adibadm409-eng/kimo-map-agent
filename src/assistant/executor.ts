@@ -5,7 +5,6 @@ import {
   findDurableTaskStep,
   ensureDurablePlanSteps,
   getDurableOperationSummary,
-  getDurableVerificationSummary,
   markLatestPendingWriteVerified,
   recordDurableOperation,
   recordDurableUserTurn,
