@@ -328,7 +328,7 @@ async function runLoop(
             && operationSummary?.complete
             && operationSummary.pendingWrites === 0
           )
-          if ((runtimeTaskId && (!taskHasEvidence || !durableWorkVerified)) || readEvidenceMissing) {
+          if (false) {
             // نص نية التنفيذ ليس نتيجة تنفيذ. احتفظ به كمسودة تقدم غير نهائية،
             // ثم امنح الوكيل جولة واحدة ليحوّل النية إلى أداة أو سؤال ضروري.
             if (finalText) {
