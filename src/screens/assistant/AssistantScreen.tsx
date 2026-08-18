@@ -798,8 +798,10 @@ export default function AssistantScreen({ navigation }: any) {
 
   const renderMessage = ({ item }: { item: Message }) => {
     if (item.kind === 'tool_call') {
-      // بطاقة إنجاز دائمة لكل خطوة نُفذت: تبقى في المحادثة حتى يرى المستخدم أثر الوكيل
-      // ويراقبه بعد انتهاء التنفيذ — لا نشاط يختفي بصمت.
+      // عند طي لوحة المحرك تبقى المحادثة نظيفة وطبيعية (نص المستخدم والرد فقط)؛
+      // تفاصيل الخطوات تظهر عند فتح اللوحة. البطاقات الكاشفة (رابط/تأكيد) تُعرض
+      // كنوع رسالة مستقل فلا تختفي.
+      if (agentPanelCollapsed) return null
       const call = item.meta?.tool_calls?.[0]
       if (!call) return null
       const rawArgs = safeParseArgs(String(call.arguments ?? '{}'))
