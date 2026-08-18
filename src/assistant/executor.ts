@@ -318,69 +318,28 @@ async function runLoop(
         }
 
         if (!result.toolCalls.length) {
+          // الوكيل الحر: أي إجابة نهائية تُعتمد مباشرة دون بوابة إثبات قسرية.
+          // نثق بالنموذج ونتائج أدواته الفعلية، وندعه يجيب مباشرة على الأسئلة
+          // العامة والمحادثة دون إجباره على أداة أو فرض "دليل" قبل الكلام.
           const finalText = result.content ? String(result.content).trim() : ''
-          const taskHasEvidence = !runtimeTaskId || (runtimeEvidenceCount > 0 && runtimeSuccessfulEvidenceCount > 0 && runtimeLastEvidenceOk)
-          const readEvidenceMissing = readIntentRequiresEvidence && !(runtimeEvidenceCount > 0 && runtimeSuccessfulEvidenceCount > 0 && runtimeLastEvidenceOk)
-          const verificationSummary = runtimeTaskId ? await getDurableVerificationSummary(runtimeTaskId).catch(() => null) : null
-          const operationSummary = runtimeTaskId ? await getDurableOperationSummary(runtimeTaskId).catch(() => null) : null
-          const durableWorkVerified = !runtimeTaskId || Boolean(
-            verificationSummary?.complete
-            && operationSummary?.complete
-            && operationSummary.pendingWrites === 0
-          )
-          if (false) {
-            // نص نية التنفيذ ليس نتيجة تنفيذ. احتفظ به كمسودة تقدم غير نهائية،
-            // ثم امنح الوكيل جولة واحدة ليحوّل النية إلى أداة أو سؤال ضروري.
-            if (finalText) {
-              // النص غير الموثق يبقى في الخيط الداخلي فقط لإتاحة جولة تصحيح؛
-              // لا نحفظه في المحادثة ولا نبثه للمستخدم كأنه نتيجة.
-              if (!readIntentRequiresEvidence) {
-                await persistAssistantText(sessionId, finalText, 'progress').catch(() => {})
-                if (emitEvents) emitForSession(sessionId, { type: 'progress', text: finalText })
-              }
-              thread.push({ role: 'assistant', content: finalText })
-            }
-            if (noEvidenceRecoveryAttempts < 1) {
-              noEvidenceRecoveryAttempts += 1
-                            runtimeCorrection = '\\nتعليمات داخلية: ردك السابق قدّم بيانات أو أرقاماً محلية دون ملاحظة أداة ناجحة. لا تجب من الذاكرة ولا تخمّن. استخدم أداة القراءة المناسبة لهذا الطلب الآن، ثم اعتمد على النتيجة المنظمة فقط؛ إذا كانت هوية الهدف ناقصة فاسأل سؤالاً واحداً واضحاً.'
-              if (emitEvents) publishRuntimeEvent(sessionId, { type: 'recovery', title: 'أراجع الجولة قبل إغلاقها', detail: 'لم تصل نتيجة تنفيذ قابلة للتحقق بعد؛ سأمنح الوكيل فرصة تصحيح داخلية.', strategy: 'retry' })
-              continue
-            }
-            const noEvidence = readIntentRequiresEvidence
-              ? 'لم تصل قراءة موثوقة من قاعدة البيانات، لذلك لن أعرض أرقاماً أو حالة غير مثبتة.'
-              : 'لم تصل نتيجة تنفيذ قابلة للتحقق، لذلك أوقفت المهمة دون اعتبارها مكتملة.'
-            if (runtimeTaskId) await transitionTaskRun(runtimeTaskId, 'failed', { lastError: noEvidence })
-            await persistAssistantText(sessionId, noEvidence, 'error').catch(() => {})
+          if (finalText) {
+            await persistAssistantText(sessionId, finalText, 'text')
             if (emitEvents) {
-              publishRuntimeEvent(sessionId, { type: 'phase', phase: 'error', label: 'تحتاج المهمة إلى معالجة', detail: noEvidence })
-              emitForSession(sessionId, { type: 'error', message: noEvidence })
-              emitForSession(sessionId, { type: 'text', content: noEvidence })
+              emitForSession(sessionId, { type: 'stream', content: finalText })
+              emitForSession(sessionId, { type: 'stream', content: '', done: true })
+              emitForSession(sessionId, { type: 'text', content: finalText })
             }
           } else {
-            if (finalText) {
-              await persistAssistantText(sessionId, finalText, 'text')
-              if (emitEvents) {
-                emitForSession(sessionId, { type: 'stream', content: finalText })
-                emitForSession(sessionId, { type: 'stream', content: '', done: true })
-                emitForSession(sessionId, { type: 'text', content: finalText })
-              }
-            }
-            if (runtimeTaskId) await transitionTaskRun(runtimeTaskId, 'verifying', { plan: runtimePlan ?? undefined })
-            if (runtimePlan) runtimePlan = advanceNonEvidencePlan(runtimePlan)
-            if (emitEvents) {
-              publishRuntimeEvent(sessionId, { type: 'phase', phase: 'complete', label: 'اكتملت المهمة', detail: 'وصلت إلى رد نهائي بعد تنفيذ الخطوات المتاحة.' })
-              if (runtimePlan) publishRuntimeEvent(sessionId, { type: 'plan', plan: runtimePlan })
-            }
-            if (runtimeTaskId) {
-              await transitionTaskRun(runtimeTaskId, 'completed', {
-                plan: runtimePlan ?? undefined,
-                currentStepId: runtimePlan?.currentStepId,
-                evidence: [
-                  { type: 'assistant_response', summary: finalText.slice(0, 500) || 'تم التحقق من العمليات المطلوبة.' },
-                  { type: 'verification_summary', summary: JSON.stringify({ verificationSummary, operationSummary }) },
-                ],
-              })
-            }
+            const soft = 'أنجزت ما أمكنني في هذه الجولة. أخبرني إن أردت تفصيلاً أو خطوة تالية محددة.'
+            await persistAssistantText(sessionId, soft, 'system').catch(() => {})
+            if (emitEvents) emitForSession(sessionId, { type: 'text', content: soft })
+          }
+          if (runtimeTaskId) {
+            await transitionTaskRun(runtimeTaskId, 'completed', {
+              plan: runtimePlan ?? undefined,
+              currentStepId: runtimePlan?.currentStepId,
+              evidence: [{ type: 'assistant_response', summary: finalText.slice(0, 500) || 'اكتملت المهمة.' }],
+            }).catch(() => {})
           }
           finished = true
           break
