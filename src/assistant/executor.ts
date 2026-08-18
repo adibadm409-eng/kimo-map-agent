@@ -101,7 +101,6 @@ async function runLoop(
     let runtimeEvidenceCount = 0
     let runtimeSuccessfulEvidenceCount = 0
     let runtimeLastEvidenceOk = true
-    let noEvidenceRecoveryAttempts = 0
     let runtimeCorrection = ''
     // الحوار الافتتاحي اختياري بالكامل: يقرر النموذج بنفسه إن كان سيشرح أو
     // يبدأ بأداة. لا تُحجب الأدوات ولا تُحقن رسالة ثابتة قبل قرار الوكيل.
