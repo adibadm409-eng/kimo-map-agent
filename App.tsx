@@ -291,7 +291,27 @@ function RootNav() {
   }
   return (
     <NavigationContainer theme={navTheme}>
-      <Tabs />
+      <SideMenuProvider>
+        <Root.Navigator initialRouteName="Tabs" screenOptions={{ headerShown: false }}>
+          <Root.Screen name="Tabs" component={Tabs} />
+          <Root.Screen name="Projects" component={ProjectsStack} />
+          <Root.Screen name="KimoOperations" component={KimoOperationsScreen} />
+          <Root.Screen name="ToolsExport" component={ToolsScreen} />
+          <Root.Screen name="BackupManager" component={BackupManagerScreen} />
+          <Root.Screen name="ViewingsList" component={Viewings} />
+          <Root.Screen name="ViewingForm" component={ViewingForm} />
+          <Root.Screen name="CampaignsList" component={Campaigns} />
+          <Root.Screen name="CampaignForm" component={CampaignForm} />
+          <Root.Screen name="Reminders" component={Reminders} />
+          <Root.Screen name="ReportsMain" component={Reports} />
+          <Root.Screen name="Settings" component={Settings} />
+          <Root.Screen name="MapSettings" component={MapSettings} />
+          <Root.Screen name="MapKeysSettings" component={MapKeysSettings} />
+          <Root.Screen name="About" component={AboutScreen} />
+        </Root.Navigator>
+        <MenuFab />
+        <SideMenuOverlay />
+      </SideMenuProvider>
     </NavigationContainer>
   )
 }
