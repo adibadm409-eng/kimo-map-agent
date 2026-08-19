@@ -78,6 +78,9 @@ export default function Properties() {
     return match && passStatus && passType && passPrice
   })
 
+  const activeFilterCount =
+    (filter !== 'all' ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0) + (priceMin || priceMax ? 1 : 0)
+
   function mediaCount(property: any): number {
     try {
       const parsed = typeof property.media === 'string' ? JSON.parse(property.media || '[]') : property.media
