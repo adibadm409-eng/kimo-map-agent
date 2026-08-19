@@ -174,7 +174,7 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
         const t = e as Extract<AgentEvent, { type: 'tool' }>
         pushAudit('tool', `${t.name}`)
         set((st) => ({
-          executionSteps: [...st.executionSteps, { id: `s-${seq}`, kind: 'tool', label: String(t.name ?? 'execute') }].slice(-40),
+          executionSteps: [...st.executionSteps, { id: `s-${seq}`, kind: 'tool', label: String(t.name ?? 'execute') } as ExecutionStep].slice(-40),
         }))
         break
       }
