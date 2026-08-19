@@ -90,7 +90,7 @@ export async function scheduleOfferReminder(date: Date, details: OfferReminderDe
 }
 
 export async function cancelLocalReminder(notificationId?: string | null): Promise<void> {
-  if (!notificationId || Platform.OS === 'web' || !notificationsAvailable) return
+  if (!notificationId || Platform.OS === 'web') return
   try {
     await Notifications.cancelScheduledNotificationAsync(notificationId)
   } catch {
