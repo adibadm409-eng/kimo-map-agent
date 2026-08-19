@@ -163,6 +163,7 @@ export default function ProjectsScreen() {
           showsVerticalScrollIndicator={false}
         />
       )}
+      <SectionFab onPress={() => navigation.navigate('ProjectForm', {})} label="إضافة مشروع" />
     </View>
   )
 }
