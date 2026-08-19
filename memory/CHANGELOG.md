@@ -34,3 +34,4 @@
 - 2026-08-19 | effca99 | تعديل تلقائي: prompts.ts
 - 2026-08-19 | fd93a6b | تعديل تلقائي: prompts.ts
 - 2026-08-19 | 65ad559 | تعديل تلقائي: prompts.ts
+- 2026-08-19 | d352d94 | تعديل تلقائي: AssistantScreen.tsx

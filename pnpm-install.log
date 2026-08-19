@@ -1,0 +1,53 @@
+? Verifying lockfile against supply-chain policies (1077 entries)...
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages: +1027
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 1027, reused 0, downloaded 0, added 0
+Progress: resolved 1027, reused 27, downloaded 0, added 0
+Progress: resolved 1027, reused 70, downloaded 0, added 0
+Progress: resolved 1027, reused 131, downloaded 0, added 0
+Progress: resolved 1027, reused 266, downloaded 0, added 0
+Progress: resolved 1027, reused 470, downloaded 0, added 0
+Packages are cloned from the content-addressable store to the virtual store.
+  Content-addressable store is at: /data/data/com.termux/files/home/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Progress: resolved 1027, reused 624, downloaded 0, added 1
+Progress: resolved 1027, reused 625, downloaded 0, added 14
+Progress: resolved 1027, reused 625, downloaded 0, added 29
+Progress: resolved 1027, reused 625, downloaded 0, added 60
+Progress: resolved 1027, reused 625, downloaded 0, added 61
+Progress: resolved 1027, reused 625, downloaded 0, added 65
+Progress: resolved 1027, reused 625, downloaded 0, added 87
+Progress: resolved 1027, reused 625, downloaded 0, added 128
+Progress: resolved 1027, reused 625, downloaded 0, added 169
+Progress: resolved 1027, reused 625, downloaded 0, added 183
+Progress: resolved 1027, reused 625, downloaded 0, added 208
+Progress: resolved 1027, reused 625, downloaded 0, added 244
+Progress: resolved 1027, reused 625, downloaded 0, added 321
+Progress: resolved 1027, reused 625, downloaded 0, added 378
+Progress: resolved 1027, reused 625, downloaded 0, added 410
+Progress: resolved 1027, reused 625, downloaded 0, added 434
+[WARN] GET https://registry.npmjs.org/@babel%2Fplugin-transform-arrow-functions error (ENOTFOUND). Will retry in 30 seconds. 6 retries left.
+Progress: resolved 1027, reused 625, downloaded 0, added 575
+Progress: resolved 1027, reused 625, downloaded 0, added 621
+Progress: resolved 1027, reused 625, downloaded 0, added 622
+Progress: resolved 1027, reused 625, downloaded 0, added 623
+Progress: resolved 1027, reused 625, downloaded 0, added 624
+Progress: resolved 1027, reused 625, downloaded 0, added 625
+[WARN] GET https://registry.npmjs.org/@babel%2Fplugin-syntax-top-level-await error (ECONNRESET). Will retry in 30 seconds. 6 retries left.
+[WARN] GET https://registry.npmjs.org/@babel%2Fplugin-syntax-typescript error (UND_ERR_SOCKET). Will retry in 30 seconds. 6 retries left.
+[WARN] GET https://registry.npmjs.org/docx/-/docx-9.7.1.tgz error (23). Will retry in 30 seconds. 6 retries left.
+[WARN] GET https://registry.npmjs.org/exceljs/-/exceljs-4.4.0.tgz error (23). Will retry in 30 seconds. 6 retries left.
+[WARN] GET https://registry.npmjs.org/expo-image/-/expo-image-3.0.11.tgz error (23). Will retry in 30 seconds. 6 retries left.
+[WARN] GET https://registry.npmjs.org/expo-sqlite/-/expo-sqlite-16.0.10.tgz error (23). Will retry in 30 seconds. 6 retries left.
+[WARN] GET https://registry.npmjs.org/@typescript-eslint%2Feslint-plugin error (23). Will retry in 30 seconds. 6 retries left.
+[WARN] GET https://registry.npmjs.org/@typescript-eslint%2Fparser error (23). Will retry in 30 seconds. 6 retries left.
+[WARN] GET https://registry.npmjs.org/@typescript-eslint%2Fscope-manager error (23). Will retry in 30 seconds. 6 retries left.
+[WARN] GET https://registry.npmjs.org/@typescript-eslint%2Ftype-utils error (23). Will retry in 30 seconds. 6 retries left.
+[WARN] GET https://registry.npmjs.org/@typescript-eslint%2Ftypes error (23). Will retry in 30 seconds. 6 retries left.
+[WARN] GET https://registry.npmjs.org/@typescript-eslint%2Ftypescript-estree error (23). Will retry in 30 seconds. 6 retries left.
+[WARN] GET https://registry.npmjs.org/@typescript-eslint%2Futils error (23). Will retry in 30 seconds. 6 retries left.
+[WARN] GET https://registry.npmjs.org/@typescript-eslint%2Fvisitor-keys error (23). Will retry in 30 seconds. 6 retries left.
+[WARN] GET https://registry.npmjs.org/-/npm/v1/attestations/@vitest/mocker@4.1.10 error (23). Will retry in 30 seconds. 6 retries left.
+[WARN] GET https://registry.npmjs.org/array.prototype.flatmap error (23). Will retry in 30 seconds. 6 retries left.
