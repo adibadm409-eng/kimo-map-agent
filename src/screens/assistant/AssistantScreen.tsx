@@ -455,33 +455,6 @@ export default function AssistantScreen({ navigation }: any) {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.bg }]}>
-      <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: colors.bgSecondary, borderBottomColor: colors.border }]}>
-        <View style={styles.headerRow}>
-          <View style={styles.headerTitleWrap}>
-            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>كيمو</Text>
-            <Text numberOfLines={1} style={[styles.headerSub, { color: colors.textMuted }]}>
-              {configured ? `${providerLabel} — ${model}` : 'لم يُعدَّ المزود بعد'}
-            </Text>
-          </View>
-          <Pressable accessibilityRole="button" accessibilityLabel="فتح سجل محادثات كيمو" onPress={() => setShowHistory(true)} style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
-            <Ionicons name="time-outline" size={20} color={colors.textPrimary} />
-          </Pressable>
-        </View>
-        <View style={styles.modeRow}>
-          <Pressable accessibilityRole="switch" accessibilityState={{ checked: mode === 'edit' }} accessibilityLabel={mode === 'edit' ? 'إيقاف وضع التعديل' : 'تفعيل وضع التعديل'} onPress={toggleMode} style={[styles.modeChip, { backgroundColor: mode === 'edit' ? colors.successSurface : colors.surface }]}>
-            <Ionicons name={mode === 'edit' ? 'create-outline' : 'eye-outline'} size={13} color={mode === 'edit' ? colors.success : colors.textSecondary} />
-            <Text style={[styles.modeChipText, { color: mode === 'edit' ? colors.success : colors.textSecondary }]}>
-              {mode === 'edit' ? 'وضع التعديل مفعّل' : 'قراءة فقط'}
-            </Text>
-          </Pressable>
-          {!configured && (
-            <Pressable accessibilityRole="button" accessibilityLabel="فتح إعدادات مزود كيمو" onPress={() => navigation.navigate('AgentSettings')} style={[styles.setupChip, { backgroundColor: colors.warningSurface }]}>
-              <Text style={[styles.modeChipText, { color: colors.warning }]}>الإعداد الآن</Text>
-            </Pressable>
-          )}
-        </View>
-      </View>
-
       <ContextBanner context={activeContext} phase={statusBar.phase} colors={colors} />
       <ExecutionStatusBar statusBar={statusBar} colors={colors} />
 
