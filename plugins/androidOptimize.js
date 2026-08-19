@@ -14,10 +14,10 @@ module.exports = function androidReleaseOptimize(config) {
 
     // 1) فرض minify + shrinkResources في نسخة release
     if (s.includes('minifyEnabled')) {
-      s = s.replace(/minifyEnabled\s*\([^)]*\)/, 'minifyEnabled true');
-      if (!/shrinkResources/.test(s)) {
-        s = s.replace(/(minifyEnabled true\s*\n)/, '$1        shrinkResources true\n');
-      }
+      s = s.replace(/minifyEnabled\s+[^\n]+/, 'minifyEnabled true');
+    }
+    if (s.includes('shrinkResources')) {
+      s = s.replace(/shrinkResources\s+[^\n]+/, 'shrinkResources true');
     }
 
     // 2) تقييد بنى ABI (حذف x86/x86_64)
