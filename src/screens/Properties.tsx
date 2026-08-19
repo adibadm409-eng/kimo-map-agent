@@ -133,8 +133,8 @@ export default function Properties() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <View style={[styles.searchBar, { backgroundColor: colors.bg }]}>
-        <View style={[styles.searchWrap, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <View style={styles.searchRow}>
+        <View style={[styles.searchWrap, { backgroundColor: colors.surface, borderColor: colors.border, flex: 1 }]}>
           <Ionicons name="search-outline" size={18} color={colors.textMuted} />
           <TextInput
             value={search}
@@ -149,17 +149,13 @@ export default function Properties() {
             </Pressable>
           ) : null}
         </View>
-      </View>
-
-      <View style={styles.filterToggleRow}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="عرض الفلاتر"
           onPress={() => setFiltersOpen((o) => !o)}
-          style={({ pressed }) => [styles.filterToggleBtn, { backgroundColor: colors.surface, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
+          style={({ pressed }) => [styles.filterCardBtn, { backgroundColor: colors.surface, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
         >
-          <Ionicons name="options-outline" size={18} color={colors.textSecondary} />
-          <Text style={[styles.filterToggleText, { color: colors.textPrimary }]}>الفلاتر</Text>
+          <Ionicons name="options-outline" size={20} color={colors.textSecondary} />
           {activeFilterCount > 0 ? (
             <View style={[styles.filterBadge, { backgroundColor: colors.accent }]}>
               <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
