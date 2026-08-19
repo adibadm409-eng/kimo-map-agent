@@ -166,7 +166,7 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
         pushAudit('progress', e.text)
         set((st) => ({
           statusBar: { ...st.statusBar, visible: true, steps: [...st.statusBar.steps, e.text].slice(-12) },
-          executionSteps: [...st.executionSteps, { id: `s-${seq}`, kind: 'progress', label: e.text }].slice(-40),
+          executionSteps: [...st.executionSteps, { id: `s-${seq}`, kind: 'progress', label: e.text } as ExecutionStep].slice(-40),
         }))
         break
       }
