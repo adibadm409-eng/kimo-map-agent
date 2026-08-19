@@ -367,7 +367,7 @@ export default function AssistantScreen({ navigation }: any) {
     // أظهر رسالة المستخدم محلياً فوراً حتى لا تختفي لحظة كتحضير الإرسال
     setMessages((prev) => [
       ...prev,
-      { id: `local-user-${Date.now()}`, sessionId: sid, role: 'user', kind: 'text', content: audio ? `رسالة صوتية: ${audio.name}` : trimmed || (attachments.length ? `أرسلت ${attachments.length} مرفقات للمراجعة` : ''), createdAt: Date.now(), meta: imageUris.length ? { images: imageUris } : undefined },
+      { id: `local-user-${Date.now()}`, sessionId: sid, role: 'user', kind: 'text', content: audio ? `رسالة صوتية: ${audio.name}` : trimmed || (attachments.length ? `أرسلت ${attachments.length} مرفقات` : ''), createdAt: Date.now(), meta: imageUris.length ? { images: imageUris } : undefined },
     ])
     const atts = attachments.length ? [...attachments] : undefined
     setAttachments([])
