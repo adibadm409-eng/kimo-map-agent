@@ -115,3 +115,4 @@
 - 2026-08-19 | 4669cfc | تعديل تلقائي: audio_probe.mjs
 - 2026-08-19 | 2bb24b7 | تعديل تلقائي: executor.ts
 - 2026-08-19 | 999033d | تعديل تلقائي: m4a_probe.mjs
+- 2026-08-19 | c0cb8d7 | تعديل تلقائي: mistral_stt_models.mjs
