@@ -130,7 +130,7 @@
 | 1 | Execution Status Bar | أسفل ContextBanner، فوق FlashList | يظهر أثناء التفكير فقط؛ يختفي (Idle) ويتحوّل لنقطة ملوّنة |
 | 2 | Sticky Context Header | أعلى أعلى، مثبّت دائماً | يتقلّص ديناميكياً عند التمرير السريع |
 | 3 | Approval Card / بطاقات | داخل FlashList | ظل + حواف تحذيرية؛ Auto-scroll إليها عند ورودها |
-| 4 | Audit Trail (FAB + Drawer) | FAB أسفل يمين فوق الإدخال | درج ينزلق من اليمين 60% عرض، لا يحجب المحادثة |
+| 4 | Audit Trail (FAB + Drawer) | FAB أسفل يمين فوق الإدخال | درج ينزلق من **الحافة اليمنى للشاشة** (edge="right" ثابتاً كما في المواصفة، بغض النظر عن اتجاه RTL) 60% عرض، لا يحجب المحادثة |
 | 5 | Contextual Action Buttons | ملحق برسالة الوكيل داخل FlashList | Row أفقي تحت النص |
 | 6 | Hybrid Input Bar | أسفل مثبّت | 📎 مرفقات، 🎤 إملاء، ⚡ أوامر؛ KeyboardAvoidingView |
 
