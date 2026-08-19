@@ -11,7 +11,8 @@
     "userInterfaceStyle": "automatic",
     "scheme": "realestate",
     "plugins": [
-      "expo-audio"
+      "expo-audio",
+      "expo-contacts"
     ],
     "android": {
       "package": "com.realestate.app",
