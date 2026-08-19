@@ -282,8 +282,7 @@ function Tabs() {
           paddingTop: 8,
           elevation: 0,
         },
-        headerShown: true,
-        header: () => <AppHeader />,
+        headerShown: false,
         tabBarLabelStyle: { fontFamily: 'Tajawal_700Bold', fontSize: 12 },
         animation: 'fade',
       }}
