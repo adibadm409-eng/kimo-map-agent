@@ -33,6 +33,6 @@ assert(offers.includes('cancelOfferReminderById'), 'offer UI must cancel one rem
 assert(!offers.includes('scheduleOfferReminder'), 'offer UI must not schedule outside the canonical DB path')
 assert(offers.includes('o.reminders'), 'offer cards must render reminder collections')
 assert(reminders.includes('targetLabel'), 'reminders screen must identify target relation')
-assert(notifications.includes('return Notifications.scheduleNotificationAsync'), 'each reminder must receive its own native notification id')
+assert(notifications.includes('return await Notifications.scheduleNotificationAsync'), 'each reminder must receive its own native notification id')
 assert(notifications.includes("type: 'offer-reminder'"), 'offer reminders must retain native notification metadata')
 console.log('unified_reminder_target_invariants: PASS')
