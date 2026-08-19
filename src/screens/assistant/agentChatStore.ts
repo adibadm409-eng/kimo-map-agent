@@ -152,7 +152,7 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
         pushAudit('plan_step', `${step.title} — ${step.status}`)
         set((st) => ({
           _plan: st._plan ? { ...st._plan, steps: st._plan.steps.map((x) => (x.id === step.id ? step : x)) } : st._plan,
-          executionSteps: [...st.executionSteps, { id: `s-${seq}`, kind: 'plan_step', label: step.title, status: step.status }].slice(-40),
+          executionSteps: [...st.executionSteps, { id: `s-${seq}`, kind: 'plan_step', label: step.title, status: step.status } as ExecutionStep].slice(-40),
         }))
         break
       }
