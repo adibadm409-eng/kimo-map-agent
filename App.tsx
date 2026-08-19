@@ -250,14 +250,22 @@ function LoadingScreen() {
 }
 
 export default function App() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Tajawal_400Regular,
     Tajawal_500Medium,
     Tajawal_700Bold,
     Tajawal_800ExtraBold,
   })
+  const [fontsTimeout, setFontsTimeout] = React.useState(false)
 
-  if (!fontsLoaded) {
+  React.useEffect(() => {
+    const t = setTimeout(() => setFontsTimeout(true), 8000)
+    return () => clearTimeout(t)
+  }, [])
+
+  const fontsReady = fontsLoaded || !!fontError || fontsTimeout
+
+  if (!fontsReady) {
     return <LoadingScreen />
   }
 
