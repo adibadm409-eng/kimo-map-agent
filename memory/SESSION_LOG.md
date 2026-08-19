@@ -238,3 +238,30 @@
 - **سلوك ثنائي الأسطح**: أحداث الوكيل الحيّة (decision/observation/completion + الكروم: ContextBanner/StatusBar/AuditTrail) تُغذّى لحظياً؛ وعند `done/error` يُعاد جلب الرسائل المحفوظة (`getMessages`) وتُعرض من `items` (tool/link/file/ask/confirm/error/text/user). الازدواج ممنوع: tool_call المجرّد يُهمَل في setMessages.
 - **التحقق**: `tsc --noEmit` (0) + `eslint src/screens/assistant` (0) + `agent_input_surface_invariants` PASS + `audio_input_invariants` PASS + `screen_catalog_invariants` PASS.
 - **تنبيه**: لم تُشغَّل بعد ملفات `test:invariants` المعتمدة على `tsx` (غير مثبّت محلياً) — تُركت للتشغيل عبر GitHub Actions. لا تلمس `react-native-reanimated` (خطر بناء).
+
+---
+
+## 2026-08-19 (تتمة) — تنظيف ردود الوكيل + توسيع خانة الكتابة
+- **المُلخّص**: عالجنا تسريب المعرّفات الداخلية (مثل `mszh218axqdkqv`, `mt0hby0a2fx5m1`)
+  وأكواد الحالة الخام (مثل `pending`, `buy_offer`) في فقاعات المساعد وبطاقات
+  خطوات الأداة، أمام المستخدم. الحل ثنائي الطبقة: توجيه صريح في البرومبت + شبكة
+  أمان برمجية (sanitizer) عند حدود العرض. وكذلك وسّعنا خانة الكتابة بدمج زرّي
+  الإرفاق (ملف/صورة) في زر واحد.
+- **ملفات جديدة**: `src/assistant/sanitize.ts` — `sanitizeAssistantText(text)`:
+  تترجم الرموز إلى تسميات عربية، تشذب المعرّفات الداخلية (سلسلة حروف/أرقام ≥10
+  تحتوي حرفاً ورقماً)، تزيل علامات backtick، وتنظّف المسافات.
+- **تعديلات**:
+  - `src/assistant/persist.ts`: `persistAssistantText` يُطهّر `content` قبل الحفظ
+    (يغطي كل المسارات: النهائي/الخطأ/النظام).
+  - `src/assistant/executor.ts`: يُطهّر `liveText` المبثوث حيّاً (stream) والنهائي
+    `finalText` (persist + emits). لا يُمسّ الملاحظة المُعادة للنموذج (يحتاجها
+    للمتابعة) — التنظيف للعرض فقط.
+  - `src/screens/assistant/registry.tsx`: `ToolStepView` يُطهّر `detail` و`resultText`
+    المعروضين (دون المساس بالملاحظة الخام في المتجر).
+  - `src/assistant/prompts.ts`: أُضيفت فقرة مانعة صريحة مع مثال "ممنوع/صحيح" في
+    قسم "إظهار النتائج" (قاعدة 13 الأصلية توجب عدم إظهار تقنيات، لكن النموذج
+    كان يتجاهلها — الآن بأمثلة ملموسة).
+  - `src/screens/assistant/AssistantScreen.tsx`: دُمج زرّا الإرفاق (ملف/صورة) في
+    `handleAttach` واحد (Alert بخيارين) → خانة النص `flex:1` اتسعت ~50px.
+- **التحقق**: `tsc --noEmit` (0) + `eslint` (0) + `agent_input_surface`/`audio_input`/
+  `screen_catalog` invariants كلها PASS.
