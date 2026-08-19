@@ -55,6 +55,7 @@ import WorkspaceDetail from './src/screens/workspace/WorkspaceDetail'
 
 const Stack = createNativeStackNavigator()
 const Tab = createBottomTabNavigator()
+const Root = createNativeStackNavigator()
 
 function PropertiesStack() {
   return (

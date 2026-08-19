@@ -166,3 +166,4 @@
 - 2026-08-19 | 82f9b86 | تعديل تلقائي: AssistantScreen.tsx
 - 2026-08-19 | 2c511dd | تعديل تلقائي: AssistantScreen.tsx
 - 2026-08-19 | eb56853 | تعديل تلقائي: AssistantScreen.tsx
+- 2026-08-19 | 0be1937 | تعديل تلقائي: App.tsx
