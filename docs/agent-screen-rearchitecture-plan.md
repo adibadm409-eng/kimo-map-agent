@@ -1,0 +1,152 @@
+# خطة إعادة هندسة شاشة وكيل الذكاء الاصطناعي (UI-Driven-by-Agent)
+
+## 1. الهدف وغير الهدف
+
+**الهدف:** إعادة بناء `src/screens/assistant/AssistantScreen.tsx` من الصفر وفق معايير
+«واجهة وكيل محترفة» المُقدَّمة: مترجم فوري لكائنات حالة الوكيل، مكوّنات عديمة العقل
+(Dumb Components) مُسجَّلة عبر `ComponentRegistry`، مخزن حالة (Zustand)، `FlashList`،
+وشريط سياق مثبّت + شريط حالة تنفيذ + بطاقات موافقة + شبكة أزرار سياقية + سجل عمليات
+قابل للطي + شريط إدخال هجين.
+
+**غير الهدف (يُحفظ كما هو):**
+- منطق الوكيل الخلفي (`executor.ts`, `agentRun.ts`, `agentContract.ts`, `invokeTools.ts`,
+  `llm.ts`, `transcribe.ts`, `providers.ts`) — **لا يُعدَّل بروتوكول الأحداث**؛ نعتمد على
+  `AgentEvent`/`VisibleAgentEvent` الموجودة فعلاً (phase, plan, plan_step, skill,
+  decision, observation, recovery, tool, ask_user, confirmation, progress, stream,
+  file, link, thinking, done, error).
+- الأسلاك الحالية: `subscribeAgent`, `sendUserMessage`, `answerAsk`, `answerConfirmation`,
+  `cancelAgent`, التنقّل (navigation)، جهات الاتصال، الإملاء الصوتي، المرفقات، وإعدادات
+  المزوّد — تبقى تعمل كما هي، تُنقل إلى المعمارية الجديدة لا تُحذف.
+- ملف `.ts` لخطوط الأدوات/الخريطة/العملاء — خارج النطاق.
+
+## 2. قرار الاعتماديات (Dependency Decision) — نقطة حرجة
+
+المواصفة تمنع `FlatList` وتشترط `FlashList` + `Reanimated v3` + `Zustand`. الواقع:
+- `zustand` و`@shopify/flash-list` غير مثبّتين (grep في package.json = فارغ).
+- `react-native-reanimated` **خطره الأعلى**: وحدة أصلية تحتاج إعداد babel plugin
+  وترجمة native، وقد تكسر بناء Android على خط التجميع الحالي (Termux + EAS/GitHub Actions).
+
+**القرار الموصى به (آمن للبناء):**
+- نثبّت `zustand` (JS صرف، آمن) و`@shopify/flash-list` (بديل قطرة-في محل FlatList، آمن).
+- نستخدم `Animated`/`LayoutAnimation` المدمجين في `react-native` بدل `Reanimated`
+  لتفادي كسر البناء الأصلي؛ نوثّق هذا الانحراف صراحةً (الحركات أبسط لكن مطابقة بصرياً).
+- نترك `Reanimated` كخيار لاحق اختياري لا يُفعَّل الآن.
+
+> إن أصرّ المستخدم على Reanimated حرفياً، نضيفه مع `babel.config.js` plugin ونختبر
+> عبر GitHub Actions فقط (لا اختبار أصلي محلي).
+
+## 3. المعمارية
+
+### 3.1 مخزن Zustand — `src/screens/assistant/agentChatStore.ts`
+يحمل (للجلسة النشطة فقط):
+- `messages: ChatItem[]` (مع `uiComponent` و `meta` و `payload`).
+- `activeContext: { goal?, budget?, date?, status? }` — يُحدّث من أحداث `plan`/`phase`/`decision`.
+- `executionSteps: AgentStep[]` — من `phase`/`plan`/`plan_step`/`tool`/`observation`/`recovery`.
+- `auditTrail: AuditEntry[]` — سجل زمني بكل الأحداث (للدرج).
+- `statusBar: { visible: boolean; steps: string[]; phase: AgentPhase }`.
+- `pending: PendingState | null` (لـ ask_user / confirmation).
+- actions: `applyEvent(e)`, `reset()`, `setPending()`, `appendMessage()`.
+
+### 3.2 ComponentRegistry — `src/screens/assistant/registry.tsx`
+خريطة `type → Component`. كل مكوّن **عديم عقل**: يستقبل `props` ويطلق `onEvent(name, payload)`.
+المكوّنات المُسجَّلة (تغطي المواصفة + أحداث الوكيل الحالية):
+- `MessageBubble` (text/user/assistant) — uiComponent: 'user_bubble' | 'assistant_text'
+- `StatusStepper` (#1 شريط الحالة) — من phase/plan/plan_step/progress
+- `ContextBanner` (#2 رأس السياق الثابت) — من activeContext المشتق
+- `ApprovalGate` (#3 بطاقة الموافقة) — من `confirmation`
+- `DecisionCard` — من `decision`
+- `ObservationCard` — من `observation`/`recovery`
+- `ToolStep` — من `tool` (خطوة تنفيذ)
+- `ActionGrid` (#5 أزرار سياقية) — من `link`/`file`/actions المرفقة بالرد
+- `FileViewer` — من `file`
+- `QuickReplies` — من `ask_user`
+- `ChartRenderer`/`SliderInput`/`MapPicker` — عناصر احتياطية مُسجَّلة مسبقاً (جاهزة للتوسّع، تُستخدم عندما يبث الوكيل payload مناسب مستقبلاً).
+
+**لا يوجد if/else في المكوّنات يقرر «إذا قال الوكيل X أظهر Y»** — الـ store يترجم الحدث
+إلى `uiComponent` واحد فقط، والـ Registry يعرضه.
+
+### 3.3 تحويل الحدث → عنصر واجهة (في store.applyEvent)
+| حدث الوكيل | عنصر الواجهة الناتج |
+|---|---|
+| `text`/`stream` | `MessageBubble` (assistant_text) |
+| `phase`/`plan`/`plan_step`/`progress` | تحديث `StatusBar` + `StatusStepper` |
+| `plan`/`phase`/`decision` | تحديث `ContextBanner` (activeContext) |
+| `confirmation` | `ApprovalGate` داخل FlashList |
+| `decision` | `DecisionCard` |
+| `observation`/`recovery` | `ObservationCard` |
+| `tool` | `ToolStep` |
+| `ask_user` | `QuickReplies` (inline) |
+| `link`/`file` | `ActionGrid`/`FileViewer` ملحق برسالة الوكيل |
+| كل حدث | إدراج في `auditTrail` |
+
+## 4. مخطط الملفات
+
+**جديد:**
+- `src/screens/assistant/agentChatStore.ts` (Zustand)
+- `src/screens/assistant/registry.tsx` (ComponentRegistry + المكوّنات)
+- `src/screens/assistant/components/` (StatusStepper.tsx, ContextBanner.tsx, ApprovalGate.tsx,
+  DecisionCard.tsx, ObservationCard.tsx, ToolStep.tsx, ActionGrid.tsx, FileViewer.tsx,
+  ChatBubble.tsx, AuditDrawer.tsx, HybridInputBar.tsx)
+- `src/screens/assistant/useAgentEvents.ts` (يوثّق subscribeAgent → store.applyEvent)
+
+**مُعدَّل:**
+- `src/screens/assistant/AssistantScreen.tsx` — يُعاد كتابته كـ «قشرة»: Sticky ContextBanner
+  فوق، StatusBar فوق FlashList، FlashList في المنتصف (يرسم عبر Registry)، FAB سجل العمليات،
+  HybridInputBar في الأسفل (يحتفظ بـ useAudioRecorder/DocumentPicker/handleSend/cancelAgent
+  لإرضاء فحص `agent_input_surface`).
+- `babel.config.js` — (فقط إن أُضيف Reanimated) إضافة plugin.
+- `package.json` — إضافة `zustand`, `@shopify/flash-list`.
+
+**محذوف/مُفرّغ:** كتلة `useState` المبعثرة + معالج `subscribeAgent` المضمّن في الشاشة الحالية
+تُنقل إلى store/registry (لا حذف للوظائف، فقط نقل معماري).
+
+## 5. العناصر الستة حسب المواصفة (التوزيع المكاني)
+
+| # | العنصر | الموضع | السلوك |
+|---|---|---|---|
+| 1 | Execution Status Bar | أسفل ContextBanner، فوق FlashList | يظهر أثناء التفكير فقط؛ يختفي (Idle) ويتحوّل لنقطة ملوّنة |
+| 2 | Sticky Context Header | أعلى أعلى، مثبّت دائماً | يتقلّص ديناميكياً عند التمرير السريع |
+| 3 | Approval Card / بطاقات | داخل FlashList | ظل + حواف تحذيرية؛ Auto-scroll إليها عند ورودها |
+| 4 | Audit Trail (FAB + Drawer) | FAB أسفل يمين فوق الإدخال | درج ينزلق من اليمين 60% عرض، لا يحجب المحادثة |
+| 5 | Contextual Action Buttons | ملحق برسالة الوكيل داخل FlashList | Row أفقي تحت النص |
+| 6 | Hybrid Input Bar | أسفل مثبّت | 📎 مرفقات، 🎤 إملاء، ⚡ أوامر؛ KeyboardAvoidingView |
+
+## 6. التدفق اللحظي (يطابق سيناريو المواصفة)
+1. إرسال → فقاعة مستخدم فورية + قفل الإدخال + `sendUserMessage`.
+2. الوكيل يبث `phase`/`progress` → StatusBar ينزلق + ContextBanner يتقلّص.
+3. `confirmation` → ApprovalGate تُدرج + Auto-scroll سلس إليها (في متناول الإبهام).
+4. «تأكيد» → `answerConfirmation` → الوكيل يبث `phase`/`decision` → تحديث ContextBanner
+   + اختفاء StatusBar + ظهور ActionGrid كفقاعة جديدة + وميض FAB السجل.
+
+## 7. الحفاظ على الفحوصات (Invariants)
+- `agent_input_surface_invariants.mjs` يتطلب نصوصاً في الشاشة: `useAudioRecorder`,
+  `const [attachments`, `DocumentPicker`, `handleSend`, `cancelAgent`, `إيقاف التسجيل وإرساله`
+  → تبقى جميعها في `HybridInputBar`/الشاشة الجديدة.
+- `audio_input_invariants.mjs` يتطلب `profile.supports.inputAudio`, `input_audio:{data,format}`,
+  `expo-audio` → لا علاقة بمعمارية العرض؛ تبقى سليمة (الإصلاح السابق محفوظ).
+- `screen_catalog` و`contact_button` لا تلمسان AssistantScreen → غير متأثرة.
+
+## 8. خطوات التنفيذ (مرحلية)
+1. `npm i zustand @shopify/flash-list` + تثبيت محلي (npm ci بأنواع حقيقية).
+2. `agentChatStore.ts` (Zustand + applyEvent + خريطة حدث→uiComponent).
+3. مكوّنات `components/` (Dumb) واحداً تلو الآخر مع تطبيق DESIGN.md (tokens, Tajawal,
+   ألوان دلالية، شبكة 4pt، عمق مسطّح).
+4. `registry.tsx` يسجّل المكوّنات.
+5. `useAgentEvents.ts` يربط `subscribeAgent` بالـ store.
+6. إعادة كتابة `AssistantScreen.tsx` كقشرة (Sticky + StatusBar + FlashList + FAB + InputBar)
+   مع نقل أسلاك التنقّل/الصوت/المرفقات/الإعدادات.
+7. التحقق: `tsc --noEmit` (heap 4096) + `eslint src audit --max-warnings 0` +
+   `npm run test:invariants` (خاصة agent_input_surface + audio_input).
+8. دفع وتشغيل بناء GitHub Actions حتى النجاح.
+
+## 9. المخاطر
+- **R1 (حرج):** إضافة Reanimated يكسر البناء → نتجنّبه (نستخدم Animated المدمج).
+- **R2 (مهم):** فقدان أسلاك الصوت/المرفقات أثناء النقل → نحتفظ بالعلامات المطلوبة للفحص.
+- **R3 (مهم):** FlashList يتطلب عناصر متجانسة الارتفاع/تقدير → نستخدم `estimatedItemSize`
+  وحدود ارتفاع للمكوّنات.
+- **R4 (مقترح):** تباعد بصري بين العناصر — نطبّق قاعدة «لا فجوات فارغة» عبر هوامش 4/8/12/16.
+
+## 10. التحقق
+- tsc 0 أخطاء، eslint 0 تحذيرات، كل الفحوصات الثابتة PASS، بناء GitHub Actions success.
+- اختبار يدوي (عبر EAS بناء APK): إرسال رسالة صوتية + رؤية StatusBar/ContextBanner/
+  ApprovalGate/ActionGrid/AuditDrawer تتصرف حسب السيناريو.
