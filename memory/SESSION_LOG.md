@@ -265,3 +265,22 @@
     `handleAttach` واحد (Alert بخيارين) → خانة النص `flex:1` اتسعت ~50px.
 - **التحقق**: `tsc --noEmit` (0) + `eslint` (0) + `agent_input_surface`/`audio_input`/
   `screen_catalog` invariants كلها PASS.
+
+---
+
+## 2026-08-19 (تتمة) — إعادة هيكلة التنقّل: شريط جانبي بدل «المزيد»+«المشاريع»
+- **السبب**: الشريط السفلي كان فيه 7 تبويبات (مضاد لنمط التصميم)؛ «المزيد» تبويب
+  يسرد تبويبات أخرى (نمط رديء). طلب المستخدم شريطاً جانبياً وزراً علوياً.
+- **التغيير (محصور في `App.tsx`، بلا مكتبات جديدة)**:
+  - الشريط السفلي أصبح 5 تبويبات فقط: العقارات/العملاء/العروض/الخريطة/المساعد.
+  - أُضيف `Root.Navigator` (NativeStack) فوق `Tabs`؛ رُفعت شاشات «المزيد» و«المشاريع»
+    لتكون مسارات جذرية مباشرة (Projects, KimoOperations, ToolsExport, BackupManager,
+    ViewingsList, ViewingForm, CampaignsList, CampaignForm, Reminders, ReportsMain,
+    Settings, MapSettings, MapKeysSettings, About) حتى يعمل التنقّل من الدرج.
+  - حُذفا `MoreMenuScreen` و`MoreStack`؛ استُبدلا بـ `SideMenuProvider` + `MenuFab`
+    (زر عائم أعلى الزاوية يمين/RTL) + `SideMenuOverlay` (لوحة جانبية منزلقة بـ
+    Animated من الجهة اليمنى، بلا react-native-reanimated).
+  - زر الإغلاق داخل اللوحة + خلفية معتمة تُغلق عند الضغط.
+- **التحقق**: `tsc --noEmit` (0) + `eslint App.tsx` (0) + كل الفحوصات الثلاثة PASS.
+- **ملاحظة**: لم تُشغَّل واجهة التطبيق فعلياً (لا محاكي)؛ التحقق آلي فقط. الزر العائم
+  قد يتداخل بصرياً مع ترويسات بعض الشاشات — يُراجَع عند التشغيل.

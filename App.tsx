@@ -140,19 +140,29 @@ function useSideMenu() {
   return React.useContext(SideMenuCtx)
 }
 
-function MenuFab() {
+function MenuButton() {
   const { colors } = useTheme()
   const { open } = useSideMenu()
-  const insets = useSafeAreaInsets()
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="القائمة الجانبية"
       onPress={open}
-      style={{ position: 'absolute', top: insets.top + 8, right: 12, width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', elevation: 6, zIndex: 50 }}
+      style={{ width: 42, height: 42, alignItems: 'center', justifyContent: 'center' }}
     >
-      <Ionicons name="menu-outline" size={22} color={colors.textPrimary} />
+      <Ionicons name="menu-outline" size={24} color={colors.textPrimary} />
     </Pressable>
+  )
+}
+
+function AppHeader() {
+  const { colors } = useTheme()
+  const insets = useSafeAreaInsets()
+  return (
+    <View style={{ paddingTop: insets.top, paddingBottom: 8, paddingHorizontal: 12, backgroundColor: colors.bgSecondary, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <MenuButton />
+      <Text style={{ fontSize: 18, fontFamily: 'Tajawal_800ExtraBold', color: colors.textPrimary }}>مدير العقارات</Text>
+    </View>
   )
 }
 
