@@ -196,7 +196,7 @@ function SideMenuOverlay() {
           position: 'absolute',
           top: 0,
           bottom: 0,
-          right: 0,
+          left: Dimensions.get('window').width - panelWidth,
           width: panelWidth,
           backgroundColor: colors.bgSecondary,
           borderLeftWidth: StyleSheet.hairlineWidth,
