@@ -327,52 +327,18 @@ async function initSchema(database: SQLite.SQLiteDatabase) {
     CREATE INDEX IF NOT EXISTS idx_offers_amount ON offers (amount);
     CREATE INDEX IF NOT EXISTS idx_campaigns_created ON campaigns (created_at);
     CREATE INDEX IF NOT EXISTS idx_viewings_created ON viewings (created_at);
-
-    CREATE TABLE IF NOT EXISTS waypoints (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      description TEXT DEFAULT '',
-      latitude REAL NOT NULL,
-      longitude REAL NOT NULL,
-      type TEXT DEFAULT 'custom',
-      media TEXT DEFAULT '[]',
-      created_at TEXT DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS areas (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      description TEXT DEFAULT '',
-      geojson TEXT NOT NULL,
-      area_sqm REAL DEFAULT 0,
-      perimeter_m REAL DEFAULT 0,
-      media TEXT DEFAULT '[]',
-      created_at TEXT DEFAULT (datetime('now'))
-    );
-
     CREATE INDEX IF NOT EXISTS idx_waypoints_coords ON waypoints (latitude, longitude);
     CREATE INDEX IF NOT EXISTS idx_areas_name ON areas (name);
     CREATE INDEX IF NOT EXISTS idx_waypoints_created ON waypoints (created_at);
     CREATE INDEX IF NOT EXISTS idx_areas_created ON areas (created_at);
-
-    CREATE TABLE IF NOT EXISTS change_log (
-      id TEXT PRIMARY KEY,
-      action TEXT NOT NULL,
-      scope TEXT NOT NULL,
-      scope_id TEXT NOT NULL,
-      actor TEXT NOT NULL DEFAULT 'system',
-      session_id TEXT,
-      tool TEXT,
-      before TEXT,
-      after TEXT,
-      summary TEXT DEFAULT '',
-      created_at INTEGER NOT NULL
-    );
     CREATE INDEX IF NOT EXISTS idx_change_log_created ON change_log (created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_change_log_scope ON change_log (scope, scope_id);
     CREATE INDEX IF NOT EXISTS idx_change_log_action ON change_log (action);
     CREATE INDEX IF NOT EXISTS idx_change_log_session ON change_log (session_id);
-  `)
+    `)
+  } catch (e) {
+    console.warn('مؤشرات الجداول لم تُنشأ الآن (غير حاسم للعمل):', e)
+  }
 
   await removeLegacyDemoData(database)
 }
