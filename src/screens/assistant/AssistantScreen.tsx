@@ -455,8 +455,13 @@ export default function AssistantScreen({ navigation }: any) {
   }, [auditTrail.length])
 
   const { setRight } = React.useContext(HeaderCtx)
+  const isFocused = useIsFocused()
 
   useEffect(() => {
+    if (!isFocused) {
+      setRight(null)
+      return
+    }
     setRight(
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <Pressable
@@ -492,7 +497,7 @@ export default function AssistantScreen({ navigation }: any) {
       </View>,
     )
     return () => setRight(null)
-  }, [setRight, mode, configured, colors, navigation, setShowHistory, toggleMode])
+  }, [setRight, isFocused, mode, configured, colors, navigation, setShowHistory, toggleMode])
 
   return (
     <View style={[styles.root, { backgroundColor: colors.bg }]}>
