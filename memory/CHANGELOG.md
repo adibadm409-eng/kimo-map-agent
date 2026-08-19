@@ -135,3 +135,4 @@
 - 2026-08-19 | 86d04cd | تعديل تلقائي: agentChatStore.ts
 - 2026-08-19 | 8bcb24f | تعديل تلقائي: agentChatStore.ts
 - 2026-08-19 | 1c43524 | تعديل تلقائي: agentChatStore.ts
+- 2026-08-19 | 1372419 | تعديل تلقائي: registry.tsx

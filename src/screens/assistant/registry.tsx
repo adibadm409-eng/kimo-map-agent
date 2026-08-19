@@ -160,7 +160,7 @@ function FileCardView({ item, ctx }: { item: ChatItem; ctx: RegistryCtx }) {
   const icon = format === 'excel' ? 'grid-outline' : format === 'word' ? 'document-text-outline' : 'print-outline'
   return (
     <View style={[styles.card, { backgroundColor: colors.successSurface, borderColor: colors.border }]}>
-      <Ionicons name={icon? 'document-outline' : 'document-outline'} size={18} color={colors.success} />
+      <Ionicons name={icon as any} size={18} color={colors.success} />
       <View style={{ flex: 1, gap: 2, minWidth: 0 }}>
         <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={1}>{meta.name ?? 'ملف'}</Text>
         <Text style={[styles.sub, { color: colors.textSecondary }]}>{format === 'excel' ? 'جدول إكسل' : format === 'word' ? 'مستند وورد' : 'ملف PDF'}</Text>
