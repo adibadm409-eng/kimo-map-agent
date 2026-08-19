@@ -9,6 +9,7 @@ import { useTheme } from '../theme/ThemeContext'
 import { spacing, radius, fontSize } from '../theme/tokens'
 import { Card, StatusBadge } from '../components/ui'
 import { getAllClients, deleteClient } from '../database/db'
+import { SectionFab } from '../components/SectionFab'
 import { formatPrice } from '../utils/helpers'
 import { CallButton } from '../components/CallButton'
 
