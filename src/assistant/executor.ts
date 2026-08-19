@@ -711,37 +711,44 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
     const voiceLabel = audioAsset?.name ?? opts.audio.name ?? 'تسجيل صوتي'
     try {
       const audio = await readAudioInput(opts.audio.uri, opts.audio.format ?? 'm4a')
-      let voiceText = text.trim()
-      try {
-        // نحوّل الصوت إلى نص قبل الإرسال كي يعمل مع أي موديل دون خطأ 400
-        // الناتج عن input_audio غير المدعوم، ونبقي التجربة موثوقة دائماً.
-        const transcript = await transcribeAudio({
-          providerId: conn.providerId,
-          baseUrl: conn.baseUrl,
-          apiKey: conn.apiKey,
-          model: conn.model,
-          audioUri: opts.audio.uri,
-          audioBase64: audio.base64,
-          format: audio.format,
-        })
-        voiceText = transcript || voiceText
-      } catch (err: any) {
-        const note =
-          err instanceof TranscribeError && err.supported
-            ? ' (تعذّر فهم التسجيل الصوتي تلقائياً هذه المرة)'
-            : ' (المزوّد الحالي لا يدعم فهم الصوت تلقائياً)'
-        voiceText = (voiceText ? voiceText + ' ' : '') + note
-      }
-      const spoken = voiceText.trim() || 'أرسل المستخدم تسجيلاً صوتياً. استمع إليه وفهم المطلوب ثم تعامل معه.'
-      content = `${content ? content + '\n\n' : ''}[رسالة صوتية محوّلة إلى نص] ${spoken}`.trim()
-      // المزوّدات الداعمة تسمع الصوت الفعلي (فيدلتي أعلى)، والبقية تعتمد النص المحوّل.
       const profile = resolveModelProfile(providerProxy(conn), conn.model)
-      initialContent = profile.supports.inputAudio
-        ? [
+      if (profile.supports.inputAudio) {
+        // السماع المباشر: الموديل يسمع الصوت نفسه بلا أي اعتماد على نقطة
+        // تفريغ خارجية (نقطة Mistral/voxtral كانت ترد 400 بنموذج غير صالح،
+        // فصار المسار المباشر هو الأصدق والأسرع للموديلات الداعمة).
+        const spoken = text.trim() || 'أرسل المستخدم تسجيلاً صوتياً. استمع إليه وفهم المطلوب واستجب له.'
+        content = `${content ? content + '\n\n' : ''}[رسالة صوتية مباشرة] ${spoken}`.trim()
+        initialContent = [
           { type: 'text', text: content },
           { type: 'input_audio', input_audio: { data: audio.base64, format: audio.format } },
         ]
-        : content
+      } else {
+        // الموديل لا يسمع: نحوّل إلى نص ثم نكمل بالمسار النصي الثابت.
+        let voiceText = text.trim()
+        try {
+          // نحوّل الصوت إلى نص قبل الإرسال كي يعمل مع أي موديل دون الاعتماد
+          // على input_audio غير المدعوم، ونبقي التجربة موثوقة دائماً.
+          const transcript = await transcribeAudio({
+            providerId: conn.providerId,
+            baseUrl: conn.baseUrl,
+            apiKey: conn.apiKey,
+            model: conn.model,
+            audioUri: opts.audio.uri,
+            audioBase64: audio.base64,
+            format: audio.format,
+          })
+          voiceText = transcript || voiceText
+        } catch (err: any) {
+          const note =
+            err instanceof TranscribeError && err.supported
+              ? ' (تعذّر فهم التسجيل الصوتي تلقائياً هذه المرة)'
+              : ' (المزوّد الحالي لا يدعم فهم الصوت تلقائياً)'
+          voiceText = (voiceText ? voiceText + ' ' : '') + note
+        }
+        const spoken = voiceText.trim() || 'أرسل المستخدم تسجيلاً صوتياً. استمع إليه وفهم المطلوب ثم تعامل معه.'
+        content = `${content ? content + '\n\n' : ''}[رسالة صوتية محوّلة إلى نص] ${spoken}`.trim()
+        initialContent = content
+      }
     } catch (error: any) {
       const message = error?.message ?? 'تعذر تجهيز التسجيل الصوتي محلياً.'
       await persistUser(sessionId, content || `رسالة صوتية: ${voiceLabel}`)
