@@ -318,6 +318,15 @@ export default function AssistantScreen({ navigation }: any) {
     }
   }
 
+  function handleAttach() {
+    if (busy || recorderState.isRecording) return
+    Alert.alert('إرفاق', 'ماذا تريد إرفاقه؟', [
+      { text: 'ملف', onPress: () => pickFiles() },
+      { text: 'صورة', onPress: () => pickImages() },
+      { text: 'إلغاء', style: 'cancel' },
+    ])
+  }
+
   async function handleVoice() {    if (busy) return
     if (!voiceReady) {
       try {
