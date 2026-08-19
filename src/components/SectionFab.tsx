@@ -25,7 +25,7 @@ export function SectionFab({
       style={({ pressed }) => [
         styles.fab,
         {
-          bottom: insets.bottom + 76,
+          bottom: insets.bottom + 66,
           right: 16,
           backgroundColor: colors.accent,
           opacity: pressed ? 0.92 : 1,
