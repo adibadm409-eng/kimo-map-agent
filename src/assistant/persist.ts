@@ -72,5 +72,5 @@ export async function persistUser(sessionId: string, content: string, meta?: Rec
 }
 
 export async function persistAssistantText(sessionId: string, content: string, kind: Message['kind'] = 'text', meta?: Record<string, any>): Promise<void> {
-  await addMessage({ sessionId, role: 'assistant', kind, content, meta })
+  await addMessage({ sessionId, role: 'assistant', kind, content: sanitizeAssistantText(content), meta })
 }
