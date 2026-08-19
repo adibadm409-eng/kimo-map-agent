@@ -363,10 +363,11 @@ export default function AssistantScreen({ navigation }: any) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
     setInput('')
     setAskText('')
+    const imageUris = attachments.filter((a) => a.kind === 'image' || /\.(jpe?g|png|gif|webp|heic|heif)$/i.test(a.uri)).map((a) => a.uri)
     // أظهر رسالة المستخدم محلياً فوراً حتى لا تختفي لحظة كتحضير الإرسال
     setMessages((prev) => [
       ...prev,
-      { id: `local-user-${Date.now()}`, sessionId: sid, role: 'user', kind: 'text', content: audio ? `رسالة صوتية: ${audio.name}` : trimmed || (attachments.length ? `أرسلت ${attachments.length} مرفقات للمراجعة` : ''), createdAt: Date.now() },
+      { id: `local-user-${Date.now()}`, sessionId: sid, role: 'user', kind: 'text', content: audio ? `رسالة صوتية: ${audio.name}` : trimmed || (attachments.length ? `أرسلت ${attachments.length} مرفقات للمراجعة` : ''), createdAt: Date.now(), meta: imageUris.length ? { images: imageUris } : undefined },
     ])
     const atts = attachments.length ? [...attachments] : undefined
     setAttachments([])
