@@ -10,6 +10,7 @@ import { spacing, radius, fontSize } from '../theme/tokens'
 import { Card, StatusBadge } from '../components/ui'
 import { getAllOffers, deleteOffer, createOfferReminder, cancelOfferReminderById } from '../database/db'
 import { OfferReminderModal } from '../components/OfferReminderModal'
+import { SectionFab } from '../components/SectionFab'
 import { formatPrice, formatDate } from '../utils/helpers'
 import { STATUS_LABELS } from '../types'
 
