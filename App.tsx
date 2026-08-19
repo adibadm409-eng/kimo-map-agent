@@ -1,6 +1,6 @@
 import React from 'react'
 import { View, Text, I18nManager, ActivityIndicator, StyleSheet, Pressable, Animated, Dimensions, ScrollView } from 'react-native'
-import { NavigationContainer, DarkTheme as NavDark, DefaultTheme as NavLight } from '@react-navigation/native'
+import { NavigationContainer, DarkTheme as NavDark, DefaultTheme as NavLight, useNavigation } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
