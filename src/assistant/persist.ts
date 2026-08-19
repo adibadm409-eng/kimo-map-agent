@@ -1,6 +1,7 @@
 import { addMessage, type Message } from './store'
 import { toWireToolCall, type ToolCall } from './llm'
 import { truncateForModel } from './constants'
+import { sanitizeAssistantText } from './sanitize'
 
 export function mimeOf(name: string): string {
   const ext = name.split('.').pop()?.toLowerCase() ?? ''

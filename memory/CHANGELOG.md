@@ -154,3 +154,4 @@
 - 2026-08-19 | 3d74c36 | تعديل تلقائي: AssistantScreen.tsx
 - 2026-08-19 | 934be41 | تعديل تلقائي: AssistantScreen.tsx
 - 2026-08-19 | a78313a | تعديل تلقائي: AssistantScreen.tsx
+- 2026-08-19 | 7786a1d | تعديل تلقائي: sanitize.ts
