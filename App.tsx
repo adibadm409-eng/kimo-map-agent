@@ -60,7 +60,7 @@ const Root = createNativeStackNavigator()
 function PropertiesStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="PropertiesList" component={Properties} options={({ navigation }) => ({ title: 'العقارات', headerRight: () => <HeaderAddButton onPress={() => navigation.navigate('PropertyForm', {})} label="إضافة عقار" /> })} />
+      <Stack.Screen name="PropertiesList" component={Properties} options={{ title: 'العقارات' }} />
       <Stack.Screen name="PropertyDetail" component={PropertyDetail} options={{ title: 'تفاصيل العقار' }} />
       <Stack.Screen name="PropertyForm" component={PropertyForm} options={{ title: 'عقار' }} />
     </Stack.Navigator>
