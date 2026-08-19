@@ -83,22 +83,7 @@ export default function AssistantScreen({ navigation }: any) {
   const recorderState = useAudioRecorderState(audioRecorder)
 
   useEffect(() => {
-    let mounted = true
-    ;(async () => {
-      try {
-        const permission = await AudioModule.requestRecordingPermissionsAsync()
-        if (!permission.granted) {
-          if (mounted) setVoiceError('لم يُسمح لكيمو باستخدام الميكروفون. يمكنك تفعيل الإذن من إعدادات Android.')
-          return
-        }
-        await setAudioModeAsync({ playsInSilentMode: true, allowsRecording: true })
-        if (mounted) setVoiceReady(true)
-      } catch (error: any) {
-        if (mounted) setVoiceError(error?.message ?? 'تعذر تهيئة الميكروفون.')
-      }
-    })()
     return () => {
-      mounted = false
       setAudioModeAsync({ allowsRecording: false }).catch(() => {})
     }
   }, [])

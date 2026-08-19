@@ -222,3 +222,19 @@
   KEY_PASSWORD (تفاصيلها في keystore/README.txt خارج الجيت).
 - **وثائق جديدة**: `docs/BUILD.md` (عامة) + تحديث `keystore/README.txt` (سرية).
 - **حالة الـ APK**: في Artifacts بأحدث تشغيل أخضر — app-release.apk (~41.5MB).
+
+---
+
+## 2026-08-19 — إعادة هندسة شاشة كيمو (UI-Driven-by-Agent) — الجزء 2
+- **المُلخّص**: أُنجزت إعادة هيكلة `AssistantScreen.tsx` كقشرة رفيعة فوق مخزن Zustand
+  (`agentChatStore.ts`) + سجل مكوّنات عديم العقل (`registry.tsx`) + رابط أحداث
+  (`useAgentEvents.ts`). الشاشة أصبحت "مترجماً فورياً" للأحداث دون أي if/else على
+  نوع الرسالة داخلها.
+- **الملفات الجديدة/المعدّلة**:
+  - `src/screens/assistant/agentChatStore.ts` (Zustand: items/activeContext/executionSteps/auditTrail/statusBar/streamText + applyEvent يحوّل أحداث الوكيل إلى عناصر).
+  - `src/screens/assistant/registry.tsx` (مكوّنات: ToolStep/AskCard/ConfirmCard/LinkCard/FileCard/DecisionCard/ObservationCard/CompletionPulse/UserBubble/AssistantMessage/Error/System + ContextBanner/ExecutionStatusBar/AuditDrawer). كل handlers من `RegistryCtx` لا من per-item.
+  - `src/screens/assistant/useAgentEvents.ts` (subscribeAgent → store.applyEvent، وreload على done/error).
+  - `src/screens/assistant/AssistantScreen.tsx` أُعيدت كتابتها كقشرة (FlashList→FlatList لتفادي مخاطر scroll API) مع حفظ علامات الفحص النصّية داخلها: `useAudioRecorder`, `const [attachments`, `DocumentPicker`, `handleSend`, `cancelAgent`, `إيقاف التسجيل وإرساله`.
+- **سلوك ثنائي الأسطح**: أحداث الوكيل الحيّة (decision/observation/completion + الكروم: ContextBanner/StatusBar/AuditTrail) تُغذّى لحظياً؛ وعند `done/error` يُعاد جلب الرسائل المحفوظة (`getMessages`) وتُعرض من `items` (tool/link/file/ask/confirm/error/text/user). الازدواج ممنوع: tool_call المجرّد يُهمَل في setMessages.
+- **التحقق**: `tsc --noEmit` (0) + `eslint src/screens/assistant` (0) + `agent_input_surface_invariants` PASS + `audio_input_invariants` PASS + `screen_catalog_invariants` PASS.
+- **تنبيه**: لم تُشغَّل بعد ملفات `test:invariants` المعتمدة على `tsx` (غير مثبّت محلياً) — تُركت للتشغيل عبر GitHub Actions. لا تلمس `react-native-reanimated` (خطر بناء).
