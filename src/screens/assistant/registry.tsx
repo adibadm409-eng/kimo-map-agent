@@ -45,8 +45,8 @@ function ToolStepView({ item, colors }: { item: ChatItem; colors: Colors }) {
   const result = meta?.observation ?? meta?.result ?? item.payload?.result ?? ''
   const ok = meta?.ok !== false
   const title = stepCardTitle(name, rawArgs)
-  const detail = stepCardDetail(name, rawArgs)
-  const resultText = stepCardResult(name, result)
+  const detail = sanitizeAssistantText(stepCardDetail(name, rawArgs))
+  const resultText = sanitizeAssistantText(stepCardResult(name, result))
   const statusColor = ok ? colors.success : colors.error
   return (
     <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
