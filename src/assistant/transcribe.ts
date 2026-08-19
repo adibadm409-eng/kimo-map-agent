@@ -46,7 +46,7 @@ function normalizeBase(url: string): string {
 function pickGeminiModel(model: string): string {
   const m = (model || '').trim()
   if (/^gemini[-\w.]*$/i.test(m)) return m
-  return 'gemini-2.5-flash'
+  return 'gemini-3.5-flash'
 }
 
 async function transcribeGemini(apiKey: string, model: string, base64: string, mime: string): Promise<string> {
