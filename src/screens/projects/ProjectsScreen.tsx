@@ -107,35 +107,21 @@ export default function ProjectsScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top + 8 }]}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>المشاريع</Text>
-        <View style={styles.headerBtns}>
-          <Pressable
-            onPress={() => navigation.navigate('WorkspacesList')}
-            style={[styles.headerBtn, { backgroundColor: colors.surface }]}
-            hitSlop={8}
-          >
-            <Ionicons name="grid-outline" size={20} color={colors.textSecondary} />
-          </Pressable>
-          <Pressable
-            onPress={() => navigation.navigate('ProjectsSearch')}
-            style={[styles.headerBtn, { backgroundColor: colors.surface }]}
-            hitSlop={8}
-          >
-            <Ionicons name="search" size={20} color={colors.textSecondary} />
-          </Pressable>
-          <Pressable
-            onPress={() => navigation.navigate('ProjectForm', {})}
-            style={[styles.headerBtn, { backgroundColor: colors.accent }]}
-            hitSlop={8}
-          >
-            <Ionicons name="add" size={22} color="#FFF" />
-          </Pressable>
-        </View>
-      </View>
-
-      <View style={styles.addWrap}>
-        <Button title="إضافة مشروع" onPress={() => navigation.navigate('ProjectForm', {})} icon={<Ionicons name="add" size={16} color="#FFF" />} />
+      <View style={styles.headerBtns}>
+        <Pressable
+          onPress={() => navigation.navigate('WorkspacesList')}
+          style={[styles.headerBtn, { backgroundColor: colors.surface }]}
+          hitSlop={8}
+        >
+          <Ionicons name="grid-outline" size={20} color={colors.textSecondary} />
+        </Pressable>
+        <Pressable
+          onPress={() => navigation.navigate('ProjectsSearch')}
+          style={[styles.headerBtn, { backgroundColor: colors.surface }]}
+          hitSlop={8}
+        >
+          <Ionicons name="search" size={20} color={colors.textSecondary} />
+        </Pressable>
       </View>
 
       <Pressable
