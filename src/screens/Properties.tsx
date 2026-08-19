@@ -205,6 +205,7 @@ export default function Properties() {
           </View>
         }
       />
+      <SectionFab onPress={() => navigation.navigate('PropertyForm', {})} label="إضافة عقار" />
     </View>
   )
 }
