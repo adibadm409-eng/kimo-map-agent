@@ -151,7 +151,6 @@ export default function ProjectsScreen() {
         <View style={styles.empty}>
           <Ionicons name="folder-open-outline" size={64} color={colors.textMuted} />
           <Text style={[styles.emptyText, { color: colors.textMuted }]}>لا توجد مشاريع بعد</Text>
-          <Button title="إضافة المشروع الأول" onPress={() => navigation.navigate('ProjectForm', {})} variant="ghost" />
         </View>
       ) : (
         <FlatList
