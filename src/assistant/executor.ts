@@ -673,7 +673,7 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
   const turn = createUserTurn(sessionId, text, assets)
   const assetText = assets.map((asset) => {
     const summary = summarizeAssetForModel(asset)
-    return `\n\n[أصل محلي جاهز للمعالجة: ${JSON.stringify(summary)} — استخدم inspect_asset أو الأدوات المناسبة قبل أي قرار.]`
+    return `\n\n[أصل محلي موجود في المحادثة: ${JSON.stringify(summary)} — لا تحلله ولا تفحصه ولا تربطه بعقار/عرض إلا بطلب واضح وصريح من المستخدم. بدون طلب واضح أبقِه في المحادثة دون أي عمل عليه، وانتظر توجيه المستخدم.]`
   }).join('')
   content = `${content}${assetText}`.trim()
   if (!content && assets.length) content = `أرسل المستخدم ${assets.length} أصلاً للمراجعة.`
