@@ -323,7 +323,7 @@ function RootNav() {
   return (
     <NavigationContainer theme={navTheme}>
       <SideMenuProvider>
-        <Root.Navigator initialRouteName="Tabs" screenOptions={{ headerShown: false }}>
+        <Root.Navigator initialRouteName="Tabs" screenOptions={{ headerShown: true, header: (props: any) => <AppHeader {...props} /> }}>
           <Root.Screen name="Tabs" component={Tabs} />
           <Root.Screen name="Projects" component={ProjectsStack} />
           <Root.Screen name="KimoOperations" component={KimoOperationsScreen} />
