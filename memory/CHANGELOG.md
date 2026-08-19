@@ -220,3 +220,4 @@
 - 2026-08-19 | eb565e9 | تعديل تلقائي: AssistantHistory.tsx
 - 2026-08-19 | 5ec5d32 | تعديل تلقائي: ProjectsScreen.tsx
 - 2026-08-19 | efdc247 | تعديل تلقائي: App.tsx
+- 2026-08-19 | 883c1ea | تعديل تلقائي: App.tsx

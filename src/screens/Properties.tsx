@@ -44,6 +44,7 @@ export default function Properties() {
   const [typeFilter, setTypeFilter] = useState('all')
   const [priceMin, setPriceMin] = useState('')
   const [priceMax, setPriceMax] = useState('')
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   useFocusEffect(useCallback(() => {
     load()
