@@ -172,6 +172,13 @@ export async function runRegistryTool(
     return true
   }
 
+  if (WRITE_TOOLS.has(tool) && s.mode === 'read') {
+    const obs = '[فشل] العملية تتطلب وضع التعديل، والوضع الحالي للقراءة فقط. فعّل وضع التعديل من إعدادات المساعد ثم أعد المحاولة.'
+    await persistPair(sessionId, call, obs, undefined, { name: tool, args, result: 'محظور في وضع القراءة فقط', ok: false })
+    if (emitEvents) emitForSession(sessionId, { type: 'tool', name: tool, args, result: 'محظور في وضع القراءة فقط' })
+    return true
+  }
+
   if (DELETE_CONFIRM_TOOLS.has(tool) && (tool !== 'mutate_record' || mutationInnerTool === 'delete')) {
     const delId = String(args.id ?? args.row_id ?? args.table_id ?? args.workspace_id ?? '')
     if (!delId) {
