@@ -80,7 +80,7 @@ function ClientsStack() {
 function OffersStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="OffersList" component={Offers} options={({ navigation }) => ({ title: 'العروض', headerRight: () => <HeaderAddButton onPress={() => navigation.navigate('OfferForm', {})} label="إضافة عرض" /> })} />
+      <Stack.Screen name="OffersList" component={Offers} options={{ title: 'العروض' }} />
       <Stack.Screen name="OfferForm" component={OfferForm} options={{ title: 'عرض' }} />
     </Stack.Navigator>
   )
