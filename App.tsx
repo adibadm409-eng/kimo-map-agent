@@ -259,9 +259,9 @@ function SideMenuOverlay() {
 function AssistantStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="AssistantMain" component={AssistantScreen} />
-      <Stack.Screen name="AgentSettings" component={AgentSettings} />
-      <Stack.Screen name="CustomProviderEditor" component={CustomProviderEditor} />
+      <Stack.Screen name="AssistantMain" component={AssistantScreen} options={{ title: 'كيمو' }} />
+      <Stack.Screen name="AgentSettings" component={AgentSettings} options={{ title: 'إعدادات المساعد' }} />
+      <Stack.Screen name="CustomProviderEditor" component={CustomProviderEditor} options={{ title: 'مزوّد مخصص' }} />
     </Stack.Navigator>
   )
 }
