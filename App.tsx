@@ -326,19 +326,19 @@ function RootNav() {
         <Root.Navigator initialRouteName="Tabs" screenOptions={{ headerShown: true, header: (props: any) => <AppHeader {...props} /> }}>
           <Root.Screen name="Tabs" component={Tabs} />
           <Root.Screen name="Projects" component={ProjectsStack} />
-          <Root.Screen name="KimoOperations" component={KimoOperationsScreen} />
-          <Root.Screen name="ToolsExport" component={ToolsScreen} />
-          <Root.Screen name="BackupManager" component={BackupManagerScreen} />
-          <Root.Screen name="ViewingsList" component={Viewings} />
-          <Root.Screen name="ViewingForm" component={ViewingForm} />
-          <Root.Screen name="CampaignsList" component={Campaigns} />
-          <Root.Screen name="CampaignForm" component={CampaignForm} />
-          <Root.Screen name="Reminders" component={Reminders} />
-          <Root.Screen name="ReportsMain" component={Reports} />
-          <Root.Screen name="Settings" component={Settings} />
-          <Root.Screen name="MapSettings" component={MapSettings} />
-          <Root.Screen name="MapKeysSettings" component={MapKeysSettings} />
-          <Root.Screen name="About" component={AboutScreen} />
+          <Root.Screen name="KimoOperations" component={KimoOperationsScreen} options={{ title: 'إشراف Kimo وسجل العمليات' }} />
+          <Root.Screen name="ToolsExport" component={ToolsScreen} options={{ title: 'الأدوات والاستيراد' }} />
+          <Root.Screen name="BackupManager" component={BackupManagerScreen} options={{ title: 'النسخ الاحتياطية' }} />
+          <Root.Screen name="ViewingsList" component={Viewings} options={({ navigation }) => ({ title: 'المشاهدات', headerRight: () => <HeaderAddButton onPress={() => navigation.navigate('ViewingForm', {})} label="إضافة مشاهدة" /> })} />
+          <Root.Screen name="ViewingForm" component={ViewingForm} options={{ title: 'مشاهدة' }} />
+          <Root.Screen name="CampaignsList" component={Campaigns} options={({ navigation }) => ({ title: 'الحملات', headerRight: () => <HeaderAddButton onPress={() => navigation.navigate('CampaignForm', {})} label="إضافة حملة" /> })} />
+          <Root.Screen name="CampaignForm" component={CampaignForm} options={{ title: 'حملة' }} />
+          <Root.Screen name="Reminders" component={Reminders} options={{ title: 'التذكيرات' }} />
+          <Root.Screen name="ReportsMain" component={Reports} options={{ title: 'التقارير' }} />
+          <Root.Screen name="Settings" component={Settings} options={{ title: 'الإعدادات' }} />
+          <Root.Screen name="MapSettings" component={MapSettings} options={{ title: 'مزوّدو الخرائط' }} />
+          <Root.Screen name="MapKeysSettings" component={MapKeysSettings} options={{ title: 'المفاتيح المطلوبة' }} />
+          <Root.Screen name="About" component={AboutScreen} options={{ title: 'حقوق الملكية' }} />
         </Root.Navigator>
         <SideMenuOverlay />
       </SideMenuProvider>
