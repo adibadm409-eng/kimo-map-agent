@@ -258,11 +258,48 @@ async function initSchema(database: SQLite.SQLiteDatabase) {
       FOREIGN KEY (property_id) REFERENCES properties (id) ON DELETE CASCADE,
       FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS waypoints (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      latitude REAL NOT NULL,
+      longitude REAL NOT NULL,
+      type TEXT DEFAULT 'custom',
+      media TEXT DEFAULT '[]',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS areas (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      geojson TEXT NOT NULL,
+      area_sqm REAL DEFAULT 0,
+      perimeter_m REAL DEFAULT 0,
+      media TEXT DEFAULT '[]',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS change_log (
+      id TEXT PRIMARY KEY,
+      action TEXT NOT NULL,
+      scope TEXT NOT NULL,
+      scope_id TEXT NOT NULL,
+      actor TEXT NOT NULL DEFAULT 'system',
+      session_id TEXT,
+      tool TEXT,
+      before TEXT,
+      after TEXT,
+      summary TEXT DEFAULT '',
+      created_at INTEGER NOT NULL
+    );
   `)
 
   await safeMigrate(database)
 
-  await database.execAsync(`
+  try {
+    await database.execAsync(`
     CREATE INDEX IF NOT EXISTS idx_entity_media_target ON entity_media (entity_type, entity_id);
     CREATE INDEX IF NOT EXISTS idx_entity_media_source ON entity_media (source_attachment_id);
     CREATE INDEX IF NOT EXISTS idx_offers_property ON offers (property_id);
