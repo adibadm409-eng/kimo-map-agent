@@ -285,23 +285,21 @@ const styles = StyleSheet.create({
     fontFamily: 'Tajawal_400Regular',
     textAlign: 'right',
   },
-  filterToggleRow: {
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xs,
-    alignItems: 'flex-end',
-  },
-  filterToggleBtn: {
+  searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    height: 38,
-    borderRadius: radius.full,
-    borderWidth: 1,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
   },
-  filterToggleText: {
-    fontSize: fontSize.sm,
-    fontFamily: 'Tajawal_700Bold',
+  filterCardBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
   },
   filterBadge: {
     minWidth: 20,
