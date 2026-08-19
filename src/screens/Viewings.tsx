@@ -19,7 +19,6 @@ const FILTERS = [
 
 export default function Viewings() {
   const { colors } = useTheme()
-  const insets = useSafeAreaInsets()
   const navigation = useNavigation<any>()
   const [viewings, setViewings] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
