@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { Message, PendingState } from '../../assistant'
-import type { AgentEvent, VisibleAgentEvent } from '../../assistant/agentRun'
-import type { AgentPhase, AgentPlan, AgentDecision, AgentSkill } from '../../assistant/agentContract'
+import type { AgentEvent } from '../../assistant/agentRun'
+import type { AgentPhase, AgentPlan, AgentDecision, AgentSkill, VisibleAgentEvent } from '../../assistant/agentContract'
 
 export type UiComponent =
   | 'user_bubble'
