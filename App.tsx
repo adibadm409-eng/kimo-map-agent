@@ -392,8 +392,9 @@ function RootNav() {
           <Root.Screen name="MapSettings" component={MapSettings} options={{ title: 'مزوّدو الخرائط' }} />
           <Root.Screen name="MapKeysSettings" component={MapKeysSettings} options={{ title: 'المفاتيح المطلوبة' }} />
           <Root.Screen name="About" component={AboutScreen} options={{ title: 'حقوق الملكية' }} />
-        </Root.Navigator>
-        <SideMenuOverlay />
+          </Root.Navigator>
+          <SideMenuOverlay />
+        </HeaderCtx.Provider>
       </SideMenuProvider>
     </NavigationContainer>
   )
