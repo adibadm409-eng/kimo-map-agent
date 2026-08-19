@@ -204,7 +204,7 @@ function SideMenuOverlay() {
     }
   }, [visible])
 
-  const panelWidth = Math.min(Dimensions.get('window').width * 0.82, 340)
+  const panelWidth = Math.min(Dimensions.get('window').width * 0.8, 320)
   if (!mounted && !visible) return null
 
   return (
@@ -215,7 +215,7 @@ function SideMenuOverlay() {
           position: 'absolute',
           top: 0,
           bottom: 0,
-          left: Dimensions.get('window').width - panelWidth,
+          right: 0,
           width: panelWidth,
           backgroundColor: colors.bgSecondary,
           borderLeftWidth: StyleSheet.hairlineWidth,
