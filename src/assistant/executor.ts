@@ -340,7 +340,6 @@ async function runLoop(
           // الوكيل الحر: أي إجابة نهائية تُعتمد مباشرة دون بوابة إثبات قسرية.
           // نثق بالنموذج ونتائج أدواته الفعلية، وندعه يجيب مباشرة على الأسئلة
           // العامة والمحادثة دون إجباره على أداة أو فرض "دليل" قبل الكلام.
-          const finalText = result.content ? String(result.content).trim() : ''
           if (finalText) {
             await persistAssistantText(sessionId, finalText, 'text')
             if (emitEvents) {
