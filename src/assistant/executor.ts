@@ -360,18 +360,6 @@ async function runLoop(
 
           const callArgs0 = parseToolArgs(call.arguments)
           const innerTool = call.name === 'execute' ? String(callArgs0.tool ?? 'execute') : call.name
-          const universalTools = UNIVERSAL_TOOLS
-          const skillAllowsTool = !runtimeSkill || universalTools.has(innerTool) || runtimeSkill.readTools.includes(innerTool) || runtimeSkill.writeTools.includes(innerTool) || runtimeSkill.preferredTools.includes(innerTool)
-          if (!skillAllowsTool) {
-            const denied = `[فشل] المهارة «${runtimeSkill?.label ?? 'الحالية'}» لا تستخدم الأداة «${innerTool}» في هذا المسار. سأعود إلى أدوات القراءة أو أسأل عن تغيير الهدف بدلاً من تنفيذ مسار غير مناسب.`
-            await persistAssistantText(sessionId, denied, 'system').catch(() => {})
-            thread.push({ role: 'tool', tool_call_id: call.id, content: denied })
-            if (emitEvents) {
-              publishRuntimeEvent(sessionId, { type: 'observation', title: 'حُجبت أداة خارج نطاق المهارة', detail: denied, status: 'warning' })
-              publishRuntimeEvent(sessionId, { type: 'recovery', title: 'أعيد توجيه التنفيذ إلى المهارة الحالية', detail: 'لم أسمح بتغيير مسار المهمة دون مبرر واضح.', strategy: 'replan' })
-            }
-            continue
-          }
 
           // execute هو envelope؛ يجب التحقق من الأداة الداخلية بنفس تعريفها قبل
           // التنفيذ، وإلا يستطيع الموديل تجاوز required/types عبر wrapper صالح شكلياً.
