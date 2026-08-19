@@ -11,6 +11,7 @@ import * as ImagePicker from 'expo-image-picker'
 import * as Clipboard from 'expo-clipboard'
 import { AudioModule, RecordingPresets, setAudioModeAsync, useAudioRecorder, useAudioRecorderState } from 'expo-audio'
 import { useTheme } from '../../theme/ThemeContext'
+import { HeaderCtx } from '../../../navigation/headerContext'
 import { spacing, radius, fontSize } from '../../theme/tokens'
 import {
   sendUserMessage,
