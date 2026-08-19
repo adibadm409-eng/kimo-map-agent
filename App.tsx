@@ -124,6 +124,55 @@ const SIDE_ITEMS: SideItem[] = [
   { label: 'حقوق الملكية', icon: 'shield-checkmark-outline', screen: 'About', color: '#94A3B8' },
 ]
 
+function getActiveRouteName(state: any): string | null {
+  if (!state || !state.routes) return null
+  let route = state.routes[state.index]
+  while (route?.state?.routes) {
+    route = route.state.routes[route.state.index]
+  }
+  return route?.name ?? null
+}
+
+const TITLE_MAP: Record<string, string> = {
+  PropertiesList: 'العقارات',
+  PropertyDetail: 'تفاصيل العقار',
+  PropertyForm: 'عقار',
+  ClientsList: 'العملاء',
+  ClientDetail: 'تفاصيل العميل',
+  ClientForm: 'عميل',
+  OffersList: 'العروض',
+  OfferForm: 'عرض',
+  ProjectsList: 'المشاريع',
+  ProjectForm: 'مشروع',
+  ProjectDetail: 'تفاصيل المشروع',
+  BlockForm: 'بلوك',
+  BlockDetail: 'تفاصيل البلوك',
+  PlotDetail: 'تفاصيل القطعة',
+  PaymentForm: 'دفعة',
+  CustomFields: 'حقول مخصصة',
+  ProjectsSearch: 'بحث المشاريع',
+  ProjectReports: 'تقرير المشروع',
+  WorkspacesList: 'مساحات العمل',
+  WorkspaceDetail: 'تفاصيل مساحة العمل',
+  ViewingsList: 'المشاهدات',
+  ViewingForm: 'مشاهدة',
+  CampaignsList: 'الحملات',
+  CampaignForm: 'حملة',
+  Reminders: 'التذكيرات',
+  ReportsMain: 'التقارير',
+  Settings: 'الإعدادات',
+  MapSettings: 'مزوّدو الخرائط',
+  MapKeysSettings: 'المفاتيح المطلوبة',
+  About: 'حقوق الملكية',
+  KimoOperations: 'إشراف Kimo وسجل العمليات',
+  ToolsExport: 'الأدوات والاستيراد',
+  BackupManager: 'النسخ الاحتياطية',
+  MapScreen: 'الخريطة',
+  AssistantMain: 'كيمو',
+  AgentSettings: 'إعدادات المساعد',
+  CustomProviderEditor: 'مزوّد مخصص',
+}
+
 const SideMenuCtx = React.createContext<{ visible: boolean; open: () => void; close: () => void }>({
   visible: false,
   open: () => {},
