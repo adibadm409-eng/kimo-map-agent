@@ -156,20 +156,6 @@ export default function Offers() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <View style={[styles.header, { borderBottomColor: colors.border, paddingTop: insets.top + spacing.md }]}>
-        <View>
-          <Text style={[styles.pageTitle, { color: colors.textPrimary }]}>العروض</Text>
-          <Text style={[styles.pageSubtitle, { color: colors.textSecondary }]}>{offers.length} عرض</Text>
-        </View>
-        <Pressable
-          onPress={() => navigation.navigate('OfferForm', {})}
-          style={({ pressed }) => [styles.addBtn, { backgroundColor: colors.accent, opacity: pressed ? 0.8 : 1 }]}
-        >
-          <Ionicons name="add" size={20} color="#FFF" />
-          <Text style={styles.addBtnText}>عرض جديد</Text>
-        </Pressable>
-      </View>
-
       <View style={styles.searchBar}>
         <View style={[styles.searchWrap, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Ionicons name="search-outline" size={18} color={colors.textMuted} />
