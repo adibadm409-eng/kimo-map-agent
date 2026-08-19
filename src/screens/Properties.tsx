@@ -36,7 +36,6 @@ const PRICE_PRESETS = [
 
 export default function Properties() {
   const { colors } = useTheme()
-  const insets = useSafeAreaInsets()
   const navigation = useNavigation<any>()
   const [properties, setProperties] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
