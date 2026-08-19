@@ -12,7 +12,8 @@
     "scheme": "realestate",
     "plugins": [
       "expo-audio",
-      "expo-contacts"
+      "expo-contacts",
+      "./plugins/androidOptimize"
     ],
     "android": {
       "package": "com.realestate.app",
