@@ -26,7 +26,7 @@ export interface OfferReminderDetails {
 }
 
 export async function ensureOfferReminderPermissions(): Promise<boolean> {
-  if (Platform.OS === 'web' || !notificationsAvailable) return false
+  if (Platform.OS === 'web') return false
 
   try {
     if (Platform.OS === 'android') {
