@@ -9,6 +9,7 @@ import { getAllProperties, deleteProperty } from '../database/db'
 import { formatPrice } from '../utils/helpers'
 import { STATUS_LABELS, TYPE_LABELS } from '../types'
 import { CallButton } from '../components/CallButton'
+import { SectionFab } from '../components/SectionFab'
 
 const STATUS_FILTERS = [
   { key: 'all', label: 'الجميع' },
