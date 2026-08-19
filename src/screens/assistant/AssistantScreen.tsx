@@ -548,7 +548,7 @@ export default function AssistantScreen({ navigation }: any) {
         <Ionicons name="list-outline" size={18} color={auditFlash ? '#fff' : colors.accent} />
       </Pressable>
 
-      <View style={[styles.inputArea, { paddingBottom: kbHeight > 0 ? kbHeight + 4 : Math.max(insets.bottom, 2), backgroundColor: colors.bgSecondary, borderTopColor: colors.border }]}>
+      <View style={[styles.inputArea, { paddingBottom: kbHeight > 0 ? kbHeight + 4 : 0, backgroundColor: colors.bgSecondary, borderTopColor: colors.border }]}>
         {!atBottom && (
           <Pressable
             accessibilityRole="button"
