@@ -110,13 +110,15 @@ type SideItem = { label: string; icon: string; screen: string; color: string } |
 const SIDE_ITEMS: SideItem[] = [
   { label: 'المشاريع', icon: 'business-outline', screen: 'Projects', color: '#3B82F6' },
   { divider: true },
-  { label: 'إشراف Kimo وسجل العمليات', icon: 'shield-checkmark-outline', screen: 'KimoOperations', color: '#16A34A' },
+  { label: 'التقارير', icon: 'bar-chart-outline', screen: 'ReportsMain', color: '#16A34A' },
   { label: 'أدوات التصدير والاستيراد', icon: 'cloud-upload-outline', screen: 'ToolsExport', color: '#0EA5E9' },
   { label: 'النسخ الاحتياطية', icon: 'archive-outline', screen: 'BackupManager', color: '#8B5CF6' },
+  { divider: true },
+  { label: 'إشراف Kimo وسجل العمليات', icon: 'shield-checkmark-outline', screen: 'KimoOperations', color: '#16A34A' },
   { label: 'المشاهدات', icon: 'calendar-outline', screen: 'ViewingsList', color: '#3B82F6' },
   { label: 'التذكيرات', icon: 'alarm-outline', screen: 'Reminders', color: '#0EA5E9' },
   { label: 'الحملات', icon: 'megaphone-outline', screen: 'CampaignsList', color: '#7C3AED' },
-  { label: 'التقارير', icon: 'bar-chart-outline', screen: 'ReportsMain', color: '#16A34A' },
+  { divider: true },
   { label: 'الإعدادات', icon: 'settings-outline', screen: 'Settings', color: '#64748B' },
   { label: 'حقوق الملكية', icon: 'shield-checkmark-outline', screen: 'About', color: '#94A3B8' },
 ]
