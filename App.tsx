@@ -297,7 +297,7 @@ function Tabs() {
         options={{ tabBarLabel: 'العروض', tabBarIcon: ({color, size}) => <Ionicons name="pricetags-outline" size={size} color={color} /> }}
       />
       <Tab.Screen name="MapScreen" component={MapScreen}
-        options={{ tabBarLabel: 'الخريطة', tabBarIcon: ({color, size}) => <Ionicons name="map-outline" size={size} color={color} /> }}
+        options={{ tabBarLabel: 'الخريطة', title: 'الخريطة', tabBarIcon: ({color, size}) => <Ionicons name="map-outline" size={size} color={color} /> }}
       />
       <Tab.Screen name="AssistantStack" component={AssistantStack}
         options={{ tabBarLabel: 'المساعد', tabBarIcon: ({color, size}) => <Ionicons name="sparkles-outline" size={size} color={color} /> }}
