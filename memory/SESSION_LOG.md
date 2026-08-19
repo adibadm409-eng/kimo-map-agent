@@ -5,6 +5,27 @@
 
 ---
 
+## 2026-08-19 — حسم جذر خطأ 400 الصوت وحلّه بالمسارات الموثّقة
+- **المُلخّص**: باستخدام مفاتيح المستخدم (مخزّنة مؤقتاً خارج المستودع) ثبت عملياً
+  أن جهاز المستخدم يسجّل m4a وأن **كلا المزوّدين يرفضان m4a في مسار chat** بـ 400:
+  جيميني OpenAI-compat → «Invalid audio format "m4a" ... Valid formats are: [wav, mp3]»،
+  ومسترال voxtral → «Failed to load audio file ... valid mp3 or wav». في المقابل
+  يقبلهما كلا المزوّدين في **نقاط التفريغ الموثّقة**: مسترال
+  `/v1/audio/transcriptions` مع `voxtral-mini-latest` (200 على mp3/m4a، والوثائق تعرض
+  مثالاً يرفع m4a)، وجيميني `generateContent` النصية بـ inlineData (200 على m4a/mp3).
+- **التعديلات**:
+  1. `transcribe.ts`: نموذج تفريغ مسترال من `voxtral-small-latest` (غير صالح → 400)
+     إلى `voxtral-mini-latest` الموثّق؛ واحتياطي نموذج جيميني من `gemini-2.5-flash`
+     (مرفوض للمفاتيح الجديدة → 404) إلى `gemini-3.5-flash`.
+  2. `executor.ts`: مسار صوتي هجين بسيط — إرسال مباشر لـ `input_audio` فقط للصيغ
+     التي يثبت المزود قبولها في chat (جيميني/مسترال: wav+mp3؛ openai: قائمة
+     whisper الشهيرة)، وإلا (m4a افتراضي الجهاز) تفريغ نصي عبر النقطة الموثّقة.
+  3. `providers.ts`: `audioFormats` لموديل voxtral-small في chat → `['wav','mp3']`.
+- **التحقق**: tsc (0 أخطاء) + eslint (0 تحذيرات) + فحوصات
+  audio_input / agent_input_surface / provider_wire / provider_compatibility
+  (154 pass, 197 blocked) / model_profile — كلها PASS.
+- **بقي**: دفع الالتزامات وإعادة تشغيل البناء في GitHub Actions ومتابعته حتى النجاح.
+
 ## 2026-08-19 — تجهيز البناء في GitHub Actions وإصلاح فحوصات CI
 - **المُلخّص**: الهدف صار البناء في GitHub Actions وليس Expo Go. أُجريت مراجعة
   شاملة جعلت كل خطوات `npm run check` و`npm run lint` و`npm run test:invariants`
