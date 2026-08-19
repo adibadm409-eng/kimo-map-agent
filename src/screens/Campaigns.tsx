@@ -142,6 +142,7 @@ export default function Campaigns() {
           </View>
         }
       />
+      <SectionFab onPress={() => navigation.navigate('CampaignForm', {})} label="حملة جديدة" />
     </View>
   )
 }
