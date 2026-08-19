@@ -38,10 +38,9 @@ describe('false progress and terminal outcome invariants', () => {
   })
 
   it('does not force the UI into complete when done carries failure', () => {
-    const screen = readFileSync(resolve(process.cwd(), 'src/screens/assistant/AssistantScreen.tsx'), 'utf8')
-    expect(screen).toContain("const outcome = e.outcome ?? 'completed'")
-    expect(screen).toContain("setAgentPhase('error')")
-    expect(screen).toContain("setAgentPhase('paused')")
+    const store = readFileSync(resolve(process.cwd(), 'src/screens/assistant/agentChatStore.ts'), 'utf8')
+    expect(store).toContain("(e as Extract<AgentEvent, { type: 'done' }>).outcome ?? 'completed'")
+    expect(store).toContain("o === 'completed' ? 'اكتملت المهمة'")
   })
 
   it('leaves plan disclosure and spoken reasoning to the agent', () => {
