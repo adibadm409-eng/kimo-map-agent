@@ -155,7 +155,7 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
       case 'skill': {
         const skill = (e as Extract<VisibleAgentEvent, { type: 'skill' }>).skill
         pushAudit('skill', skill.label)
-        set((st) => ({ executionSteps: [...st.executionSteps, { id: `s`, kind: 'skill', label: skill.label, detail: skill.description } as any].slice(-40) }))
+        set((st) => ({ executionSteps: [...st.executionSteps, { id: `s-${seq}`, kind: 'skill', label: skill.label, detail: skill.description }].slice(-40) }))
         break
       }
       case 'progress': {

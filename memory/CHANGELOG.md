@@ -132,3 +132,4 @@
 - 2026-08-19 | 25ce3d5 | تعديل تلقائي: agent-screen-rearchitecture-plan.md
 - 2026-08-19 | 646a839 | تعديل تلقائي: agent-screen-rearchitecture-plan.md
 - 2026-08-19 | 40b32ae | تعديل تلقائي: package.json
+- 2026-08-19 | 86d04cd | تعديل تلقائي: agentChatStore.ts
