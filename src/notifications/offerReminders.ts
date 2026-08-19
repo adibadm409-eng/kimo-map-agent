@@ -55,7 +55,7 @@ export async function ensureOfferReminderPermissions(): Promise<boolean> {
 
 export async function scheduleLocalReminder(date: Date, title: string, body: string, data: Record<string, any> = {}): Promise<string> {
   if (date.getTime() <= Date.now()) throw new Error('يجب أن يكون موعد التنبيه في المستقبل.')
-  if (!notificationsAvailable) throw new Error('الإشعارات المحلية غير متاحة على هذا الجهاز.')
+  if (Platform.OS === 'web') throw new Error('الإشعارات المحلية غير مدعومة على الويب.')
   const permitted = await ensureOfferReminderPermissions()
   if (!permitted) throw new Error('لم يتم منح صلاحية الإشعارات المحلية.')
 
