@@ -164,3 +164,4 @@
 - 2026-08-19 | 9a59123 | تعديل تلقائي: registry.tsx
 - 2026-08-19 | e53d647 | تعديل تلقائي: prompts.ts
 - 2026-08-19 | 82f9b86 | تعديل تلقائي: AssistantScreen.tsx
+- 2026-08-19 | 2c511dd | تعديل تلقائي: AssistantScreen.tsx

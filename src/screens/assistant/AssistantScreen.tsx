@@ -591,11 +591,8 @@ export default function AssistantScreen({ navigation }: any) {
           </View>
         )}
         <View style={styles.inputRow}>
-          <Pressable accessibilityRole="button" accessibilityLabel="إرفاق ملفات" onPress={pickFiles} disabled={busy || recorderState.isRecording} style={[styles.attachBtn, { backgroundColor: colors.surface, opacity: busy || recorderState.isRecording ? 0.4 : 1 }]}>
+          <Pressable accessibilityRole="button" accessibilityLabel="إرفاق ملف أو صورة" onPress={handleAttach} disabled={busy || recorderState.isRecording} style={[styles.attachBtn, { backgroundColor: colors.surface, opacity: busy || recorderState.isRecording ? 0.4 : 1 }]}>
             <Ionicons name="attach-outline" size={20} color={colors.textSecondary} />
-          </Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel="إرفاق صور" onPress={pickImages} disabled={busy || recorderState.isRecording} style={[styles.attachBtn, { backgroundColor: colors.surface, opacity: busy || recorderState.isRecording ? 0.4 : 1 }]}>
-            <Ionicons name="image-outline" size={20} color={colors.textSecondary} />
           </Pressable>
           <Pressable
             accessibilityRole="button"
