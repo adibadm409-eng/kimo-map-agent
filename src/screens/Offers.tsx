@@ -201,6 +201,7 @@ export default function Offers() {
         onClose={() => setReminderOffer(null)}
         onSave={saveReminder}
       />
+      <SectionFab onPress={() => navigation.navigate('OfferForm', {})} label="إضافة عرض" />
     </View>
   )
 }
