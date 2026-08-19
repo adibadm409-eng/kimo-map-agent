@@ -676,7 +676,7 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
     return `\n\n[أصل محلي موجود في المحادثة: ${JSON.stringify(summary)} — لا تحلله ولا تفحصه ولا تربطه بعقار/عرض إلا بطلب واضح وصريح من المستخدم. بدون طلب واضح أبقِه في المحادثة دون أي عمل عليه، وانتظر توجيه المستخدم.]`
   }).join('')
   content = `${content}${assetText}`.trim()
-  if (!content && assets.length) content = `أرسل المستخدم ${assets.length} أصلاً للمراجعة.`
+  if (!content && assets.length) content = `أرسل المستخدم ${assets.length} مرفقاً في هذه المحادثة (لم يحدد طلباً واضحاً عليها). اسأله ماذا يريد أن تفعل بها دون تحليل أو ربط مسبق.`
   if (assetErrors.length) content += `\n\n[فشل حفظ بعض الأصول: ${assetErrors.join(' | ')}]`
 
   await recordDurableUserTurn({
