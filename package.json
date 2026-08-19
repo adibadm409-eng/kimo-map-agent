@@ -46,7 +46,6 @@
     "@types/react": "~19.1.10",
     "eslint": "^9.39.5",
     "eslint-config-expo": "~10.0.0",
-    "pm2": "^7.0.3",
     "typescript": "~5.9.2",
     "vitest": "^4.1.10"
   },
