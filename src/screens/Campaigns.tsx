@@ -103,19 +103,6 @@ export default function Campaigns() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <View style={[styles.header, { borderBottomColor: colors.border, paddingTop: insets.top + spacing.md }]}>
-        <View>
-          <Text style={[styles.pageTitle, { color: colors.textPrimary }]}>الحملات</Text>
-          <Text style={[styles.pageSubtitle, { color: colors.textSecondary }]}>{campaigns.length} حملة</Text>
-        </View>
-        <Pressable
-          onPress={() => navigation.navigate('CampaignForm', {})}
-          style={({ pressed }) => [styles.addBtn, { backgroundColor: colors.accent, opacity: pressed ? 0.8 : 1 }]}
-        >
-          <Ionicons name="add" size={20} color="#FFF" />
-          <Text style={styles.addBtnText}>حملة جديدة</Text>
-        </Pressable>
-      </View>
 
       <View style={styles.searchBar}>
         <View style={[styles.searchWrap, { backgroundColor: colors.surface, borderColor: colors.border }]}>
