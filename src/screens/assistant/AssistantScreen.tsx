@@ -321,8 +321,19 @@ export default function AssistantScreen({ navigation }: any) {
   async function handleVoice() {
     if (busy) return
     if (!voiceReady) {
-      Alert.alert('الميكروفون غير جاهز', voiceError ?? 'اسمح بالوصول إلى الميكروفون ثم أعد المحاولة.')
-      return
+      try {
+        const permission = await AudioModule.requestRecordingPermissionsAsync()
+        if (!permission.granted) {
+          Alert.alert('الميكروفون غير مصرّح', 'اسمح لكيمو باستخدام الميكروفون من إعدادات Android ثم أعد المحاولة.')
+          return
+        }
+        await setAudioModeAsync({ playsInSilentMode: true, allowsRecording: true })
+        setVoiceReady(true)
+      } catch (error: any) {
+        setVoiceError(error?.message ?? 'تعذر تهيئة الميكروفون.')
+        Alert.alert('تعذر التسجيل', error?.message ?? 'تحقق من إذن الميكروفون ثم أعد المحاولة.')
+        return
+      }
     }
     try {
       if (recorderState.isRecording) {
