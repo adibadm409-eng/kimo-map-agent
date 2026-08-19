@@ -134,6 +134,10 @@ function getActiveRouteName(state: any): string | null {
 }
 
 const TITLE_MAP: Record<string, string> = {
+  PropertiesStack: 'العقارات',
+  ClientsStack: 'العملاء',
+  OffersStack: 'العروض',
+  AssistantStack: 'كيمو',
   PropertiesList: 'العقارات',
   PropertyDetail: 'تفاصيل العقار',
   PropertyForm: 'عقار',
