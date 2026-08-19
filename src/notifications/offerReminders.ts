@@ -3,8 +3,6 @@ import * as Notifications from 'expo-notifications'
 
 export const OFFER_REMINDER_CHANNEL = 'offer-reminders'
 
-let notificationsAvailable = true
-
 if (Platform.OS !== 'web') {
   try {
     Notifications.setNotificationHandler({
@@ -16,7 +14,7 @@ if (Platform.OS !== 'web') {
       }),
     })
   } catch {
-    notificationsAvailable = false
+    // ignore: notification presentation handler unavailable on this runtime
   }
 }
 

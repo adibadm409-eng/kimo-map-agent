@@ -260,3 +260,4 @@
 - 2026-08-20 | 9246122 | تعديل تلقائي: offerReminders.ts
 - 2026-08-20 | 26a9ae5 | تعديل تلقائي: offerReminders.ts
 - 2026-08-20 | 6bc4fff | تعديل تلقائي: offerReminders.ts
+- 2026-08-20 | bfb483e | تعديل تلقائي: offerReminders.ts
