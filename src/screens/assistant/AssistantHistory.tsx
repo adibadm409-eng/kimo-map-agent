@@ -90,9 +90,17 @@ export default function AssistantHistory({
         <View style={[styles.sheet, { backgroundColor: colors.bgSecondary, paddingTop: insets.top + 12 }]}>
           <View style={[styles.handleRow, { borderBottomColor: colors.border }]}>
             <Text style={[styles.title, { color: colors.textPrimary }]}>سجل المحادثات</Text>
-            <Pressable onPress={onClose} hitSlop={8} style={[styles.closeBtn, { backgroundColor: colors.surface }]}>
-              <Ionicons name="close" size={18} color={colors.textPrimary} />
-            </Pressable>
+            <View style={styles.headerRight}>
+              <Pressable onPress={onNew} hitSlop={8} style={[styles.headerIconBtn, { backgroundColor: colors.accent }]}>
+                <Ionicons name="add" size={18} color="#fff" />
+              </Pressable>
+              <Pressable onPress={onOpenSettings} hitSlop={8} style={[styles.headerIconBtn, { backgroundColor: colors.surface }]}>
+                <Ionicons name="settings-outline" size={18} color={colors.textPrimary} />
+              </Pressable>
+              <Pressable onPress={onClose} hitSlop={8} style={[styles.headerIconBtn, { backgroundColor: colors.surface }]}>
+                <Ionicons name="close" size={18} color={colors.textPrimary} />
+              </Pressable>
+            </View>
           </View>
 
           <View style={styles.searchRow}>
