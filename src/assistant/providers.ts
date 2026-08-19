@@ -161,7 +161,7 @@ const DECLARED_MODEL_CAPABILITIES: Record<string, Partial<ProviderCapabilities>>
   'gemini:gemini-3.5-flash': { supportsChat: true, supportsVision: true, supportsTools: true, supportsInputAudio: true },
   'openai:gpt-4o-audio-preview': { supportsChat: true, supportsVision: true, supportsTools: true, supportsInputAudio: true },
   'openai:gpt-4o-mini-audio-preview': { supportsChat: true, supportsVision: true, supportsTools: true, supportsInputAudio: true },
-  'mistral:voxtral-small-latest': { supportsChat: true, supportsVision: false, supportsTools: true, supportsInputAudio: true, audioFormats: ['wav', 'mp3', 'm4a', 'webm'] },
+  'mistral:voxtral-small-latest': { supportsChat: true, supportsVision: false, supportsTools: true, supportsInputAudio: true, audioFormats: ['wav', 'mp3'] },
   'mistral:mistral-small-3.1-24b-instruct-2503': { supportsChat: true, supportsVision: true, supportsTools: true, supportsInputAudio: false },
 }
 

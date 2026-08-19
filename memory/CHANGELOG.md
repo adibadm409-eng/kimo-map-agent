@@ -118,3 +118,4 @@
 - 2026-08-19 | c0cb8d7 | تعديل تلقائي: mistral_stt_models.mjs
 - 2026-08-19 | 6247211 | تعديل تلقائي: transcribe.ts
 - 2026-08-19 | 7f02cdd | تعديل تلقائي: transcribe.ts
+- 2026-08-19 | a14f187 | تعديل تلقائي: transcribe.ts
