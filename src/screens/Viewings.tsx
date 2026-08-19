@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics'
 import { useTheme } from '../theme/ThemeContext'
 import { spacing, radius, fontSize } from '../theme/tokens'
 import { Card, StatusBadge } from '../components/ui'
+import { SectionFab } from '../components/SectionFab'
 import { getAllViewings, deleteViewing } from '../database/db'
 import { formatDateTime } from '../utils/helpers'
 
