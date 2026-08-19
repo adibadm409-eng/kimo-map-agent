@@ -139,7 +139,8 @@
 2. الوكيل يبث `phase`/`progress` → StatusBar ينزلق + ContextBanner يتقلّص.
 3. `confirmation` → ApprovalGate تُدرج + Auto-scroll سلس إليها (في متناول الإبهام).
 4. «تأكيد» → `answerConfirmation` → الوكيل يبث `phase`/`decision` → تحديث ContextBanner
-   + اختفاء StatusBar + ظهور ActionGrid كفقاعة جديدة + وميض FAB السجل.
+   + اختفاء StatusBar + ظهور `ActionGrid` **كصف أفقي ملحق مباشرة أسفل فقاعة رد الوكيل**
+   (لا كفقاعة مستقلة) + وميض FAB السجل (تأثير نبضة عبر `Animated` مدته 1.2ث).
 
 ## 7. الحفاظ على الفحوصات (Invariants)
 - `agent_input_surface_invariants.mjs` يتطلب نصوصاً في الشاشة: `useAudioRecorder`,
