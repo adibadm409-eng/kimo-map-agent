@@ -27,7 +27,6 @@ const TYPE_ICONS: Record<string, string> = {
 
 export default function Campaigns() {
   const { colors } = useTheme()
-  const insets = useSafeAreaInsets()
   const navigation = useNavigation<any>()
   const [campaigns, setCampaigns] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
