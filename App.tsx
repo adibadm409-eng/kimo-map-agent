@@ -322,7 +322,6 @@ function RootNav() {
           <Root.Screen name="MapKeysSettings" component={MapKeysSettings} />
           <Root.Screen name="About" component={AboutScreen} />
         </Root.Navigator>
-        <MenuFab />
         <SideMenuOverlay />
       </SideMenuProvider>
     </NavigationContainer>
