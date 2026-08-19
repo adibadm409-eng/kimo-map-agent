@@ -172,6 +172,11 @@
 - **R4 (مقترح):** تباعد بصري بين العناصر — نطبّق قاعدة «لا فجوات فارغة» عبر هوامش 4/8/12/16.
 
 ## 10. التحقق
+- **لا تُثبّت `react-native-reanimated`** إطلاقاً في هذه المرحلة (نستخدم Animated المدمج).
 - tsc 0 أخطاء، eslint 0 تحذيرات، كل الفحوصات الثابتة PASS، بناء GitHub Actions success.
+- **فحص ربط FlashList الأصلي:** بعد `npm install` نتأكد من ارتباط الوحدة عبر بناء
+  GitHub Actions (ولا نعتمد على نجاح الـ lint وحده). إن لزم نُشغّل بناء APK تجريبي
+  للتأكد من عدم تعطّل الشاشة (شاشة بيضاء/blank).
 - اختبار يدوي (عبر EAS بناء APK): إرسال رسالة صوتية + رؤية StatusBar/ContextBanner/
-  ApprovalGate/ActionGrid/AuditDrawer تتصرف حسب السيناريو.
+  ApprovalGate/ActionGrid/AuditDrawer تتصرف حسب السيناريو، والتأكد من أن فحص
+  `agent_input_surface` لا يزال PASS (العلامات موجودة نصّياً في AssistantScreen.tsx).
