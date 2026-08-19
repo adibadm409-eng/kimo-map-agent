@@ -221,17 +221,18 @@ function HeaderAddButton({ onPress, label }: { onPress: () => void; label?: stri
   )
 }
 
-function AppHeader({ options }: any) {
+function AppHeader() {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
-  const title = options?.title
-  const Right = options?.headerRight
+  const { right } = React.useContext(HeaderCtx)
+  const leaf = useNavigationState((state) => getActiveRouteName(state))
+  const title = TITLE_MAP[leaf ?? ''] ?? 'كيمو'
   return (
     <View style={{ paddingTop: insets.top, paddingBottom: 8, paddingHorizontal: 12, backgroundColor: colors.bgSecondary, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
       <MenuButton />
       <Text style={{ flex: 1, fontSize: 18, fontFamily: 'Tajawal_800ExtraBold', color: colors.textPrimary }} numberOfLines={1}>{title}</Text>
       <View style={{ alignItems: 'center', justifyContent: 'center', flexShrink: 1 }}>
-        {Right ? (typeof Right === 'function' ? <Right /> : Right) : null}
+        {right ? (typeof right === 'function' ? <right /> : right) : null}
       </View>
     </View>
   )
