@@ -159,6 +159,7 @@ export default function Clients() {
           </View>
         }
       />
+      <SectionFab onPress={() => navigation.navigate('ClientForm', {})} label="إضافة عميل" />
     </View>
   )
 }
