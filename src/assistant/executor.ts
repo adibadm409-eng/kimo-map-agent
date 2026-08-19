@@ -732,7 +732,8 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
   }
 
   if (!hasPayload(turn) && !assetErrors.length) return
-  await persistUser(sessionId, content)
+  const userImages = assets.filter((a) => a.kind === 'image' && a.uri).map((a) => a.uri)
+  await persistUser(sessionId, content, userImages.length ? { images: userImages } : undefined)
   // لا رسائل تقدم ثابتة — المساعد نفسه يخاطب المستخدم بما يقرره هو.
   const outcome = await runGuarded(sessionId, conn, true, initialContent)
   emitForSession(sessionId, { type: 'done', outcome })
