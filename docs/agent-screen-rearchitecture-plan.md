@@ -21,16 +21,18 @@
 
 ## 2. قرار الاعتماديات (Dependency Decision) — نقطة حرجة
 
-المواصفة تمنع `FlatList` وتشترط `FlashList` + `Reanimated v3` + `Zustand`. الواقع:
-- `zustand` و`@shopify/flash-list` غير مثبّتين (grep في package.json = فارغ).
+المواصفة تمنع `FlatList` وتشترط `FlashList` + `Reanimated v3` + `Zustand`. الواقع
+(موثّق عبر فحص `package.json`):
+- `@shopify/flash-list` **مثبّت مسبقاً** (موجود في dependencies) — لا حاجة لإعادة تثبيت.
+- `zustand` **غير مثبّت** — يُضاف (JS صرف، آمن).
 - `react-native-reanimated` **خطره الأعلى**: وحدة أصلية تحتاج إعداد babel plugin
   وترجمة native، وقد تكسر بناء Android على خط التجميع الحالي (Termux + EAS/GitHub Actions).
 
 **القرار الموصى به (آمن للبناء):**
-- نثبّت `zustand` (JS صرف، آمن) و`@shopify/flash-list` (بديل قطرة-في محل FlatList، آمن).
+- نثبّت `zustand` فقط. نعتمد `@shopify/flash-list` الموجود فعلاً.
 - نستخدم `Animated`/`LayoutAnimation` المدمجين في `react-native` بدل `Reanimated`
   لتفادي كسر البناء الأصلي؛ نوثّق هذا الانحراف صراحةً (الحركات أبسط لكن مطابقة بصرياً).
-- نترك `Reanimated` كخيار لاحق اختياري لا يُفعَّل الآن.
+- **لا نثبّت `react-native-reanimated` إطلاقاً** في هذه المرحلة (انظر §10).
 
 > إن أصرّ المستخدم على Reanimated حرفياً، نضيفه مع `babel.config.js` plugin ونختبر
 > عبر GitHub Actions فقط (لا اختبار أصلي محلي).
