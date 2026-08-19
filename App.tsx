@@ -70,7 +70,7 @@ function PropertiesStack() {
 function ClientsStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="ClientsList" component={Clients} options={({ navigation }) => ({ title: 'العملاء', headerRight: () => <HeaderAddButton onPress={() => navigation.navigate('ClientForm', {})} label="إضافة عميل" /> })} />
+      <Stack.Screen name="ClientsList" component={Clients} options={{ title: 'العملاء' }} />
       <Stack.Screen name="ClientDetail" component={ClientDetail} options={{ title: 'تفاصيل العميل' }} />
       <Stack.Screen name="ClientForm" component={ClientForm} options={{ title: 'عميل' }} />
     </Stack.Navigator>
