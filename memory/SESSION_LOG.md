@@ -5,6 +5,30 @@
 
 ---
 
+## 2026-08-19 — تنظيف شامل + تحسين بناء أندرويد + نجاح البناء في CI
+- **المُلخّص**: تنظيف التبعيات الميتة، إصلاح اسم حزمة خطوط Tajawal المعطوب (كان
+  `@expo/google-fonts/tajawal` بخط مائل غير صالح في الـ scope → `@expo-google-fonts/tajawal`؛
+  هذا كان يُفشل `npm ci` في CI دائماً)، إضافة plugin لتحسين بناء أندرويد (minifyEnabled +
+  shrinkResources + abiFilters arm64-v8a/armeabi-v7a وحذف x86)، تشغيل توقيع APK وتحقق من
+  توقيعه في سير العمل، وجعل `offerReminders.ts` آمناً من الانهيار (إشعارات محلية فقط).
+- **التعديلات**:
+  1. `package.json`: حذف `react-native-web`/`react-dom`/`pm2`؛ تصحيح اسم `@expo-google-fonts/tajawal`؛
+     إبقاء `docx` (تصدير Word) و`@expo-google-fonts/tajawal` (خطوط App.tsx) بعد إزالتهما خطأً.
+  2. `plugins/androidOptimize.js` (جديد) + `app.json`: حقن minify/shrink/abiFilters.
+  3. `.github/workflows/build-apk.yml`: Android SDK + NDK + توقيع من الأسرار + تحقق digest.
+  4. `src/notifications/offerReminders.ts`: `setNotificationHandler` في try/catch؛ جدولة
+     آمنة بـ `return await Notifications.scheduleNotificationAsync(...)` ترجع المعرّف الحقيقي.
+  5. `audit/false_progress_invariants.test.ts`: تحديث الفحص ليطابق `agentChatStore.ts`
+     (لا `AssistantScreen.tsx`) بعد نقل منطق done.
+  6. `audit/unified_reminder_target_invariants.mjs`: تحديث العلامة الحرفية إلى
+     `return await Notifications.scheduleNotificationAsync` (مطابقة للكود الآمن).
+- **التحقق**: tsc (0) + eslint (0) + سلسلة `test:invariants` كاملة تمر محلياً
+  (node/vitest/tsx)؛ بناء GitHub Actions ناجح (RUN 32308962167، conclusion=success)
+  مع رفع artifact موقّع `realestate-app-release` (~36MB).
+- **ملاحظة**: إصلاح `unified_reminder_target` كان ضرورياً لأن تعديلي على offerReminders
+  (إضافة await) كسر العلامة الحرفية للفحص — درس: أي تعديل على كود يُفحص حرفياً يجب
+  مزامنته مع فحصه.
+
 ## 2026-08-19 — حسم جذر خطأ 400 الصوت وحلّه بالمسارات الموثّقة
 - **المُلخّص**: باستخدام مفاتيح المستخدم (مخزّنة مؤقتاً خارج المستودع) ثبت عملياً
   أن جهاز المستخدم يسجّل m4a وأن **كلا المزوّدين يرفضان m4a في مسار chat** بـ 400:
