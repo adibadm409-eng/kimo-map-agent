@@ -293,13 +293,17 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   filterCardBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.lg,
-    borderWidth: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+    gap: 6,
+    height: 44,
+    paddingHorizontal: 14,
+    borderRadius: radius.full,
+    borderWidth: 1,
+  },
+  filterCardText: {
+    fontSize: fontSize.sm,
+    fontFamily: 'Tajawal_700Bold',
   },
   filterBadge: {
     minWidth: 20,
