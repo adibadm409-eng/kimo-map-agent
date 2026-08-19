@@ -42,12 +42,20 @@
 ### 3.1 مخزن Zustand — `src/screens/assistant/agentChatStore.ts`
 يحمل (للجلسة النشطة فقط):
 - `messages: ChatItem[]` (مع `uiComponent` و `meta` و `payload`).
-- `activeContext: { goal?, budget?, date?, status? }` — يُحدّث من أحداث `plan`/`phase`/`decision`.
-- `executionSteps: AgentStep[]` — من `phase`/`plan`/`plan_step`/`tool`/`observation`/`recovery`.
+- `activeContext: { goal?, budget?, date?, status? }` — يُحدّث من أحداث `plan`/`phase`/`decision`
+  بقاعدة أسبقية: `plan.goal` هو المصدر الأساسي للهدف؛ `decision` يُحدّث الحقول المطابقة
+  فقط (لا يمسح الهدف).
+- `executionSteps: AgentStep[]` — المصدر الوحيد لخطوات التنفيذ، يُغذّى من
+  `phase`/`plan`/`plan_step`/`tool`/`observation`/`recovery`/`skill`.
 - `auditTrail: AuditEntry[]` — سجل زمني بكل الأحداث (للدرج).
-- `statusBar: { visible: boolean; steps: string[]; phase: AgentPhase }`.
+- `statusBar: { visible: boolean; steps: string[]; phase: AgentPhase }` — **مشتق عرضي** من
+  `executionSteps` + حالة `busy` (لا يُخزَّن مستقلاً لتفادي الازدواج).
 - `pending: PendingState | null` (لـ ask_user / confirmation).
 - actions: `applyEvent(e)`, `reset()`, `setPending()`, `appendMessage()`.
+
+**قاعدة التدفق الجزئي (Streaming):** عند استقبال `stream` (وليس `done`) تُعدَّل
+`content` لآخر عنصر `MessageBubble` في `messages` (دمج)، ولا يُنشأ عنصر جديد لكل جزء.
+عند `stream.done` يُثبَّت العنصر.
 
 ### 3.2 ComponentRegistry — `src/screens/assistant/registry.tsx`
 خريطة `type → Component`. كل مكوّن **عديم عقل**: يستقبل `props` ويطلق `onEvent(name, payload)`.
@@ -62,7 +70,12 @@
 - `ActionGrid` (#5 أزرار سياقية) — من `link`/`file`/actions المرفقة بالرد
 - `FileViewer` — من `file`
 - `QuickReplies` — من `ask_user`
-- `ChartRenderer`/`SliderInput`/`MapPicker` — عناصر احتياطية مُسجَّلة مسبقاً (جاهزة للتوسّع، تُستخدم عندما يبث الوكيل payload مناسب مستقبلاً).
+- `ThinkingDot` — نقطة «يت thinking» صغيرة من `thinking` (تُشغّل/تُطفي StatusBar)
+- `ErrorCard` — من `error`
+- `CompletionPulse` — من `done` (يحوّل StatusBar→Idle)
+- `ChartRenderer`/`SliderInput`/`MapPicker` — مُسجَّلة كـ **stubs**: تُستدعى فقط عندما يحمل
+  payload الوكيل حقل `uiComponent: 'chart'|'slider'|'map'` صريحاً (لا يُبث حالياً)؛ حتى ذلك
+  الحين تعرض placeholder آمناً. (عقود جاهزة للتوسّع المستقبلي بلا تعديل الـ Registry.)
 
 **لا يوجد if/else في المكوّنات يقرر «إذا قال الوكيل X أظهر Y»** — الـ store يترجم الحدث
 إلى `uiComponent` واحد فقط، والـ Registry يعرضه.
@@ -70,14 +83,18 @@
 ### 3.3 تحويل الحدث → عنصر واجهة (في store.applyEvent)
 | حدث الوكيل | عنصر الواجهة الناتج |
 |---|---|
-| `text`/`stream` | `MessageBubble` (assistant_text) |
-| `phase`/`plan`/`plan_step`/`progress` | تحديث `StatusBar` + `StatusStepper` |
+| `text`/`stream` | `MessageBubble` (assistant_text) — مع دمج الجزئيات (§3.1) |
+| `skill` | `ToolStep` (سطر مهارة) داخل `executionSteps` |
+| `thinking` | `ThinkingDot` + إظهار StatusBar |
+| `phase`/`plan`/`plan_step`/`progress` | تحديث `executionSteps` + `StatusBar` + `StatusStepper` |
 | `plan`/`phase`/`decision` | تحديث `ContextBanner` (activeContext) |
 | `confirmation` | `ApprovalGate` داخل FlashList |
 | `decision` | `DecisionCard` |
 | `observation`/`recovery` | `ObservationCard` |
 | `tool` | `ToolStep` |
 | `ask_user` | `QuickReplies` (inline) |
+| `error` | `ErrorCard` |
+| `done` | `CompletionPulse` (StatusBar→Idle) + تحديث `activeContext.status` |
 | `link`/`file` | `ActionGrid`/`FileViewer` ملحق برسالة الوكيل |
 | كل حدث | إدراج في `auditTrail` |
 
