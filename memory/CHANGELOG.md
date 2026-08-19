@@ -212,3 +212,4 @@
 - 2026-08-19 | 788ed1d | تعديل تلقائي: Viewings.tsx
 - 2026-08-19 | 5f47f66 | تعديل تلقائي: Viewings.tsx
 - 2026-08-19 | e17ce5f | تعديل تلقائي: Campaigns.tsx
+- 2026-08-19 | fb5bbfb | تعديل تلقائي: Campaigns.tsx
