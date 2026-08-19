@@ -140,3 +140,4 @@
 - 2026-08-19 | 5e35fd8 | تعديل تلقائي: useAgentEvents.ts
 - 2026-08-19 | 5d51201 | تعديل تلقائي: AssistantScreen.tsx
 - 2026-08-19 | 9308aa1 | تعديل تلقائي: agentChatStore.ts
+- 2026-08-19 | ce40e5a | تعديل تلقائي: agentChatStore.ts
