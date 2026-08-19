@@ -341,11 +341,12 @@ async function runLoop(
           // نثق بالنموذج ونتائج أدواته الفعلية، وندعه يجيب مباشرة على الأسئلة
           // العامة والمحادثة دون إجباره على أداة أو فرض "دليل" قبل الكلام.
           if (finalText) {
-            await persistAssistantText(sessionId, finalText, 'text')
+            const safeFinal = sanitizeAssistantText(finalText)
+            await persistAssistantText(sessionId, safeFinal, 'text')
             if (emitEvents) {
-              emitForSession(sessionId, { type: 'stream', content: finalText })
+              emitForSession(sessionId, { type: 'stream', content: safeFinal })
               emitForSession(sessionId, { type: 'stream', content: '', done: true })
-              emitForSession(sessionId, { type: 'text', content: finalText })
+              emitForSession(sessionId, { type: 'text', content: safeFinal })
             }
           } else {
             const soft = 'أنجزت ما أمكنني في هذه الجولة. أخبرني إن أردت تفصيلاً أو خطوة تالية محددة.'
