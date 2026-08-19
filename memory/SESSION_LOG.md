@@ -34,8 +34,11 @@
   `src/screens/assistant/AssistantScreen.tsx`, `app.json`,
   `audit/agent_input_surface_invariants.mjs`, `audit/audio_input_invariants.mjs`,
   `audit/unified_mutation_invariants.test.ts`, `audit/safe_edit_invariants.mjs`.
-- **الخطوة التالية**: دفع `production-hardening-local` وتشغيل `workflow_dispatch`
-  ومتابعة البناء حتى النجاح والتحقق من التوقيع.
+- **اكتمال البناء**: دُفع الفرع `production-hardening-local` (7074a98) وشُغّل
+  `workflow_dispatch` يدوياً (حلقة REST مع تذبذب DNS محلي)؛ التشغيل 32247136114
+  انتهى **success** بكل خطواته — typecheck، lint، invariant tests، prebuild،
+  التوقيع، `Verify APK signature`، ورفع artifact. الرابط:
+  https://github.com/adibadm409-eng/property-manager-app/actions/runs/32247136114
 
 ---
 
