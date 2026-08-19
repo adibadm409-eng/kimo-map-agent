@@ -89,7 +89,7 @@ function OffersStack() {
 function ProjectsStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="ProjectsList" component={ProjectsScreen} options={({ navigation }) => ({ title: 'المشاريع', headerRight: () => <HeaderAddButton onPress={() => navigation.navigate('ProjectForm', {})} label="إضافة مشروع" /> })} />
+      <Stack.Screen name="ProjectsList" component={ProjectsScreen} options={{ title: 'المشاريع' }} />
       <Stack.Screen name="ProjectForm" component={ProjectForm} options={{ title: 'مشروع' }} />
       <Stack.Screen name="ProjectDetail" component={ProjectDetail} options={{ title: 'تفاصيل المشروع' }} />
       <Stack.Screen name="BlockForm" component={BlockForm} options={{ title: 'بلوك' }} />
