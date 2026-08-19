@@ -157,13 +157,32 @@ function MenuButton() {
   )
 }
 
-function AppHeader() {
+function HeaderAddButton({ onPress, label }: { onPress: () => void; label?: string }) {
+  const { colors } = useTheme()
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label ?? 'إضافة'}
+      onPress={onPress}
+      style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}
+    >
+      <Ionicons name="add" size={22} color="#fff" />
+    </Pressable>
+  )
+}
+
+function AppHeader({ options }: any) {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
+  const title = options?.title
+  const Right = options?.headerRight
   return (
-    <View style={{ paddingTop: insets.top, paddingBottom: 8, paddingHorizontal: 12, backgroundColor: colors.bgSecondary, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+    <View style={{ paddingTop: insets.top, paddingBottom: 8, paddingHorizontal: 12, backgroundColor: colors.bgSecondary, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
       <MenuButton />
-      <Text style={{ fontSize: 18, fontFamily: 'Tajawal_800ExtraBold', color: colors.textPrimary }}>مدير العقارات</Text>
+      <Text style={{ flex: 1, fontSize: 18, fontFamily: 'Tajawal_800ExtraBold', color: colors.textPrimary }} numberOfLines={1}>{title}</Text>
+      <View style={{ minWidth: 40, alignItems: 'center', justifyContent: 'center' }}>
+        {Right ? (typeof Right === 'function' ? <Right /> : Right) : null}
+      </View>
     </View>
   )
 }
