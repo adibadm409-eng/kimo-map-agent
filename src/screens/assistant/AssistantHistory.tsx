@@ -178,19 +178,6 @@ export default function AssistantHistory({
               )
             })}
           </ScrollView>
-
-          <View style={[styles.footer, { paddingBottom: insets.bottom + 10, borderTopColor: colors.border }]}>
-            <Pressable
-              onPress={onNew}
-              style={({ pressed }) => [styles.primaryBtn, { backgroundColor: colors.accent, opacity: pressed ? 0.8 : 1 }]}
-            >
-              <Ionicons name="add" size={18} color="#fff" />
-              <Text style={styles.primaryBtnText}>محادثة جديدة</Text>
-            </Pressable>
-            <Pressable onPress={onOpenSettings} style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
-              <Ionicons name="settings-outline" size={20} color={colors.textPrimary} />
-            </Pressable>
-          </View>
         </View>
       </View>
     </Modal>

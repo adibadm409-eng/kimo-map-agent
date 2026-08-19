@@ -215,3 +215,4 @@
 - 2026-08-19 | fb5bbfb | تعديل تلقائي: Campaigns.tsx
 - 2026-08-19 | f7d61b1 | تعديل تلقائي: Campaigns.tsx
 - 2026-08-19 | f07714b | تعديل تلقائي: Campaigns.tsx
+- 2026-08-19 | b7a55a4 | تعديل تلقائي: AssistantHistory.tsx
