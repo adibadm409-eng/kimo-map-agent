@@ -5,6 +5,40 @@
 
 ---
 
+## 2026-08-19 — تجهيز البناء في GitHub Actions وإصلاح فحوصات CI
+- **المُلخّص**: الهدف صار البناء في GitHub Actions وليس Expo Go. أُجريت مراجعة
+  شاملة جعلت كل خطوات `npm run check` و`npm run lint` و`npm run test:invariants`
+  تمر محلياً (بعد `npm ci` بالأنواع الحقيقية)، ثم أصبحت مستعدة للدفع والتشغيل.
+- **إصلاحات جذرية (تراجعات مسبقة كانت تكسر البناء)**:
+  1. `agent_input_surface_invariants` يتطلب `initialContent =` في executor بينما
+     الالتزام 5a1f922 حذف المسار الصوتي متعدد الوسائط. أعيد العقد: إسناد الحمولة
+     النهائية لـ `initialContent`، ومع مسار صوتي مستقيم للمزوّدات الداعمة
+     (`profile.supports.inputAudio` → `input_audio` بالـ base64 والـ format) والنص
+     المحوّل للباقي، داخل `sendUserMessage`.
+  2. `audio_input_invariants` يتطلب `expo-audio` في app.json → أضيف plugin
+     `expo-audio`، ويُنشأ معه `expo-contacts` بعد فحص `offer_relationship` المتطلب له.
+  3. `false_progress_invariants` يتطلب `noEvidenceRecoveryAttempts` → أُعيد
+     الحارس الموثق في تعليق الكود (القراءة التي تطلب بيانات محلية لا تختم بنص
+     النموذج وحده): عدّاد يتجاوز `MAX_NO_EVIDENCE_RECOVERIES=2` → فشل صريح،
+     ودون ذلك يُعاد الطلب للوكيل بتوجيه `runtimeCorrection`.
+  4. `unified_mutation_invariants` كان يعترض على وجود أدوات CRUD في سطح كل مهارة —
+     افتراض قديم يُبطلها قرار تحرير الأدوات؛ عُدّل ليصرّح بوجود `mutate_record` فقط.
+  5. `safe_edit_invariants` كان يشترط `skillAllowsTool` — عُدّل ليصرّح بغياب البوابة.
+- **تحقق محلي**: `npm ci` حقيقي، ثم `tsc --noEmit` (0 أخطاء، حاجة heap 4GB محلياً)،
+  `eslint src audit --max-warnings 0` (0 أخطاء)، وكامل فحوصات invariants (المجموعات
+  الأربع vitest + جميع نصوص node/tsx) كلها PASS.
+- **ملاحظات بيئية (لا تخص CI)**: أوامر `npx vitest`/`npx eslint`/`npx tsx` تفشل في
+  Termux بسبب shebang `/usr/bin/env` وتثبيت tsx مؤقت بـ `--no-save`؛ في ubuntu تعمل.
+- **الملفات**: `src/assistant/executor.ts`, `src/assistant/prompts.ts`,
+  `src/assistant/invokeTools.ts`, `src/assistant/persist.ts`,
+  `src/screens/assistant/AssistantScreen.tsx`, `app.json`,
+  `audit/agent_input_surface_invariants.mjs`, `audit/audio_input_invariants.mjs`,
+  `audit/unified_mutation_invariants.test.ts`, `audit/safe_edit_invariants.mjs`.
+- **الخطوة التالية**: دفع `production-hardening-local` وتشغيل `workflow_dispatch`
+  ومتابعة البناء حتى النجاح والتحقق من التوقيع.
+
+---
+
 ## 2026-08-16 — تنظيف التضخم والكود الميت والبيانات المولدة
 - **المُلخّص**: إزالة كاش الخرائط المتتبع `.tilecache` (نحو 75MB/4840 ملفاً)، إضافته إلى `.gitignore`، وحذف الوحدات القديمة غير القابلة للوصول من مسار App الحالي، بما فيها حزمة Leaflet القديمة ومكونات map legacy غير المستخدمة. أزيلت أيضاً أصول Expo المكررة غير المرجعية والملف المؤقت `.tmp`.
 - **الاعتمادات**: أزيل `expo-status-bar` لأنه لم يكن مستورداً أو مستخدماً. أبقيت `react-dom` و`react-native-web` و`react-native-screens` و`babel-preset-expo` و`pm2` لأنها مطلوبة للويب/React Navigation/البناء أو تشغيل Metro الموثق، وأبقيت حزم التقارير والخرائط لأنها ذات قيمة عملية.
