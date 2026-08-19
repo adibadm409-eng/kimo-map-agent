@@ -962,6 +962,7 @@ export default function AssistantScreen({ navigation }: any) {
       )
     }
     const isUser = item.role === 'user'
+    const userImages = isUser && Array.isArray(item.meta?.images) ? (item.meta.images as string[]).filter(Boolean) : []
     return (
       <View style={[styles.bubbleRow, isUser ? styles.userRow : styles.assistantRow]}>
         {isUser ? (
@@ -974,7 +975,14 @@ export default function AssistantScreen({ navigation }: any) {
               },
             ]}
           >
-            <Text style={[styles.bubbleText, { color: '#FFFFFF', textAlign: 'right', writingDirection: 'rtl' }]}>{item.content}</Text>
+            {userImages.length > 0 && (
+              <View style={styles.userImages}>
+                {userImages.map((uri, i) => (
+                  <Image key={`${uri}-${i}`} source={{ uri }} style={styles.userImg} />
+                ))}
+              </View>
+            )}
+            {!!item.content && <Text style={[styles.bubbleText, { color: '#FFFFFF', textAlign: 'right', writingDirection: 'rtl' }]}>{item.content}</Text>}
           </View>
         ) : (
           <View style={styles.assistantBlock}>
