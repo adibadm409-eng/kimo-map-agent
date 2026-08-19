@@ -10,6 +10,9 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "scheme": "realestate",
+    "plugins": [
+      "expo-audio"
+    ],
     "android": {
       "package": "com.realestate.app",
       "softwareKeyboardLayoutMode": "resize",
