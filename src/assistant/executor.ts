@@ -712,10 +712,18 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
     try {
       const audio = await readAudioInput(opts.audio.uri, opts.audio.format ?? 'm4a')
       const profile = resolveModelProfile(providerProxy(conn), conn.model)
-      if (profile.supports.inputAudio) {
-        // السماع المباشر: الموديل يسمع الصوت نفسه بلا أي اعتماد على نقطة
-        // تفريغ خارجية (نقطة Mistral/voxtral كانت ترد 400 بنموذج غير صالح،
-        // فصار المسار المباشر هو الأصدق والأسرع للموديلات الداعمة).
+      // المسار الموثّق الأبسط: نرسل الصوت مباشرة فقط للصيغ التي يثبت المزود
+      // قبولها في chat (wav/mp3 عند جيميني ومسترال)، وإلا (m4a وهو افتراضي
+      // تسجيل الجهاز) نحوّله نصاً عبر نقطة التفريغ الموثّقة ثم نكمل نصياً.
+      const CHAT_AUDIO_FORMATS: Record<string, string[]> = {
+        gemini: ['wav', 'mp3'],
+        mistral: ['wav', 'mp3'],
+        openai: ['mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'wav', 'webm'],
+      }
+      const acceptedChatAudio = CHAT_AUDIO_FORMATS[conn.providerId]
+      const directAudio =
+        profile.supports.inputAudio && (acceptedChatAudio ? acceptedChatAudio.includes(audio.format) : true)
+      if (directAudio) {
         const spoken = text.trim() || 'أرسل المستخدم تسجيلاً صوتياً. استمع إليه وفهم المطلوب واستجب له.'
         content = `${content ? content + '\n\n' : ''}[رسالة صوتية مباشرة] ${spoken}`.trim()
         initialContent = [
@@ -723,11 +731,10 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
           { type: 'input_audio', input_audio: { data: audio.base64, format: audio.format } },
         ]
       } else {
-        // الموديل لا يسمع: نحوّل إلى نص ثم نكمل بالمسار النصي الثابت.
+        // الموديل/الصيغة لا يدعم chat مباشرة : نحوّل إلى نص ثم نكمل بالمسار النصي الثابت.
         let voiceText = text.trim()
         try {
-          // نحوّل الصوت إلى نص قبل الإرسال كي يعمل مع أي موديل دون الاعتماد
-          // على input_audio غير المدعوم، ونبقي التجربة موثوقة دائماً.
+          // نحوّل الصوت إلى نص عبر نقطة التفريغ الموثّقة (تتعامل مع m4a بنجاح).
           const transcript = await transcribeAudio({
             providerId: conn.providerId,
             baseUrl: conn.baseUrl,
