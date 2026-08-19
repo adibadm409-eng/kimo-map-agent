@@ -193,22 +193,18 @@ ${projectMemoryBlock}
 ردودك منظمة وواضحة، وإن نفذت خطوات فاذكرها باختصار.`
 }
 
-/** تعريفات الأدوات المرئية للنموذج. أدوات المهارة فقط تُعرض، بينما يبقى التنفيذ
- * محمياً بحارس مستقل داخل executor حتى لا تكون الصلاحية مجرد تعليمات نصية. */
-export function getAgentFunctions(skill?: AgentSkill | null): FunctionDef[] {
+/** تعريفات الأدوات المرئية للنموذج. الأدوات مفصولة تماماً عن المهارات: تُعرض
+ * كل أدوات التطبيق بغض النظر عن المهارة النشطة، والمهارة توجّه السلوك فقط
+ * والوكيل هو من يقرر المهارة والأداة اللازمتين. */
+export function getAgentFunctions(_skill?: AgentSkill | null): FunctionDef[] {
   const schemas = buildToolSchemas()
-  const universal = UNIVERSAL_TOOLS
-  const allowed = skill
-    ? new Set([...universal, ...skill.readTools, ...skill.writeTools, ...skill.preferredTools])
-    : universal
-  const visibleTools = TOOLS.filter((tool) => allowed.has(tool.name))
-  const toolFns: FunctionDef[] = visibleTools.map((t) => ({
+  const toolFns: FunctionDef[] = TOOLS.map((t) => ({
     name: t.name,
     description: t.description,
     parameters: schemas[t.name] ?? { type: 'object', properties: {}, required: [] },
   }))
   const wrappers = WRAPPER_FUNCTIONS.map((wrapper) => wrapper.name === 'execute'
-    ? { ...wrapper, description: `${wrapper.description}\nالأدوات المسموحة في هذه المهارة فقط: ${[...allowed].join('، ')}` }
+    ? { ...wrapper, description: `${wrapper.description}\nكل أدوات التطبيق متاحة لك للتنفيذ مباشرةً دون تقييد بالمهارة أو الوضع — اختر الأداة المناسبة بنفسك.` }
     : wrapper)
   return [...toolFns, ...wrappers]
 }
