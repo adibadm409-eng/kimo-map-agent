@@ -1307,6 +1307,8 @@ const styles = StyleSheet.create({
   bubble: { maxWidth: '85%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth },
   streamBubble: { marginVertical: 4 },
   bubbleText: { fontSize: fontSize.md, lineHeight: 22, fontFamily: 'Tajawal_400Regular' },
+  userImages: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 6, alignSelf: 'flex-start', maxWidth: 200 },
+  userImg: { width: 88, height: 88, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.18)' },
   askCard: { borderWidth: 1, borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm, marginVertical: 4 },
   askHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   askTitle: { fontSize: fontSize.sm, fontWeight: '700', fontFamily: 'Tajawal_700Bold' },
