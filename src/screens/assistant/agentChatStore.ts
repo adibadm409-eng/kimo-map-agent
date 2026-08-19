@@ -143,7 +143,7 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
         set((st) => ({
           _plan: plan,
           activeContext: { ...st.activeContext, goal: plan.goal, status: plan.status },
-          executionSteps: [...st.executionSteps, { id: `s-${seq}`, kind: 'plan', label: plan.goal }].slice(-40),
+          executionSteps: [...st.executionSteps, { id: `s-${seq}`, kind: 'plan', label: plan.goal } as ExecutionStep].slice(-40),
         }))
         break
       }
