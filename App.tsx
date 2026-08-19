@@ -10,6 +10,7 @@ import { useFonts } from 'expo-font'
 import { Tajawal_400Regular, Tajawal_500Medium, Tajawal_700Bold, Tajawal_800ExtraBold } from '@expo-google-fonts/tajawal'
 
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext'
+import { HeaderCtx } from './src/navigation/headerContext'
 import './src/agent'
 
 I18nManager.forceRTL(true)
