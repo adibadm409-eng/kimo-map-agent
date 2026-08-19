@@ -3,15 +3,21 @@ import * as Notifications from 'expo-notifications'
 
 export const OFFER_REMINDER_CHANNEL = 'offer-reminders'
 
+let notificationsAvailable = true
+
 if (Platform.OS !== 'web') {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowBanner: true,
-      shouldShowList: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-    }),
-  })
+  try {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+      }),
+    })
+  } catch {
+    notificationsAvailable = false
+  }
 }
 
 export interface OfferReminderDetails {
