@@ -226,8 +226,8 @@ async function runLoop(
                 // اعتماد نتيجة أداة ناجحة؛ وإلا قد يرى المستخدم أرقاماً هلوسية
                 // أثناء البث ثم تُرفض لاحقاً. الرد النهائي سيُبث دفعة واحدة
                 // بعد اجتياز بوابة الإثبات.
-                if (emitEvents && !readIntentRequiresEvidence && liveText && (!d.toolCalls || !d.toolCalls.length)) {
-                  emitForSession(sessionId, { type: 'stream', content: liveText })
+                 if (emitEvents && !readIntentRequiresEvidence && liveText && (!d.toolCalls || !d.toolCalls.length)) {
+                  emitForSession(sessionId, { type: 'stream', content: sanitizeAssistantText(liveText) })
                 }
               },
             },
