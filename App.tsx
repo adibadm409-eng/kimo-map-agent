@@ -391,4 +391,46 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'Tajawal_700Bold',
   },
+  sideHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  sideTitle: {
+    fontSize: 20,
+    fontFamily: 'Tajawal_800ExtraBold',
+  },
+  sideClose: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sideDivider: {
+    height: StyleSheet.hairlineWidth,
+    marginVertical: 8,
+  },
+  sideItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 14,
+  },
+  sideIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sideLabel: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: 'Tajawal_700Bold',
+  },
 })
