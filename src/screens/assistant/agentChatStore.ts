@@ -52,6 +52,7 @@ interface ChatStoreState {
   executionSteps: ExecutionStep[]
   auditTrail: AuditEntry[]
   statusBar: { visible: boolean; phase: AgentPhase; thinking: boolean; steps: string[] }
+  streamText: string
   pending: PendingState | null
   _plan: AgentPlan | null
   _seq: number
@@ -62,7 +63,7 @@ interface ChatStoreState {
   reset: () => void
 }
 
-const PHASE_LABELS: Record<AgentPhase, string> = {
+export const PHASE_LABELS: Record<AgentPhase, string> = {
   understand: 'أفهم طلبك',
   plan: 'أبني الخطة',
   ask: 'أحتاج قرارك',
@@ -102,6 +103,7 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
   executionSteps: [],
   auditTrail: [],
   statusBar: { visible: false, phase: 'understand', thinking: false, steps: [] },
+  streamText: '',
   pending: null,
   _plan: null,
   _seq: 0,
@@ -112,7 +114,7 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
       uiComponent: componentForMessage(m),
       message: m,
     }))
-    set({ items })
+    set({ items, streamText: '', statusBar: { visible: false, phase: 'understand', thinking: false, steps: [] } })
   },
 
   applyEvent: (e) => {
@@ -171,7 +173,6 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
         pushAudit('tool', `${t.name}`)
         set((st) => ({
           executionSteps: [...st.executionSteps, { id: `s-${seq}`, kind: 'tool', label: String(t.name ?? 'execute') }].slice(-40),
-          items: [...st.items, { id: `tool-${seq}`, uiComponent: 'tool_step', payload: { name: t.name, args: t.args, result: t.result } }],
         }))
         break
       }
@@ -203,49 +204,36 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
       case 'stream': {
         const txt = (e as Extract<AgentEvent, { type: 'text' }> | Extract<AgentEvent, { type: 'stream' }>).content
         if (e.type === 'stream' && !(e as any).done) {
-          set((st) => {
-            const items = [...st.items]
-            for (let i = items.length - 1; i >= 0; i--) {
-              if (items[i].uiComponent === 'assistant_message') {
-                const m = { ...(items[i].message as Message), content: txt }
-                items[i] = { ...items[i], message: m }
-                break
-              }
-            }
-            return { items, statusBar: { ...st.statusBar, steps: [] } }
-          })
+          set((st) => ({ streamText: txt ?? '', statusBar: { ...st.statusBar, visible: true, thinking: false, steps: [] } }))
         } else {
-          set((st) => ({ items: [...st.items, { id: `msg-${seq}`, uiComponent: 'assistant_message', message: { id: `msg-${seq}`, sessionId: '', role: 'assistant', kind: 'text', content: txt, createdAt: Date.now() } as Message }] }))
+          set({ streamText: '' })
         }
         break
       }
       case 'ask_user': {
         const a = e as Extract<AgentEvent, { type: 'ask_user' }>
-        set((st) => ({ items: [...st.items, { id: `ask-${seq}`, uiComponent: 'ask_card', payload: a }] }))
+        pushAudit('ask_user', a.question)
         break
       }
       case 'confirmation': {
         const c = e as Extract<AgentEvent, { type: 'confirmation' }>
-        set((st) => ({ items: [...st.items, { id: `confirm-${seq}`, uiComponent: 'confirm_card', payload: c }] }))
+        pushAudit('confirmation', c.title)
         break
       }
       case 'file': {
         const f = e as Extract<AgentEvent, { type: 'file' }>
-        set((st) => ({ items: [...st.items, { id: `file-${seq}`, uiComponent: 'file_card', payload: f, message: { id: `file-${seq}`, sessionId: '', role: 'assistant', kind: 'file', content: f.name, createdAt: Date.now(), meta: f } as Message }] }))
+        pushAudit('file', f.name)
         break
       }
       case 'link': {
         const l = e as Extract<AgentEvent, { type: 'link' }>
-        set((st) => ({ items: [...st.items, { id: `link-${seq}`, uiComponent: 'link_card', payload: l, message: { id: `link-${seq}`, sessionId: '', role: 'assistant', kind: 'link', content: l.label ?? l.kind, createdAt: Date.now(), meta: l } as Message }] }))
+        pushAudit('link', `${l.kind}:${l.id}`)
         break
       }
       case 'error': {
         const err = e as Extract<AgentEvent, { type: 'error' }>
         pushAudit('error', err.message)
-        set((st) => ({
-          statusBar: { ...st.statusBar, visible: false, thinking: false },
-          items: [...st.items, { id: `error-${seq}`, uiComponent: 'error_card', message: { id: `error-${seq}`, sessionId: '', role: 'assistant', kind: 'error', content: err.message, createdAt: Date.now() } as Message }],
-        }))
+        set((st) => ({ statusBar: { ...st.statusBar, visible: false, thinking: false }, streamText: '' }))
         break
       }
       case 'done': {
@@ -253,6 +241,7 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
         pushAudit('done', o)
         set((st) => ({
           statusBar: { ...st.statusBar, visible: false, thinking: false, steps: [] },
+          streamText: '',
           activeContext: { ...st.activeContext, status: o === 'completed' ? 'اكتملت المهمة' : o === 'paused' || o === 'cancelled' ? 'متوقف مؤقتاً' : 'تحتاج معالجة' },
           items: [...st.items, { id: `done-${seq}`, uiComponent: 'completion_pulse', payload: { outcome: o } }],
         }))
@@ -273,11 +262,11 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
       executionSteps: [],
       auditTrail: [],
       statusBar: { visible: false, phase: 'understand', thinking: false, steps: [] },
+      streamText: '',
       pending: null,
       _plan: null,
       _seq: 0,
     }),
 }))
 
-export { PHASE_LABELS }
 export type { ChatStoreState, AgentSkill }
