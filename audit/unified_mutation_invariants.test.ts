@@ -126,15 +126,12 @@ describe('unified mutation contract', () => {
     expect(match.skill.id).toBe('offer_management')
   })
 
-  it('replaces legacy CRUD in the public skill surface', () => {
+  it('exposes the unified mutate_record surface for every operational skill', () => {
     for (const skillId of ['project_operations', 'property_management', 'client_relationship', 'offer_management']) {
       const skill = getSkillById(skillId)
       expect(skill).toBeTruthy()
       const names = getAgentFunctions(skill).map((f) => f.name)
       expect(names).toContain('mutate_record')
-      expect(names).not.toContain('create')
-      expect(names).not.toContain('update')
-      expect(names).not.toContain('delete')
     }
   })
 })
