@@ -129,6 +129,7 @@ export default function Viewings() {
           </View>
         }
       />
+      <SectionFab onPress={() => navigation.navigate('ViewingForm', {})} label="مشاهدة جديدة" />
     </View>
   )
 }

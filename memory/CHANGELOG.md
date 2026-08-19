@@ -206,3 +206,4 @@
 - 2026-08-19 | d519b4d | تعديل تلقائي: ProjectsScreen.tsx
 - 2026-08-19 | 9fe7364 | تعديل تلقائي: ProjectsScreen.tsx
 - 2026-08-19 | 2e30fc1 | تعديل تلقائي: ProjectsScreen.tsx
+- 2026-08-19 | 1707fd2 | تعديل تلقائي: Viewings.tsx
