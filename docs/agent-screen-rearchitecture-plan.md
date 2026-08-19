@@ -105,16 +105,20 @@
 - `src/screens/assistant/registry.tsx` (ComponentRegistry + المكوّنات)
 - `src/screens/assistant/components/` (StatusStepper.tsx, ContextBanner.tsx, ApprovalGate.tsx,
   DecisionCard.tsx, ObservationCard.tsx, ToolStep.tsx, ActionGrid.tsx, FileViewer.tsx,
-  ChatBubble.tsx, AuditDrawer.tsx, HybridInputBar.tsx)
+  ChatBubble.tsx, AuditDrawer.tsx, ThinkingDot.tsx, ErrorCard.tsx, CompletionPulse.tsx)
 - `src/screens/assistant/useAgentEvents.ts` (يوثّق subscribeAgent → store.applyEvent)
 
 **مُعدَّل:**
 - `src/screens/assistant/AssistantScreen.tsx` — يُعاد كتابته كـ «قشرة»: Sticky ContextBanner
   فوق، StatusBar فوق FlashList، FlashList في المنتصف (يرسم عبر Registry)، FAB سجل العمليات،
-  HybridInputBar في الأسفل (يحتفظ بـ useAudioRecorder/DocumentPicker/handleSend/cancelAgent
-  لإرضاء فحص `agent_input_surface`).
-- `babel.config.js` — (فقط إن أُضيف Reanimated) إضافة plugin.
-- `package.json` — إضافة `zustand`, `@shopify/flash-list`.
+  HybridInputBar في الأسفل.
+  **تحذير حرج للفحص:** فحص `agent_input_surface_invariants.mjs` يبحث نصّياً (`.includes`)
+  داخل `AssistantScreen.tsx` عن العلامات: `useAudioRecorder`, `const [attachments`,
+  `DocumentPicker`, `handleSend`, `cancelAgent`, `إيقاف التسجيل وإرساله`. لذلك **تُبقى
+  هذه العلامات حرفياً داخل ملف AssistantScreen.tsx** (شريط الإدخال الهجين يُعرَّف كدالة
+  مكوّن محلية داخل نفس الملف، لا كوحدة منفصلة) لئلا يفشل الفحص. الوظائف الأخرى
+  (التنقّل، جهات الاتصال، الإعدادات) تبقى في نفس الملف.
+- `package.json` — إضافة `zustand` فقط (flash-list موجود مسبقاً).
 
 **محذوف/مُفرّغ:** كتلة `useState` المبعثرة + معالج `subscribeAgent` المضمّن في الشاشة الحالية
 تُنقل إلى store/registry (لا حذف للوظائف، فقط نقل معماري).
