@@ -148,3 +148,4 @@
 - 2026-08-19 | 423b424 | تعديل تلقائي: agentChatStore.ts
 - 2026-08-19 | 15ea487 | تعديل تلقائي: agentChatStore.ts
 - 2026-08-19 | f668e75 | تعديل تلقائي: AssistantScreen.tsx
+- 2026-08-19 | d863fb8 | تعديل تلقائي: registry.tsx

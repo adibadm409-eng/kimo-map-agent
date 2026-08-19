@@ -399,5 +399,3 @@ const styles = StyleSheet.create({
   auditRow: { gap: 2, paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth },
   auditType: { fontSize: fontSize.xs, fontWeight: '700', fontFamily: 'Tajawal_700Bold' },
 })
-
-export type { RegistryCtx }
