@@ -400,4 +400,4 @@ const styles = StyleSheet.create({
   auditType: { fontSize: fontSize.xs, fontWeight: '700', fontFamily: 'Tajawal_700Bold' },
 })
 
-export { type RegistryCtx }
+export type { RegistryCtx }
