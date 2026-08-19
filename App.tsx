@@ -180,7 +180,7 @@ function AppHeader({ options }: any) {
     <View style={{ paddingTop: insets.top, paddingBottom: 8, paddingHorizontal: 12, backgroundColor: colors.bgSecondary, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
       <MenuButton />
       <Text style={{ flex: 1, fontSize: 18, fontFamily: 'Tajawal_800ExtraBold', color: colors.textPrimary }} numberOfLines={1}>{title}</Text>
-      <View style={{ minWidth: 40, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ alignItems: 'center', justifyContent: 'center', flexShrink: 1 }}>
         {Right ? (typeof Right === 'function' ? <Right /> : Right) : null}
       </View>
     </View>
