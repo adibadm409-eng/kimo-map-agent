@@ -232,7 +232,7 @@ function AppHeader() {
       <MenuButton />
       <Text style={{ flex: 1, fontSize: 18, fontFamily: 'Tajawal_800ExtraBold', color: colors.textPrimary }} numberOfLines={1}>{title}</Text>
       <View style={{ alignItems: 'center', justifyContent: 'center', flexShrink: 1 }}>
-        {right ? (typeof right === 'function' ? right() : right) : null}
+        {right}
       </View>
     </View>
   )
