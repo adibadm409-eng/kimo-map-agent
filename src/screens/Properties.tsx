@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react'
 import { View, Text, StyleSheet, TextInput, Pressable, FlatList, RefreshControl, ScrollView, Alert, Image } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import { useTheme } from '../theme/ThemeContext'
