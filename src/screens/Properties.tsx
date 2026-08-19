@@ -289,6 +289,42 @@ const styles = StyleSheet.create({
     fontFamily: 'Tajawal_400Regular',
     textAlign: 'right',
   },
+  filterToggleRow: {
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xs,
+    alignItems: 'flex-end',
+  },
+  filterToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    height: 38,
+    borderRadius: radius.full,
+    borderWidth: 1,
+  },
+  filterToggleText: {
+    fontSize: fontSize.sm,
+    fontFamily: 'Tajawal_700Bold',
+  },
+  filterBadge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  filterBadgeText: {
+    fontSize: fontSize.xs,
+    fontFamily: 'Tajawal_700Bold',
+    color: '#FFF',
+  },
+  filterSheet: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingVertical: spacing.sm,
+  },
   filterBar: {
     height: 50,
     flexGrow: 0,
