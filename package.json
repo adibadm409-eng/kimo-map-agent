@@ -51,7 +51,6 @@
   },
   "scripts": {
     "start": "expo start",
-    "start:lan": "bash start-metro.sh",
     "postinstall": "bash postinstall.sh",
     "android": "expo run:android",
     "ios": "expo run:ios",
