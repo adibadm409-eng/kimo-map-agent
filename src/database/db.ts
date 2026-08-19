@@ -258,7 +258,11 @@ async function initSchema(database: SQLite.SQLiteDatabase) {
       FOREIGN KEY (property_id) REFERENCES properties (id) ON DELETE CASCADE,
       FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE
     );
+  `)
 
+  await safeMigrate(database)
+
+  await database.execAsync(`
     CREATE INDEX IF NOT EXISTS idx_entity_media_target ON entity_media (entity_type, entity_id);
     CREATE INDEX IF NOT EXISTS idx_entity_media_source ON entity_media (source_attachment_id);
     CREATE INDEX IF NOT EXISTS idx_offers_property ON offers (property_id);
