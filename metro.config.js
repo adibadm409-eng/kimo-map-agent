@@ -7,4 +7,6 @@ config.watchFolders = [
   path.resolve(__dirname, 'src'),
 ];
 
+console.error('METRO_WATCHFOLDERS', JSON.stringify(config.watchFolders));
+
 module.exports = config;
