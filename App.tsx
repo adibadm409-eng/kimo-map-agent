@@ -329,9 +329,9 @@ function RootNav() {
           <Root.Screen name="KimoOperations" component={KimoOperationsScreen} options={{ title: 'إشراف Kimo وسجل العمليات' }} />
           <Root.Screen name="ToolsExport" component={ToolsScreen} options={{ title: 'الأدوات والاستيراد' }} />
           <Root.Screen name="BackupManager" component={BackupManagerScreen} options={{ title: 'النسخ الاحتياطية' }} />
-          <Root.Screen name="ViewingsList" component={Viewings} options={({ navigation }) => ({ title: 'المشاهدات', headerRight: () => <HeaderAddButton onPress={() => navigation.navigate('ViewingForm', {})} label="إضافة مشاهدة" /> })} />
+          <Root.Screen name="ViewingsList" component={Viewings} options={{ title: 'المشاهدات' }} />
           <Root.Screen name="ViewingForm" component={ViewingForm} options={{ title: 'مشاهدة' }} />
-          <Root.Screen name="CampaignsList" component={Campaigns} options={({ navigation }) => ({ title: 'الحملات', headerRight: () => <HeaderAddButton onPress={() => navigation.navigate('CampaignForm', {})} label="إضافة حملة" /> })} />
+          <Root.Screen name="CampaignsList" component={Campaigns} options={{ title: 'الحملات' }} />
           <Root.Screen name="CampaignForm" component={CampaignForm} options={{ title: 'حملة' }} />
           <Root.Screen name="Reminders" component={Reminders} options={{ title: 'التذكيرات' }} />
           <Root.Screen name="ReportsMain" component={Reports} options={{ title: 'التقارير' }} />
