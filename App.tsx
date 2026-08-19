@@ -105,62 +105,123 @@ function ProjectsStack() {
   )
 }
 
-function MoreMenuScreen({ navigation }: any) {
+type SideItem = { label: string; icon: string; screen: string; color: string } | { divider: true }
+
+const SIDE_ITEMS: SideItem[] = [
+  { label: 'المشاريع', icon: 'business-outline', screen: 'Projects', color: '#3B82F6' },
+  { divider: true },
+  { label: 'إشراف Kimo وسجل العمليات', icon: 'shield-checkmark-outline', screen: 'KimoOperations', color: '#16A34A' },
+  { label: 'أدوات التصدير والاستيراد', icon: 'cloud-upload-outline', screen: 'ToolsExport', color: '#0EA5E9' },
+  { label: 'النسخ الاحتياطية', icon: 'archive-outline', screen: 'BackupManager', color: '#8B5CF6' },
+  { label: 'المشاهدات', icon: 'calendar-outline', screen: 'ViewingsList', color: '#3B82F6' },
+  { label: 'التذكيرات', icon: 'alarm-outline', screen: 'Reminders', color: '#0EA5E9' },
+  { label: 'الحملات', icon: 'megaphone-outline', screen: 'CampaignsList', color: '#7C3AED' },
+  { label: 'التقارير', icon: 'bar-chart-outline', screen: 'ReportsMain', color: '#16A34A' },
+  { label: 'الإعدادات', icon: 'settings-outline', screen: 'Settings', color: '#64748B' },
+  { label: 'حقوق الملكية', icon: 'shield-checkmark-outline', screen: 'About', color: '#94A3B8' },
+]
+
+const SideMenuCtx = React.createContext<{ visible: boolean; open: () => void; close: () => void }>({
+  visible: false,
+  open: () => {},
+  close: () => {},
+})
+
+function SideMenuProvider({ children }: { children: React.ReactNode }) {
+  const [visible, setVisible] = React.useState(false)
+  const value = React.useMemo(
+    () => ({ visible, open: () => setVisible(true), close: () => setVisible(false) }),
+    [visible],
+  )
+  return <SideMenuCtx.Provider value={value}>{children}</SideMenuCtx.Provider>
+}
+
+function useSideMenu() {
+  return React.useContext(SideMenuCtx)
+}
+
+function MenuFab() {
   const { colors } = useTheme()
-  const menuItems = [
-    { label: 'إشراف Kimo وسجل العمليات', icon: 'shield-checkmark-outline', screen: 'KimoOperations', color: '#16A34A' },
-    { label: 'أدوات التصدير والاستيراد', icon: 'cloud-upload-outline', screen: 'ToolsExport', color: '#0EA5E9' },
-    { label: 'النسخ الاحتياطية', icon: 'archive-outline', screen: 'BackupManager', color: '#8B5CF6' },
-    { label: 'المشاهدات', icon: 'calendar-outline', screen: 'ViewingsList', color: '#3B82F6' },
-    { label: 'التذكيرات', icon: 'alarm-outline', screen: 'Reminders', color: '#0EA5E9' },
-    { label: 'الحملات', icon: 'megaphone-outline', screen: 'CampaignsList', color: '#7C3AED' },
-    { label: 'التقارير', icon: 'bar-chart-outline', screen: 'ReportsMain', color: '#16A34A' },
-    { label: 'الإعدادات', icon: 'settings-outline', screen: 'Settings', color: '#64748B' },
-    { label: 'حقوق الملكية', icon: 'shield-checkmark-outline', screen: 'About', color: '#C0C0C0' },
-  ]
+  const { open } = useSideMenu()
+  const insets = useSafeAreaInsets()
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <View style={[styles.moreHeader, { paddingTop: 50, paddingHorizontal: 20, paddingBottom: 16, borderBottomColor: colors.border }]}>
-        <Text style={[styles.moreTitle, { color: colors.textPrimary }]}>المزيد</Text>
-      </View>
-      <View style={styles.moreList}>
-        {menuItems.map((item, i) => (
-          <View key={i} style={[styles.moreItem, { borderBottomColor: colors.border }]}>
-            <Pressable
-              onPress={() => navigation.navigate(item.screen)}
-              style={({ pressed }) => [styles.moreItemInner, { opacity: pressed ? 0.7 : 1 }]}
-            >
-              <View style={[styles.moreIcon, { backgroundColor: item.color + '15' }]}>
-                <Ionicons name={item.icon as any} size={20} color={item.color} />
-              </View>
-              <Text style={[styles.moreLabel, { color: colors.textPrimary }]}>{item.label}</Text>
-              <Ionicons name="chevron-back" size={20} color={colors.textMuted} />
-            </Pressable>
-          </View>
-        ))}
-      </View>
-    </View>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="القائمة الجانبية"
+      onPress={open}
+      style={{ position: 'absolute', top: insets.top + 8, right: 12, width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', elevation: 6, zIndex: 50 }}
+    >
+      <Ionicons name="menu-outline" size={22} color={colors.textPrimary} />
+    </Pressable>
   )
 }
 
-function MoreStack() {
+function SideMenuOverlay() {
+  const { colors } = useTheme()
+  const { visible, close } = useSideMenu()
+  const navigation = useNavigation<any>()
+  const insets = useSafeAreaInsets()
+  const translate = React.useRef(new Animated.Value(1)).current
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    if (visible) {
+      setMounted(true)
+      Animated.timing(translate, { toValue: 0, duration: 220, useNativeDriver: true }).start()
+    } else if (mounted) {
+      Animated.timing(translate, { toValue: 1, duration: 200, useNativeDriver: true }).start(() => setMounted(false))
+    }
+  }, [visible])
+
+  const panelWidth = Math.min(Dimensions.get('window').width * 0.82, 340)
+  if (!mounted && !visible) return null
+
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="MoreMenu" component={MoreMenuScreen} />
-      <Stack.Screen name="ViewingsList" component={Viewings} />
-      <Stack.Screen name="Reminders" component={Reminders} />
-      <Stack.Screen name="ViewingForm" component={ViewingForm} />
-      <Stack.Screen name="CampaignsList" component={Campaigns} />
-      <Stack.Screen name="CampaignForm" component={CampaignForm} />
-      <Stack.Screen name="ReportsMain" component={Reports} />
-      <Stack.Screen name="Settings" component={Settings} />
-      <Stack.Screen name="MapSettings" component={MapSettings} />
-      <Stack.Screen name="MapKeysSettings" component={MapKeysSettings} />
-      <Stack.Screen name="ToolsExport" component={ToolsScreen} />
-      <Stack.Screen name="KimoOperations" component={KimoOperationsScreen} />
-      <Stack.Screen name="BackupManager" component={BackupManagerScreen} />
-      <Stack.Screen name="About" component={AboutScreen} />
-    </Stack.Navigator>
+    <View style={[StyleSheet.absoluteFill, { zIndex: 100 }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel="إغلاق القائمة" onPress={close} style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.35)' }]} />
+      <Animated.View
+        style={{
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
+          right: 0,
+          width: panelWidth,
+          backgroundColor: colors.bgSecondary,
+          borderLeftWidth: StyleSheet.hairlineWidth,
+          borderLeftColor: colors.border,
+          transform: [{ translateX: translate.interpolate({ inputRange: [0, 1], outputRange: [0, panelWidth] }) }],
+        }}
+      >
+        <View style={[styles.sideHeader, { paddingTop: insets.top + 14, borderBottomColor: colors.border }]}>
+          <Text style={[styles.sideTitle, { color: colors.textPrimary }]}>القائمة</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="إغلاق" onPress={close} style={({ pressed }) => [styles.sideClose, { opacity: pressed ? 0.6 : 1 }]}>
+            <Ionicons name="close" size={22} color={colors.textSecondary} />
+          </Pressable>
+        </View>
+        <ScrollView style={{ flex: 1 }}>
+          {SIDE_ITEMS.map((it, i) =>
+            'divider' in it ? (
+              <View key={i} style={[styles.sideDivider, { backgroundColor: colors.border }]} />
+            ) : (
+              <Pressable
+                key={i}
+                onPress={() => {
+                  navigation.navigate((it as Exclude<SideItem, { divider: true }>).screen)
+                  close()
+                }}
+                style={({ pressed }) => [styles.sideItem, { opacity: pressed ? 0.7 : 1 }]}
+              >
+                <View style={[styles.sideIcon, { backgroundColor: (it as Exclude<SideItem, { divider: true }>).color + '15' }]}>
+                  <Ionicons name={(it as Exclude<SideItem, { divider: true }>).icon as any} size={20} color={(it as Exclude<SideItem, { divider: true }>).color} />
+                </View>
+                <Text style={[styles.sideLabel, { color: colors.textPrimary }]}>{(it as Exclude<SideItem, { divider: true }>).label}</Text>
+                <Ionicons name="chevron-back" size={20} color={colors.textMuted} />
+              </Pressable>
+            ),
+          )}
+        </ScrollView>
+      </Animated.View>
+    </View>
   )
 }
 
