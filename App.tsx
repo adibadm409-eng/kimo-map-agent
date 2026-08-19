@@ -359,6 +359,7 @@ function Tabs() {
 
 function RootNav() {
   const { mode, colors } = useTheme()
+  const [headerRight, setHeaderRight] = React.useState<React.ReactNode | null>(null)
   const navTheme = {
     ...(mode === 'dark' ? NavDark : NavLight),
     colors: {
@@ -374,8 +375,9 @@ function RootNav() {
   return (
     <NavigationContainer theme={navTheme}>
       <SideMenuProvider>
-        <Root.Navigator initialRouteName="Tabs" screenOptions={{ headerShown: true, header: (props: any) => <AppHeader {...props} /> }}>
-          <Root.Screen name="Tabs" component={Tabs} />
+        <HeaderCtx.Provider value={{ right: headerRight, setRight: setHeaderRight }}>
+          <Root.Navigator initialRouteName="Tabs" screenOptions={{ headerShown: true, header: () => <AppHeader /> }}>
+            <Root.Screen name="Tabs" component={Tabs} />
           <Root.Screen name="Projects" component={ProjectsStack} />
           <Root.Screen name="KimoOperations" component={KimoOperationsScreen} options={{ title: 'إشراف Kimo وسجل العمليات' }} />
           <Root.Screen name="ToolsExport" component={ToolsScreen} options={{ title: 'الأدوات والاستيراد' }} />
