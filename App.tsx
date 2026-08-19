@@ -60,9 +60,9 @@ const Root = createNativeStackNavigator()
 function PropertiesStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="PropertiesList" component={Properties} />
-      <Stack.Screen name="PropertyDetail" component={PropertyDetail} />
-      <Stack.Screen name="PropertyForm" component={PropertyForm} />
+      <Stack.Screen name="PropertiesList" component={Properties} options={({ navigation }) => ({ title: 'العقارات', headerRight: () => <HeaderAddButton onPress={() => navigation.navigate('PropertyForm', {})} label="إضافة عقار" /> })} />
+      <Stack.Screen name="PropertyDetail" component={PropertyDetail} options={{ title: 'تفاصيل العقار' }} />
+      <Stack.Screen name="PropertyForm" component={PropertyForm} options={{ title: 'عقار' }} />
     </Stack.Navigator>
   )
 }
@@ -70,9 +70,9 @@ function PropertiesStack() {
 function ClientsStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="ClientsList" component={Clients} />
-      <Stack.Screen name="ClientDetail" component={ClientDetail} />
-      <Stack.Screen name="ClientForm" component={ClientForm} />
+      <Stack.Screen name="ClientsList" component={Clients} options={({ navigation }) => ({ title: 'العملاء', headerRight: () => <HeaderAddButton onPress={() => navigation.navigate('ClientForm', {})} label="إضافة عميل" /> })} />
+      <Stack.Screen name="ClientDetail" component={ClientDetail} options={{ title: 'تفاصيل العميل' }} />
+      <Stack.Screen name="ClientForm" component={ClientForm} options={{ title: 'عميل' }} />
     </Stack.Navigator>
   )
 }
@@ -80,8 +80,8 @@ function ClientsStack() {
 function OffersStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="OffersList" component={Offers} />
-      <Stack.Screen name="OfferForm" component={OfferForm} />
+      <Stack.Screen name="OffersList" component={Offers} options={({ navigation }) => ({ title: 'العروض', headerRight: () => <HeaderAddButton onPress={() => navigation.navigate('OfferForm', {})} label="إضافة عرض" /> })} />
+      <Stack.Screen name="OfferForm" component={OfferForm} options={{ title: 'عرض' }} />
     </Stack.Navigator>
   )
 }
@@ -89,18 +89,18 @@ function OffersStack() {
 function ProjectsStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="ProjectsList" component={ProjectsScreen} />
-      <Stack.Screen name="ProjectForm" component={ProjectForm} />
-      <Stack.Screen name="ProjectDetail" component={ProjectDetail} />
-      <Stack.Screen name="BlockForm" component={BlockForm} />
-      <Stack.Screen name="BlockDetail" component={BlockDetail} />
-      <Stack.Screen name="PlotDetail" component={PlotDetail} />
-      <Stack.Screen name="PaymentForm" component={PaymentForm} />
-      <Stack.Screen name="CustomFields" component={CustomFields} />
-      <Stack.Screen name="ProjectsSearch" component={SearchScreen} />
-      <Stack.Screen name="ProjectReports" component={ReportsScreen} />
-      <Stack.Screen name="WorkspacesList" component={WorkspacesScreen} />
-      <Stack.Screen name="WorkspaceDetail" component={WorkspaceDetail} />
+      <Stack.Screen name="ProjectsList" component={ProjectsScreen} options={({ navigation }) => ({ title: 'المشاريع', headerRight: () => <HeaderAddButton onPress={() => navigation.navigate('ProjectForm', {})} label="إضافة مشروع" /> })} />
+      <Stack.Screen name="ProjectForm" component={ProjectForm} options={{ title: 'مشروع' }} />
+      <Stack.Screen name="ProjectDetail" component={ProjectDetail} options={{ title: 'تفاصيل المشروع' }} />
+      <Stack.Screen name="BlockForm" component={BlockForm} options={{ title: 'بلوك' }} />
+      <Stack.Screen name="BlockDetail" component={BlockDetail} options={{ title: 'تفاصيل البلوك' }} />
+      <Stack.Screen name="PlotDetail" component={PlotDetail} options={{ title: 'تفاصيل القطعة' }} />
+      <Stack.Screen name="PaymentForm" component={PaymentForm} options={{ title: 'دفعة' }} />
+      <Stack.Screen name="CustomFields" component={CustomFields} options={{ title: 'حقول مخصصة' }} />
+      <Stack.Screen name="ProjectsSearch" component={SearchScreen} options={{ title: 'بحث المشاريع' }} />
+      <Stack.Screen name="ProjectReports" component={ReportsScreen} options={{ title: 'تقرير المشروع' }} />
+      <Stack.Screen name="WorkspacesList" component={WorkspacesScreen} options={{ title: 'مساحات العمل' }} />
+      <Stack.Screen name="WorkspaceDetail" component={WorkspaceDetail} options={{ title: 'تفاصيل مساحة العمل' }} />
     </Stack.Navigator>
   )
 }
