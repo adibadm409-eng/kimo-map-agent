@@ -242,3 +242,4 @@
 - 2026-08-20 | c57f95f | تعديل تلقائي: App.tsx
 - 2026-08-20 | 80d433c | تعديل تلقائي: AssistantScreen.tsx
 - 2026-08-20 | b410078 | تعديل تلقائي: AssistantScreen.tsx
+- 2026-08-20 | 3df5d6d | تعديل تلقائي: AssistantScreen.tsx

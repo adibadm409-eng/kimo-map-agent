@@ -155,13 +155,13 @@ export default function Properties() {
           onPress={() => setFiltersOpen((o) => !o)}
           style={({ pressed }) => [styles.filterCardBtn, { backgroundColor: colors.surface, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
         >
-          <Ionicons name="options-outline" size={20} color={colors.textSecondary} />
+          <Ionicons name="options-outline" size={18} color={colors.textSecondary} />
+          <Text style={[styles.filterCardText, { color: colors.textPrimary }]}>فلتر</Text>
           {activeFilterCount > 0 ? (
             <View style={[styles.filterBadge, { backgroundColor: colors.accent }]}>
               <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
             </View>
           ) : null}
-          <Ionicons name={filtersOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
         </Pressable>
       </View>
 
