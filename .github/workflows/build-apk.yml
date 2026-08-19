@@ -5,6 +5,9 @@ on:
   push:
     branches: [main]
 
+env:
+  CI: "true"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,6 +24,14 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Export Android env
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
+
       - name: Install dependencies
         run: npm ci
 
@@ -35,6 +46,14 @@ jobs:
 
       - name: Generate Android project
         run: npx expo prebuild --platform android
+
+      - name: Install matching NDK
+        run: |
+          NDK_VER=$(grep -oP 'ndkVersion "\K[^"]+' android/build.gradle || true)
+          echo "NDK version: ${NDK_VER:-<unset, gradle will use default>}"
+          if [ -n "$NDK_VER" ]; then sdkmanager "ndk;$NDK_VER"; fi
+        env:
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
 
       - name: Configure signing (keystore + release signingConfig)
         run: |
@@ -105,6 +124,8 @@ jobs:
       - name: Build signed release APK
         working-directory: android
         run: ./gradlew assembleRelease
+        env:
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
 
       - name: Verify APK signature (real check, no masking)
         working-directory: android
