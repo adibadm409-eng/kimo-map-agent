@@ -453,45 +453,45 @@ export default function AssistantScreen({ navigation }: any) {
     }
   }, [auditTrail.length])
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      title: 'كيمو',
-      headerRight: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+  const { setRight } = React.useContext(HeaderCtx)
+
+  useEffect(() => {
+    setRight(
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="فتح سجل محادثات كيمو"
+          onPress={() => setShowHistory(true)}
+          style={[styles.iconBtn, { backgroundColor: colors.surface }]}
+        >
+          <Ionicons name="time-outline" size={20} color={colors.textPrimary} />
+        </Pressable>
+        <Pressable
+          accessibilityRole="switch"
+          accessibilityState={{ checked: mode === 'edit' }}
+          accessibilityLabel={mode === 'edit' ? 'إيقاف وضع التعديل' : 'تفعيل وضع التعديل'}
+          onPress={toggleMode}
+          style={[styles.modeChip, { backgroundColor: mode === 'edit' ? colors.successSurface : colors.surface }]}
+        >
+          <Ionicons name={mode === 'edit' ? 'create-outline' : 'eye-outline'} size={13} color={mode === 'edit' ? colors.success : colors.textSecondary} />
+          <Text style={[styles.modeChipText, { color: mode === 'edit' ? colors.success : colors.textSecondary }]}>
+            {mode === 'edit' ? 'تعديل' : 'قراءة'}
+          </Text>
+        </Pressable>
+        {!configured ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="فتح سجل محادثات كيمو"
-            onPress={() => setShowHistory(true)}
-            style={[styles.iconBtn, { backgroundColor: colors.surface }]}
+            accessibilityLabel="فتح إعدادات مزود كيمو"
+            onPress={() => navigation.navigate('AgentSettings')}
+            style={[styles.setupChip, { backgroundColor: colors.warningSurface }]}
           >
-            <Ionicons name="time-outline" size={20} color={colors.textPrimary} />
+            <Text style={[styles.modeChipText, { color: colors.warning }]}>الإعداد</Text>
           </Pressable>
-          <Pressable
-            accessibilityRole="switch"
-            accessibilityState={{ checked: mode === 'edit' }}
-            accessibilityLabel={mode === 'edit' ? 'إيقاف وضع التعديل' : 'تفعيل وضع التعديل'}
-            onPress={toggleMode}
-            style={[styles.modeChip, { backgroundColor: mode === 'edit' ? colors.successSurface : colors.surface }]}
-          >
-            <Ionicons name={mode === 'edit' ? 'create-outline' : 'eye-outline'} size={13} color={mode === 'edit' ? colors.success : colors.textSecondary} />
-            <Text style={[styles.modeChipText, { color: mode === 'edit' ? colors.success : colors.textSecondary }]}>
-              {mode === 'edit' ? 'تعديل' : 'قراءة'}
-            </Text>
-          </Pressable>
-          {!configured ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="فتح إعدادات مزود كيمو"
-              onPress={() => navigation.navigate('AgentSettings')}
-              style={[styles.setupChip, { backgroundColor: colors.warningSurface }]}
-            >
-              <Text style={[styles.modeChipText, { color: colors.warning }]}>الإعداد</Text>
-            </Pressable>
-          ) : null}
-        </View>
-      ),
-    })
-  }, [navigation, mode, configured, colors])
+        ) : null}
+      </View>,
+    )
+    return () => setRight(null)
+  }, [setRight, mode, configured, colors, navigation, setShowHistory, toggleMode])
 
   return (
     <View style={[styles.root, { backgroundColor: colors.bg }]}>
