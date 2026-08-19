@@ -268,14 +268,8 @@ function Tabs() {
       <Tab.Screen name="MapScreen" component={MapScreen}
         options={{ tabBarLabel: 'الخريطة', tabBarIcon: ({color, size}) => <Ionicons name="map-outline" size={size} color={color} /> }}
       />
-      <Tab.Screen name="ProjectsStack" component={ProjectsStack}
-        options={{ tabBarLabel: 'المشاريع', tabBarIcon: ({color, size}) => <Ionicons name="business-outline" size={size} color={color} /> }}
-      />
       <Tab.Screen name="AssistantStack" component={AssistantStack}
         options={{ tabBarLabel: 'المساعد', tabBarIcon: ({color, size}) => <Ionicons name="sparkles-outline" size={size} color={color} /> }}
-      />
-      <Tab.Screen name="MoreStack" component={MoreStack}
-        options={{ tabBarLabel: 'المزيد', tabBarIcon: ({color, size}) => <Ionicons name="apps-outline" size={size} color={color} /> }}
       />
     </Tab.Navigator>
   )
