@@ -287,6 +287,32 @@
 
 ---
 
+## 2026-08-19 (تتمة 2) — زر عائم للأقسام + زر ترويسة لسجلات المحادثات + تحسينات
+- **القرار**: «الأقسام» (العقارات/العملاء/العروض/المشاريع/المشاهدات/الحملات) = زر
+  إضافة **عائم** عالي الجودة (`src/components/SectionFab.tsx`: دائري، ظل، حلقة).
+  «السجلات = سجلات المحادثات مع الذكاء الاصطناعي» = زر في **الترويسة العلوية**
+  (نُقل زر «محادثة جديدة» من تذييل `AssistantHistory` إلى ترويسة الـ sheet).
+- **التغييرات**:
+  - أُزيلت أزرار الإضافة الداخلية من Properties/Clients/Offers/ProjectsScreen/
+    Viewings/Campaigns (ترويسات/أزرار مكررة) وأُضيف `SectionFab` لكلٍّ منها.
+  - `AssistantScreen`: حُذفت الترويسة الداخلية «كيمو» ونُقلت أزرارها (السجل/وضع
+    التعديل/الإعداد) إلى الترويسة العلوية عبر `useLayoutEffect` + `navigation.setOptions`
+    (headerRight يطفو إلى AppHeader). عُدّل `AppHeader` ليسمح لـ headerRight بعرض
+    عدة أزرار.
+  - اللوحة الجانبية: تثبيت الارتكاز `right:0` (تبقى على اليمين في RTL) وتصغير عناصرها.
+  - `Properties`: الفلاتر أصبحت بطاقة زر أنيقة بجانب شريط البحث تفتح sheet قابلاً
+    للطي (مع شارة بعدّاد الفلاتر النشطة).
+- **الملفات**: `src/components/SectionFab.tsx` (جديد)، `App.tsx`، `src/screens/Properties.tsx`،
+  `src/screens/Clients.tsx`، `src/screens/Offers.tsx`، `src/screens/Viewings.tsx`،
+  `src/screens/Campaigns.tsx`، `src/screens/projects/ProjectsScreen.tsx`،
+  `src/screens/assistant/AssistantScreen.tsx`، `src/screens/assistant/AssistantHistory.tsx`.
+- **التحقق**: `tsc` (0) + `eslint` (0) + الفحوصات الثلاثة (agent_input_surface/
+  audio_input/screen_catalog) PASS.
+- **ملاحظة**: لم يُشغَّل المحاكي؛ التحقق آلي. زر الفلاتر وبطاقة البحث وبقية
+  التعديلات تحتاج مراجعة بصرية عند التشغيل.
+
+---
+
 ## 2026-08-19 (تتمة) — تعديل زر القائمة: ترويسة علوية بدل الزر العائم
 - **الطلب**: الزر العائم كان يغطي الأزرار/المسميات؛ أراده زراً عادياً داخل الشاشة
   أعلى اليمين، مع بقاء اللوحة تنزلق من اليمين وتُغلق بضغط الخارج، وترتيب الأزرار
