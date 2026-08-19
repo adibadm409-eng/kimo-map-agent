@@ -743,7 +743,7 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
   const userImages = assets.filter((a) => a.kind === 'image' && a.localUri).map((a) => a.localUri)
   // الحمولة النهائية المحوّلة إلى نص (صور تُعرض في الشاشة عبر meta.images، وصوت
   // يُنسخ نصاً) تمر عبر عقد initialContent لتُستبدل بها آخر رسالة مستخدم نظيفة.
-  initialContent = content
+  if (initialContent === undefined) initialContent = content
   await persistUser(sessionId, content, userImages.length ? { images: userImages } : undefined)
   // لا رسائل تقدم ثابتة — المساعد نفسه يخاطب المستخدم بما يقرره هو.
   const outcome = await runGuarded(sessionId, conn, true, initialContent)
