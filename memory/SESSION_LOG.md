@@ -91,6 +91,21 @@
 
 ---
 
+## 2026-08-19 — تحقق: خانة رفع وسائط (صور/فيديو) للعقارات موجودة وكاملة
+- **الملخص**: تأكيد وجود رفع وسائط حقيقي للعقار مستقل عن أيقونة العقار:
+  - `PropertyForm.tsx` خانة «معرض الصور والفيديوهات»: اختيار من المكتبة
+    (`MediaTypeOptions.All` = صور وفيديو) وتصوير بالكاميرا (فيديو حتى 60ث)، حد 12
+    وسيطاً، معاينات مصغرة مع حذف، وخلية نصية صريحة «مستقل عن صورة الأيقونة»؛
+    الملفات تُنسخ إلى `property_media/` وتُخزَّن كـ JSON في عمود `properties.media`.
+  - `PropertyDetail.tsx` يعرض «معرض العقار» عبر MediaStrip/MediaPreview مع تمييز
+    الفيديو بالامتداد في `parseMediaList` (shareMedia.tsx).
+  - الوكيل: أداة `attach_media_to_entity` (property/offer) + جدول `entity_media`
+    لربط مرفقات المحادثة، وبرومبت كيمو يوجّه إلى استخدام media لا icon_uri.
+- **الملفات**: PropertyForm.tsx, PropertyDetail.tsx, shareMedia.tsx, domainTools.ts,
+  workspace.ts (linkAttachmentToEntity), db.ts (entity_media).
+
+---
+
 ## 2026-08-19 — فصل الأدوات عن المهارات + إصلاح جذري لـ broker_name (قاعدة قديمة)
 - **المُلخّص**: بأمر المستخدم "حرر الوكيل / اجعل الأدوات مفصولة عن المهارات بحيث هو من يقرر
   المهارة والأداة": أُزيلت بوابات الكود التي كانت تحجب أدوات الكتابة —
