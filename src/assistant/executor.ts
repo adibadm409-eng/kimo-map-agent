@@ -70,6 +70,8 @@ function advanceNonEvidencePlan(plan: AgentPlan): AgentPlan {
 
 // ---------- الحلقة الرئيسية ----------
 
+const MAX_NO_EVIDENCE_RECOVERIES = 2
+
 async function runLoop(
   sessionId: string,
   s: AgentSettings,
