@@ -124,7 +124,7 @@ export async function transcribeAudio(input: TranscribeInput): Promise<string> {
   const { providerId, baseUrl, apiKey, model, audioUri, audioBase64, format } = input
   const mime = MIME_BY_FORMAT[format] ?? 'audio/m4a'
   if (providerId === 'gemini') return transcribeGemini(apiKey, model, audioBase64, mime)
-  if (providerId === 'mistral') return transcribeViaFileEndpoint(baseUrl, apiKey, 'audio/transcriptions', 'voxtral-small-latest', audioUri, mime, format)
+  if (providerId === 'mistral') return transcribeViaFileEndpoint(baseUrl, apiKey, 'audio/transcriptions', 'voxtral-mini-latest', audioUri, mime, format)
   if (providerId === 'openai') return transcribeViaFileEndpoint(baseUrl, apiKey, 'audio/transcriptions', 'whisper-1', audioUri, mime, format)
   throw new TranscribeError('المزوّد الحالي لا يدعم تحويل الصوت إلى نص تلقائياً.', false)
 }
