@@ -84,6 +84,7 @@ async function runLoop(
     const lastObsBySig = new Map<string, string>()
     const startedAt = Date.now()
     let totalCalls = 0
+    let noEvidenceRecoveryAttempts = 0
     const lastObsHashForSig = new Map<string, string>()
     const lastUserMsg = (await getMessages(sessionId)).filter((m) => m.role === 'user').pop()
     const lastUserText = String(lastUserMsg?.content ?? '').trim()
