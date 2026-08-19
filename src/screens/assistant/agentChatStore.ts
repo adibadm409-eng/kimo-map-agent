@@ -109,11 +109,13 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
   _seq: 0,
 
   setMessages: (messages) => {
-    const items: ChatItem[] = messages.map((m) => ({
-      id: m.id,
-      uiComponent: componentForMessage(m),
-      message: m,
-    }))
+    const items: ChatItem[] = messages
+      .filter((m) => m.kind !== 'tool_call')
+      .map((m) => ({
+        id: m.id,
+        uiComponent: componentForMessage(m),
+        message: m,
+      }))
     set({ items, streamText: '', statusBar: { visible: false, phase: 'understand', thinking: false, steps: [] } })
   },
 
