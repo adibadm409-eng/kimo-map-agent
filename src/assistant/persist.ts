@@ -66,8 +66,8 @@ export async function persistPair(sessionId: string, call: ToolCall, result: any
   return obs
 }
 
-export async function persistUser(sessionId: string, content: string): Promise<void> {
-  await addMessage({ sessionId, role: 'user', kind: 'text', content })
+export async function persistUser(sessionId: string, content: string, meta?: Record<string, any>): Promise<void> {
+  await addMessage({ sessionId, role: 'user', kind: 'text', content, meta: meta && Object.keys(meta).length ? meta : undefined })
 }
 
 export async function persistAssistantText(sessionId: string, content: string, kind: Message['kind'] = 'text', meta?: Record<string, any>): Promise<void> {
