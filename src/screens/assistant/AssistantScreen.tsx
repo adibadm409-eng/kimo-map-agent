@@ -688,8 +688,7 @@ export default function AssistantScreen({ navigation }: any) {
       <AuditDrawer
         visible={showAudit}
         onClose={() => setShowAudit(false)}
-        auditTrail={auditTrail}
-        executionSteps={store.executionSteps}
+        trail={auditTrail}
         colors={colors}
       />
 
