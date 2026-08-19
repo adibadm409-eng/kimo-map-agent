@@ -265,3 +265,4 @@
 - 2026-08-20 | 0d1261f | تعديل تلقائي: offerReminders.ts
 - 2026-08-20 | cf3b922 | تعديل تلقائي: offerReminders.ts
 - 2026-08-20 | 549493b | تعديل تلقائي: package.json
+- 2026-08-20 | c05b6c5 | تعديل تلقائي: package.json
