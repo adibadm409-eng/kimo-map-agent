@@ -716,8 +716,8 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
       const spoken = voiceText.trim() || 'أرسل المستخدم تسجيلاً صوتياً. استمع إليه وفهم المطلوب ثم تعامل معه.'
       content = `${content ? content + '\n\n' : ''}[رسالة صوتية محوّلة إلى نص] ${spoken}`.trim()
       // المزوّدات الداعمة تسمع الصوت الفعلي (فيدلتي أعلى)، والبقية تعتمد النص المحوّل.
-      const threadProfile = resolveModelProfile(providerProxy(conn), conn.model)
-      initialContent = threadProfile.supports.inputAudio
+      const profile = resolveModelProfile(providerProxy(conn), conn.model)
+      initialContent = profile.supports.inputAudio
         ? [
           { type: 'text', text: content },
           { type: 'input_audio', input_audio: { data: audio.base64, format: audio.format } },
