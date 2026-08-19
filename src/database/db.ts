@@ -337,7 +337,6 @@ async function initSchema(database: SQLite.SQLiteDatabase) {
     CREATE INDEX IF NOT EXISTS idx_change_log_session ON change_log (session_id);
   `)
 
-  await safeMigrate(database)
   await removeLegacyDemoData(database)
 }
 
