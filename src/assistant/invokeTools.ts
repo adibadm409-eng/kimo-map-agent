@@ -313,12 +313,6 @@ export async function handleToolCall(
   }
   const args = parsed.value
 
-  if (s.mode === 'read' && name === 'undo_last') {
-    await persistPair(sessionId, call, 'محظور: الوضع الحالي للقراءة فقط — التراجع يتطلب وضع التعديل')
-    if (emitEvents) emitForSession(sessionId, { type: 'tool', name, args, result: 'محظور في وضع القراءة فقط' })
-    return true
-  }
-
   if (name === 'ask_user') {
     const question = String(args.question ?? '')
     const choices = Array.isArray(args.choices) ? args.choices.map(String) : undefined
