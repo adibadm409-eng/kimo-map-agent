@@ -167,44 +167,47 @@ export default function Properties() {
 
       {filtersOpen ? (
         <View style={[styles.filterSheet, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterScroll}
-            style={styles.filterBar}
-          >
-            {STATUS_FILTERS.map((f) => (
-              <Pressable
-                key={f.key}
-                onPress={() => setFilter(f.key)}
-                style={[
-                  styles.filterTab,
-                  { borderColor: colors.border },
-                  filter === f.key ? { backgroundColor: colors.accent, borderColor: colors.accent } : {},
-                ]}
-              >
-                <Text style={[
-                  styles.filterTabText,
-                  { color: filter === f.key ? '#FFF' : colors.textSecondary, fontFamily: 'Tajawal_500Medium' },
-                ]}>
-                  {f.label}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
+          <View style={styles.filterSection}>
+            <Text style={[styles.filterSectionLabel, { color: colors.textSecondary }]}>الحالة</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+              {STATUS_FILTERS.map((f) => (
+                <Pressable
+                  key={f.key}
+                  onPress={() => setFilter(f.key)}
+                  style={[
+                    styles.filterTab,
+                    { borderColor: colors.border },
+                    filter === f.key ? { backgroundColor: colors.accent, borderColor: colors.accent } : {},
+                  ]}
+                >
+                  <Text style={[
+                    styles.filterTabText,
+                    { color: filter === f.key ? '#FFF' : colors.textSecondary, fontFamily: 'Tajawal_500Medium' },
+                  ]}>
+                    {f.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll} style={styles.filterBar}>
-            {TYPE_FILTERS.map((f) => (
-              <Pressable key={f.key} accessibilityRole="button" accessibilityState={{ selected: typeFilter === f.key }} onPress={() => setTypeFilter(f.key)} style={[styles.filterTab, { borderColor: colors.border }, typeFilter === f.key ? { backgroundColor: colors.accent, borderColor: colors.accent } : {}]}>
-                <Text style={[styles.filterTabText, { color: typeFilter === f.key ? '#FFF' : colors.textSecondary }]}>{f.label}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
+          <View style={styles.filterSection}>
+            <Text style={[styles.filterSectionLabel, { color: colors.textSecondary }]}>النوع</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+              {TYPE_FILTERS.map((f) => (
+                <Pressable key={f.key} accessibilityRole="button" accessibilityState={{ selected: typeFilter === f.key }} onPress={() => setTypeFilter(f.key)} style={[styles.filterTab, { borderColor: colors.border }, typeFilter === f.key ? { backgroundColor: colors.accent, borderColor: colors.accent } : {}]}>
+                  <Text style={[styles.filterTabText, { color: typeFilter === f.key ? '#FFF' : colors.textSecondary }]}>{f.label}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
 
-          <View style={styles.priceFilterRow}>
-            <Text style={[styles.priceFilterLabel, { color: colors.textSecondary }]}>السعر</Text>
-            <TextInput accessibilityLabel="الحد الأدنى للسعر" value={priceMin} onChangeText={setPriceMin} keyboardType="numeric" placeholder="من" placeholderTextColor={colors.textMuted} style={[styles.priceInput, { backgroundColor: colors.bg, borderColor: colors.border, color: colors.textPrimary }]} />
-            <TextInput accessibilityLabel="الحد الأعلى للسعر" value={priceMax} onChangeText={setPriceMax} keyboardType="numeric" placeholder="إلى" placeholderTextColor={colors.textMuted} style={[styles.priceInput, { backgroundColor: colors.bg, borderColor: colors.border, color: colors.textPrimary }]} />
+          <View style={styles.filterSection}>
+            <Text style={[styles.filterSectionLabel, { color: colors.textSecondary }]}>السعر</Text>
+            <View style={styles.priceInputsRow}>
+              <TextInput accessibilityLabel="الحد الأدنى للسعر" value={priceMin} onChangeText={setPriceMin} keyboardType="numeric" placeholder="من" placeholderTextColor={colors.textMuted} style={[styles.priceInput, { backgroundColor: colors.bg, borderColor: colors.border, color: colors.textPrimary }]} />
+              <TextInput accessibilityLabel="الحد الأعلى للسعر" value={priceMax} onChangeText={setPriceMax} keyboardType="numeric" placeholder="إلى" placeholderTextColor={colors.textMuted} style={[styles.priceInput, { backgroundColor: colors.bg, borderColor: colors.border, color: colors.textPrimary }]} />
+            </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pricePresetScroll}>
               {PRICE_PRESETS.map((preset) => <Pressable key={preset.key || 'any'} onPress={() => setPriceMax(preset.key)} style={[styles.pricePreset, { borderColor: colors.border }, priceMax === preset.key ? { backgroundColor: colors.accent, borderColor: colors.accent } : {}]}><Text style={[styles.pricePresetText, { color: priceMax === preset.key ? '#FFF' : colors.textSecondary }]}>{preset.label}</Text></Pressable>)}
             </ScrollView>
