@@ -155,7 +155,7 @@ async def run_loop(
                 break
 
     profile = resolve_profile(provider_proxy(conn), conn.model)
-    functions = [ToolCall] and registry.function_defs()  # type: ignore
+    functions = registry.function_defs()
 
     call_counts: dict[str, int] = {}
     last_obs_by_sig: dict[str, str] = {}
