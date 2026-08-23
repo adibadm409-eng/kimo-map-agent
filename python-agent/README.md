@@ -118,3 +118,25 @@ asyncio.run(main())
 - الأصل: TypeScript/Expo، يعتمد على قاعدة SQLite داخل التطبيق وواجهات RN.
 - هذه النسخة: بايثون نقي، مع `ToolBackend` قابل للتوصيل وطبقة مزوّدين
   متعددة، وبنية غير متزامنة سريعة (`asyncio`) جاهزة للإنتاج.
+
+## طبقة الدمج الإنتاجية (Integration Backend)
+
+تربط المحرك بطبقة المجال الحقيقية لمدير العقارات عبر `kimo/integration/`:
+
+- `catalog.py` — منفذ دقيق لـ `src/agent/catalog.ts` (13 كياناً + الحقول/الوسوم العربية).
+- `store.py` — `SqliteStore` مبني على المخطط، مع استعلام مرن آمن (فلاتر/بحث/فرز/ترقيم)
+  يستعمل قائمة بيضاء لأسماء الأعمدة لمنع حقن SQL، بالإضافة إلى إنشاء/تعديل/حذف
+  مع حذف متتالٍ لشجرة المشروع.
+- `analytics.py` — منفذ `analytics.ts`: `project_tree`, `project_financials`,
+  `installment_schedule`, `buyer_summary`, `payment_ledger`, `dashboard_kpis`.
+- `backend.py` — `build_integration_registry(store)` يسجّل أدوات واجهة المحرك
+  (`query`, `get`, `mutate_record`, `list` + أدوات المشاريع) بنفس أسماء الأصل،
+  فيسهل استبدال محرك JS بمحرك البايثون دون تغيير أي prompt.
+
+### تشغيل اختبار الدمج
+```bash
+PYTHONPATH=. python3 examples/integration_test.py
+```
+يُنشئ قاعدة SQLite في الذاكرة، يزرع بيانات تجريبية، ويتحقق من 8 سيناريوهات
+(إنشاء/قراءة، استعلام بفلتر، شجرة مشروع، ملخّص مالي، جدولة أقساط، ملخّص مشترٍ،
+دفتر مدفوعات، مؤشرات لوحة التحكم) ثم حارس رفض كيان غير معروف.
