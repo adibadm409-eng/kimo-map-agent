@@ -1,66 +1,77 @@
 #!/usr/bin/env python3
-"""خادم أدوات المجال — يعمل محلياً ويفصح أدوات المحرك البايثوني عبر HTTP.
+"""خادم المحرك الكامل — يحاكي سلوك المحرك القديم بتمامه، والفرق السرعة فقط.
 
-معمارية التشغيل المحلي (كما طُلب):
-  - تطبيق إكسبو (على الهاتف) هو من يتواصل مع مزوّدي النماذج مباشرةً.
-  - محرك البايثون المحلي (هذا الخادم) يوفّر أدوات المجال فقط
-    (استعلام/إنشاء/تعديل/تحليلات) ويُنفّذها على قاعدة البيانات المحلية.
+المحرك البايثوني هنا هو «العقل الكامل» تماماً مثل المحرك القديم:
+يُدير حلقة التفكير، يطلب مزوّد النموذج، ينفّذ الأدوات، ويتحقق قبل الكتابة.
+تطبيق إكسبو (أو متصفح) هو مجرد واجهة ترسل الرسالة وتعرض الرد.
 
 نقاط النهاية:
-  GET  /api/tools       تعريفات الأدوات الجاهزة للاستدعاء من التطبيق
-  POST /api/tool        تنفيذ أداة {name, args} وإرجاع النتيجة
-  GET  /api/providers   قائمة المزوّدات المدعومة
-  GET  /api/settings    إعدادات المحرك (المزوّد/الموديل/المفتاح)
+  GET  /api/providers   قائمة المزوّدات
+  GET  /api/settings    إعدادات المحرك
   POST /api/settings    حفظ الإعدادات
-  GET  /api/entities    الكيانات المتاحة (للواجهة)
+  POST /api/session     إنشاء جلسة
+  POST /api/chat        إرسال رسالة وانتظار الرد النهائي (كالمحرك القديم)
+  GET  /                شاشة محادثة ويب للتجربة
 
-التشغيل:  python3 kimo_serve.py  ثم افتح على نفس الجهاز/الشبكة.
+التشغيل:  python3 kimo_serve.py  ثم افتح http://localhost:8000
 """
 
 from __future__ import annotations
 
+import asyncio
 import json
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from kimo.config_store import load_settings, save_settings, providers_catalog
 from kimo.config import AgentSettings
-from kimo.integration.backend import build_integration_registry
+from kimo.host import build_agent
 from kimo.integration.store import SqliteStore
-from kimo.tools import ToolCall
 
 
 PORT = 8000
 
 
-class ToolHub:
-    """يحمل سجل الأدوات المحلية ويُنفّذها."""
+class EngineHub:
+    """نسخة واحدة من المحرك الكامل تخدم المحادثات."""
 
     def __init__(self, db_path: str = "kimo.db") -> None:
         self.db = SqliteStore(db_path)
-        self.registry = build_integration_registry(self.db)
+        self.engine, _ = build_agent(db_path=db_path)
 
-    def tool_defs(self) -> list[dict]:
-        return self.registry.function_defs()
+    def create_session(self) -> str:
+        return asyncio.run(self.engine.create_session(title="محادثة كيمو")).id
 
-    def execute(self, name: str, args: str) -> dict:
-        result = ToolCall(id="srv", name=name, arguments=args)
-        outcome = self.registry.execute(result, ctx=None)
-        return {
-            "ok": outcome.ok,
-            "data": outcome.data,
-            "error": outcome.error,
-            "observation": outcome.observation,
-        }
+    def chat(self, session_id: str, text: str) -> dict:
+        collected: list[dict] = []
+        final_text = ""
+
+        def on_event(e):
+            item = {"type": e.type}
+            for attr in ("name", "content", "ok", "status", "title", "detail", "observation"):
+                v = getattr(e, attr, None)
+                if v is not None:
+                    item[attr] = v
+            collected.append(item)
+            if e.type == "text":
+                nonlocal final_text
+                final_text = e.content or final_text
+
+        off = self.engine.on_event(on_event)
+        try:
+            asyncio.run(self.engine.send_user_message(session_id, text))
+        finally:
+            off()
+        return {"answer": final_text, "events": collected}
 
 
-HUB: ToolHub | None = None
+HUB: EngineHub | None = None
 
 
-def _get_hub() -> ToolHub:
+def _get_hub() -> EngineHub:
     global HUB
     if HUB is None:
-        HUB = ToolHub()
+        HUB = EngineHub()
     return HUB
 
 
@@ -97,29 +108,19 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = self.path.split("?", 1)[0]
-        if path == "/api/tools":
-            self._send(200, _get_hub().tool_defs())
+        if path in ("/", "/index.html"):
+            self._send(200, _CHAT_PAGE, "text/html; charset=utf-8")
         elif path == "/api/providers":
             self._send(200, providers_catalog())
         elif path == "/api/settings":
             self._send(200, _current_settings())
-        elif path == "/api/entities":
-            self._send(200, [t["function"]["name"] for t in _get_hub().tool_defs()])
-        elif path in ("/", "/index.html"):
-            self._send(200, _STATUS_PAGE, "text/html; charset=utf-8")
         else:
             self._send(404, {"error": "غير موجود"})
 
     def do_POST(self):
         path = self.path
         data = self._body()
-        if path == "/api/tool":
-            name = data.get("name", "")
-            args = data.get("arguments")
-            if isinstance(args, dict):
-                args = json.dumps(args, ensure_ascii=False)
-            self._send(200, _get_hub().execute(name, args or "{}"))
-        elif path == "/api/settings":
+        if path == "/api/settings":
             s = AgentSettings(
                 provider_id=data.get("provider_id", "openai"),
                 provider_name=data.get("provider_name") or None,
@@ -133,7 +134,16 @@ class _Handler(BaseHTTPRequestHandler):
                 max_tool_rounds=int(data.get("max_tool_rounds", 12)),
             )
             save_settings(s)
+            global HUB
+            HUB = None
             self._send(200, {"ok": True})
+        elif path == "/api/session":
+            self._send(200, {"session_id": _get_hub().create_session()})
+        elif path == "/api/chat":
+            hub = _get_hub()
+            sid = data.get("session_id") or hub.create_session()
+            result = hub.chat(sid, data.get("text", ""))
+            self._send(200, {"session_id": sid, **result})
         else:
             self._send(404, {"error": "غير موجود"})
 
@@ -141,20 +151,52 @@ class _Handler(BaseHTTPRequestHandler):
         pass
 
 
-_STATUS_PAGE = """<!DOCTYPE html><html lang="ar" dir="rtl"><head>
-<meta charset="utf-8"><title>خادم أدوات كيمو</title></head><body style="font-family:Tahoma;background:#0f172a;color:#e2e8f0;padding:24px">
-<h2>خادم أدوات محرك كيمو المحلي</h2>
-<p>هذا الخادم يقدّم أدوات المجال لتطبيق إكسبو المحلي. التطبيق هو من يطلب مزوّدات النماذج.</p>
-<ul>
-<li><code>GET /api/tools</code> — تعريفات الأدوات</li>
-<li><code>POST /api/tool</code> — تنفيذ أداة</li>
-<li><code>GET /api/settings</code> — إعدادات المحرك</li>
-</ul></body></html>"""
+_CHAT_PAGE = """<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>محادثة كيمو</title>
+<style>
+:root{--bg:#0f172a;--card:#1e293b;--fg:#e2e8f0;--accent:#38bdf8;--bub:#334155}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,Tahoma,sans-serif;background:var(--bg);color:var(--fg)}
+.wrap{max-width:720px;margin:auto;height:100vh;display:flex;flex-direction:column}
+header{padding:14px 18px;background:var(--card);font-weight:700}
+#log{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:80%;padding:10px 14px;border-radius:12px;white-space:pre-wrap;line-height:1.5}
+.user{align-self:flex-end;background:var(--accent);color:#06283d}
+.assistant{align-self:flex-start;background:var(--bub)}
+.tool{font-size:12px;color:#94a3b8;align-self:flex-start;background:#0b1220;border:1px solid #1e293b;padding:6px 10px;border-radius:8px;max-width:90%}
+.input{display:flex;gap:8px;padding:12px;background:var(--card)}
+.input input{flex:1;padding:11px;border-radius:9px;border:1px solid #334155;background:#0f172a;color:var(--fg)}
+.input button{padding:11px 18px;border:none;border-radius:9px;background:var(--accent);color:#06283d;font-weight:700;cursor:pointer}
+</style></head>
+<body><div class="wrap">
+<header>محادثة كيمو — المحرك البايثوني الكامل</header>
+<div id="log"></div>
+<div class="input"><input id="t" placeholder="اكتب رسالتك..."><button onclick="send()">إرسال</button></div>
+</div>
+<script>
+const log=document.getElementById('log');
+let sid=null;
+function add(cls,text){const d=document.createElement('div');d.className=cls;d.textContent=text;log.appendChild(d);log.scrollTop=log.scrollHeight;}
+async function ensureSession(){if(!sid){const r=await fetch('/api/session',{method:'POST'});sid=(await r.json()).session_id;}}
+async function send(){
+  const t=document.getElementById('t');const text=t.value.trim();if(!text)return;t.value='';
+  add('user',text);
+  await ensureSession();
+  add('assistant','… يفكّر وينفّذ');
+  const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:sid,text})});
+  const j=await r.json();
+  log.lastChild.remove();
+  (j.events||[]).forEach(e=>{if(e.type==='observation')add('tool','• '+((e.title||'')+': '+(e.detail||'')).slice(0,160));});
+  add('assistant',j.answer||'(لا يوجد رد)');
+}
+document.getElementById('t').addEventListener('keydown',e=>{if(e.key==='Enter')send();});
+</script></body></html>"""
 
 
 def main() -> None:
     server = HTTPServer(("0.0.0.0", PORT), _Handler)
-    print(f"خادم أدوات كيمو المحلي يعمل على:  http://localhost:{PORT}")
+    print(f"خادم محرك كيمو الكامل يعمل على:  http://localhost:{PORT}")
     print("شغّل تطبيق إكسبو على نفس الجهاز/الشبكة ووجّهه إلى عنوان IP لهذا الجهاز.")
     print("اضغط Ctrl+C للإيقاف.")
     try:
