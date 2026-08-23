@@ -30,6 +30,15 @@ def _col_whitelist(entity: EntityDef) -> set[str]:
     return {f.name for f in entity.fields}
 
 
+# Per-instance cache so hot query paths never recompute the column allow-list.
+def _whitelist(self, entity: EntityDef) -> set[str]:
+    cached = self._whitelist_cache.get(entity.key)
+    if cached is None:
+        cached = _col_whitelist(entity)
+        self._whitelist_cache[entity.key] = cached
+    return cached
+
+
 @dataclass
 class QuerySpec:
     entity: str
