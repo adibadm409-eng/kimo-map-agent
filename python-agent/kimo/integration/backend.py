@@ -19,7 +19,9 @@ from .analytics import (
     installment_schedule,
     payment_ledger,
     project_financials,
+    project_integrity_check,
     project_tree,
+    record_payment,
 )
 from .store import QuerySpec, SqliteStore
 
