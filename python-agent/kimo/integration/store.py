@@ -63,9 +63,13 @@ class SqliteStore:
                 scope_id TEXT, actor TEXT, tool TEXT, summary TEXT, session_id TEXT
             )"""
         )
+        reserved = {"id", "sys_created_at", "sys_updated_at", "sys_extra"}
         for entity in ALL_ENTITIES:
             cols = ["id TEXT PRIMARY KEY", "sys_created_at TEXT", "sys_updated_at TEXT", "sys_extra TEXT"]
-            import sqlite3 as _sq
+            for fld in entity.fields:
+                if fld.name in reserved:
+                    continue
+                cols.append(f"{fld.name} {_sql_type(fld)}")
             cur.execute(f'CREATE TABLE IF NOT EXISTS "{entity.table}" ({", ".join(cols)})')
             cur.execute(f'CREATE TABLE IF NOT EXISTS "{entity.table}" ({", ".join(cols)})')
         # custom fields
