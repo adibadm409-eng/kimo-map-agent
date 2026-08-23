@@ -25,9 +25,11 @@ from kimo.host import build_agent, make_mock_client
 
 async def _run(db_path: str, mock: bool) -> int:
     if mock:
+        from kimo.config import AgentSettings
         from kimo.integration.store import SqliteStore
         store = SqliteStore(":memory:", seed=True)
-        engine, _ = build_agent(db_path=":memory:", store=store)
+        settings = AgentSettings(provider_id="openai", model="mock", api_key="mock")
+        engine, _ = build_agent(db_path=":memory:", settings=settings, store=store)
         engine.client = make_mock_client()
     else:
         engine, _ = build_agent(db_path=db_path)
