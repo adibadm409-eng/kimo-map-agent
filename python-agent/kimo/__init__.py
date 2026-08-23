@@ -30,7 +30,14 @@ from .engine import (
     SendOptions,
 )
 from .config import AgentSettings, ModelProfile, ProviderDef, resolve_profile
-from .llm import ChatMessage, ChatResult, FunctionDef, ToolCall, parse_tool_args
+from .types import (
+    ChatMessage,
+    ChatResult,
+    FunctionDef,
+    ToolCall,
+    ToolResult,
+    parse_tool_args,
+)
 from .tools import ToolDef, ToolArg, Registry, ToolBackend
 from .session import Message, SessionStore, MemorySessionStore
 from .skills import Skill, assess_skill, plan_for_skill
