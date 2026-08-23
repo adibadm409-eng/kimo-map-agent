@@ -5,6 +5,22 @@
 
 ---
 
+## 2026-08-23 — تصحيح معمارية محرك كيمو البايثوني ليتطابق مع القديم
+- **المُلخّص**: المستخدم أوضح أن المحرك الجديد يجب أن يعمل **بنفس طريقة المحرك القديم تماماً**،
+  والفرق الوحيد السرعة/الكفاءة/القوة. لذلك أُلغيت تجزئة المعمارية (تطبيق يطلب المزوّدات +
+  بايثون أدوات فقط) وعُدنا إلى محرك كامل: `kimo_serve.py` يفعل الحلقة + المزوّد + الأدوات
+  كعقل كامل، وتطبيق إكسبو مجرد واجهة عميل (محادثة RTL + إعدادات).
+- **التعديلات**:
+  1. `python-agent/kimo_serve.py`: أُعيد إلى نسخة المحرك الكامل (EngineHub يحوي create_session
+     + chat يستهلك send_user_message ويعيد answer+events)؛ نقاط /api/providers, /api/settings,
+     /api/session, /api/chat، وشاشة محادثة ويب للتجربة.
+  2. `python-agent/expo-app/`: App.js (عميل محادثة + مودال إعدادات)، ServerConfig.js
+     (SERVER_URL بعنوان IP الشبكة المحلية)، index.js، babel.config.js، app.json، package.json.
+- **التحقق**: 12 فحص تكامل ناجح؛ الخادم يردّ على providers/settings/chat سليمة.
+- **قيد التشغيل**: `python3 kimo_serve.py` + تعديل SERVER_URL في expo-app + `npx expo start`.
+
+---
+
 ## 2026-08-19 — تنظيف شامل + تحسين بناء أندرويد + نجاح البناء في CI
 - **المُلخّص**: تنظيف التبعيات الميتة، إصلاح اسم حزمة خطوط Tajawal المعطوب (كان
   `@expo/google-fonts/tajawal` بخط مائل غير صالح في الـ scope → `@expo-google-fonts/tajawal`؛
