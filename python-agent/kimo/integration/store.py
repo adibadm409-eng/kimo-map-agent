@@ -31,12 +31,6 @@ def _col_whitelist(entity: EntityDef) -> set[str]:
 
 
 # Per-instance cache so hot query paths never recompute the column allow-list.
-def _whitelist(self, entity: EntityDef) -> set[str]:
-    cached = self._whitelist_cache.get(entity.key)
-    if cached is None:
-        cached = _col_whitelist(entity)
-        self._whitelist_cache[entity.key] = cached
-    return cached
 
 
 @dataclass
@@ -111,7 +105,7 @@ class SqliteStore:
 
     def query(self, spec: QuerySpec) -> dict[str, Any]:
         entity = self._entity(spec.entity)
-        whitelist = _col_whitelist(entity)
+        whitelist = self._whitelist(entity)
         where: list[str] = []
         params: list[Any] = []
 
@@ -236,7 +230,7 @@ class SqliteStore:
 
     def create(self, entity_key: str, data: dict[str, Any]) -> dict[str, Any]:
         entity = self._entity(entity_key)
-        whitelist = _col_whitelist(entity)
+        whitelist = self._whitelist(entity)
         record_id = str(data.get("id") or _gen_id())
         known = {k: v for k, v in data.items() if k in whitelist}
         extra = {k: v for k, v in data.items() if k not in whitelist and k not in ("id",)}
@@ -252,7 +246,7 @@ class SqliteStore:
 
     def update(self, entity_key: str, record_id: str, data: dict[str, Any]) -> dict[str, Any]:
         entity = self._entity(entity_key)
-        whitelist = _col_whitelist(entity)
+        whitelist = self._whitelist(entity)
         existing = self._q(f'SELECT sys_extra FROM "{entity.table}" WHERE id = ?', (record_id,))
         if not existing:
             raise ValueError("السجل المطلوب غير موجود؛ لم تتم أي كتابة.")
