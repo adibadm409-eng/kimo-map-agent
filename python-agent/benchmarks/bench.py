@@ -118,7 +118,7 @@ async def _sequential_sessions(reg: Registry, sessions: int) -> None:
 
 async def _http_transport() -> dict:
     out: dict = {}
-    n = 30
+    n = 5
     url = "https://httpbin.org/get"
     try:
         from kimo.llm import HttpxTransport, UrllibTransport
@@ -128,7 +128,7 @@ async def _http_transport() -> dict:
         tr = UrllibTransport()
         t0 = _t()
         for _ in range(n):
-            await tr.request("GET", url, {}, b"", 5)
+            await asyncio.wait_for(tr.request("GET", url, {}, b"", 5), timeout=20)
         out["urllib_seq_s"] = _t() - t0
     except Exception:
         out["urllib_seq_s"] = None
@@ -138,7 +138,7 @@ async def _http_transport() -> dict:
             tr = HttpxTransport(client)
             t0 = _t()
             for _ in range(n):
-                await tr.request("GET", url, {}, b"", 5)
+                await asyncio.wait_for(tr.request("GET", url, {}, b"", 5), timeout=20)
             out["httpx_pooled_s"] = _t() - t0
     except Exception:
         out["httpx_pooled_s"] = None
