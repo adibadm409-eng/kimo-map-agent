@@ -26,13 +26,18 @@ def parse_tool_args(raw: Any) -> Any:
     if not s:
         return {}
     # Strip markdown code fences if present.
-    fence = re.match(r"^```(?:json)?\s*(.*?)\s*```$", s, re.DOTALL)
+    fence = re.match(r"^```(?:json|python)?\s*(.*?)\s*```$", s, re.DOTALL)
     if fence:
         s = fence.group(1).strip()
-    try:
-        return json.loads(s)
-    except (json.JSONDecodeError, ValueError):
-        pass
+    # Common model slip: a bare Python dict literal printed in the reply.
+    if s.startswith("{") or s.startswith("["):
+        try:
+            return json.loads(s)
+        except (json.JSONDecodeError, ValueError):
+            pass
+        recovered = _recover_json(s)
+        if recovered is not None:
+            return recovered
     # Try to recover the first balanced {...} or [...] block.
     for opener, closer in (("{", "}"), ("[", "]")):
         start = s.find(opener)
@@ -49,8 +54,53 @@ def parse_tool_args(raw: Any) -> Any:
                     try:
                         return json.loads(candidate)
                     except (json.JSONDecodeError, ValueError):
-                        break
+                        rec = _recover_json(candidate)
+                        if rec is not None:
+                            return rec
+                    break
     return {}
+
+
+def _recover_json(s: str) -> Any:
+    """Best-effort repair of slightly malformed JSON (trailing commas,
+    single quotes, unquoted keys, Python literals)."""
+    if not s:
+        return None
+    # Normalise quotes and trailing commas.
+    work = s
+    # Remove trailing commas before } or ]
+    work = re.sub(r",\s*([}\]])", r"\1", work)
+    # Single -> double quotes (only outside existing double quotes)
+    work = _normalise_quotes(work)
+    try:
+        return json.loads(work)
+    except (json.JSONDecodeError, ValueError):
+        pass
+    # Quote unquoted object keys: {foo: 1} -> {"foo": 1}
+    work = re.sub(r"([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)\s*:", r'\1"\2":', work)
+    try:
+        return json.loads(work)
+    except (json.JSONDecodeError, ValueError):
+        return None
+
+
+def _normalise_quotes(s: str) -> str:
+    """Convert single-quoted strings to double-quoted, leaving doubles alone."""
+    out = []
+    i = 0
+    n = len(s)
+    in_double = False
+    while i < n:
+        c = s[i]
+        if c == '"':
+            in_double = not in_double
+            out.append(c)
+        elif c == "'" and not in_double:
+            out.append('"')
+        else:
+            out.append(c)
+        i += 1
+    return "".join(out)
 
 
 def _coerce_text(content: Any) -> str:
