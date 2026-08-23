@@ -112,7 +112,7 @@ def _wrap_with_cache(reg: Registry, cache: _ReadCache) -> None:
         ))
 
 
-def build_integration_registry(store: SqliteStore) -> Registry:
+def build_integration_registry(store: SqliteStore, max_cache: int = 256) -> Registry:
     reg = Registry()
 
     def h_query(args, ctx):
