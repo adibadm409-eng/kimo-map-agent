@@ -362,7 +362,6 @@ async def _execute_one(
 
 
 def _schema_hint(registry: Registry, calls: list[ToolCall]) -> str:
-    lines = []
     for call in calls:
         name = call.name
         if name == "execute":
