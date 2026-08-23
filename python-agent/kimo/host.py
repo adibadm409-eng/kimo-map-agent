@@ -47,15 +47,6 @@ def build_agent(
     return engine, db
 
 
-def _settings_from_env() -> AgentSettings:
-    provider = os.environ.get("KIMO_PROVIDER", "openai")
-    model = os.environ.get("KIMO_MODEL")
-    api_key = os.environ.get("KIMO_API_KEY")
-    if not model:
-        model = (default_provider(provider).default_models or ["gpt-4o-mini"])[0]
-    return AgentSettings(provider_id=provider, model=model, api_key=api_key)
-
-
 def make_mock_client() -> ChatClient:
     """A deterministic fake LLM for self-tests (no network/keys).
 
