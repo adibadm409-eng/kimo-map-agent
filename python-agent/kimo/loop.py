@@ -371,6 +371,37 @@ def _is_unknown_tool(registry: Registry, call: ToolCall) -> bool:
     return registry.get(name) is None
 
 
+def _turn_issues(registry: Registry, calls: list[ToolCall]) -> list:
+    """Validate a whole model turn, including the inner tool behind `execute`."""
+    from .tools import Issue, validate_tool_call
+
+    issues: list = []
+    for call in calls:
+        if call.name == "execute":
+            try:
+                outer = parse_tool_args(call.arguments)
+            except Exception:
+                outer = {}
+            inner = str(outer.get("tool", "execute")) if isinstance(outer, dict) else "execute"
+            inner_args = (
+                outer.get("args")
+                if isinstance(outer, dict) and isinstance(outer.get("args"), dict)
+                else None
+            )
+            inner_call = ToolCall(id=call.id, name=inner, arguments=json.dumps(inner_args or {}, ensure_ascii=False))
+            if registry.get(inner) is None:
+                issues.append(Issue(f"الأداة غير معروفة: {inner}."))
+            else:
+                issues.extend(validate_tool_call(registry.get(inner), inner_call))
+        else:
+            tool = registry.get(call.name)
+            if tool is None:
+                issues.append(Issue(f"الأداة غير معروفة: {call.name}."))
+            else:
+                issues.extend(validate_tool_call(tool, call))
+    return issues
+
+
 def _schema_hint(registry: Registry, calls: list[ToolCall]) -> str:
     lines = []
     for call in calls:
