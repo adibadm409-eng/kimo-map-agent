@@ -65,13 +65,11 @@ class ConnConfig:
 
 
 def provider_proxy(conn: ConnConfig) -> ProviderDef:
-    from .config import default_provider
-
     if conn.provider_id.startswith("custom:"):
         return ProviderDef(
             id="custom",
             name=conn.provider_name,
-            wire_family=__import__("kimo.config", fromlist=["WireFamily"]).WireFamily.CUSTOM,
+            wire_family=WireFamily.CUSTOM,
             base_url=conn.base_url,
         )
     base = default_provider(conn.provider_id)
