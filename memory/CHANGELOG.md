@@ -285,3 +285,4 @@
 - 2026-08-20 | 77eb53a | تعديل تلقائي: unified_reminder_target_invariants.mjs
 - 2026-08-20 | b219866 | تعديل تلقائي: SESSION_LOG.md
 - 2026-08-24 | dea27c9 | تعديل تلقائي: README.md
+- 2026-08-24 | e98e3b0 | تعديل تلقائي: AGENTS.md
