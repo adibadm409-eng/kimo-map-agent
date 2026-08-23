@@ -56,11 +56,13 @@ def _handle_test(payload: dict) -> dict:
     )
     try:
         conn = settings.active_config()
+        provider_def = default_provider(settings.provider_id).to_proxy(
+            base_url=conn["baseUrl"], name=conn["providerName"])
         client = ChatClient()
         msgs = [ChatMessage(role="system", content="اختصار: أجب بكلمة واحدة فقط: حسناً."),
                 ChatMessage(role="user", content="تحقق")]
         result = asyncio.run(chat_with_retry(
-            client, settings.provider_id, base_url=conn["baseUrl"], api_key=api_key,
+            client, provider_def, base_url=conn["baseUrl"], api_key=api_key,
             model=model, messages=msgs, functions=[], max_tokens=8, temperature=0,
             retry_delays=(1, 2),
         ))
