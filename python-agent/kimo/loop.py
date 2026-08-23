@@ -296,21 +296,21 @@ async def run_loop(
                 inner_args0 = parse_tool_args(call.arguments)
                 inner_tool = call.name
                 if call.name == "execute":
-                    inner_tool = str(inner_args0.get("tool", "execute")) if isinstance(inner_args0, dict) else "execute"
-                    # Re-validate the inner tool's args through the envelope.
-                    outer = parse_tool_args(call.arguments)
-                    inner_args = (
-                        outer.get("args")
-                        if isinstance(outer, dict) and isinstance(outer.get("args"), dict)
-                        else None
+                    outer = inner_args0 if isinstance(inner_args0, dict) else {}
+                    inner_tool = str(outer.get("tool", "execute"))
+                    inner_args = outer.get("args") if isinstance(outer.get("args"), dict) else None
+                    inner_call = ToolCall(
+                        id=call.id,
+                        name=inner_tool,
+                        arguments=json.dumps(inner_args or {}, ensure_ascii=False),
                     )
-                    inner_call = ToolCall(id=call.id, name=inner_tool, arguments=__import__("json").dumps(inner_args or {}, ensure_ascii=False))
-                    if not inner_args or registry.validate(inner_call, profile.supports_parallel_tools):
-                        # registry.validate returns [] when OK
-                        pass
                     issues = registry.validate(inner_call, profile.supports_parallel_tools)
                     if not isinstance(outer, dict) or not inner_args or issues:
-                        detail = "execute يحتاج args ككائن JSON." if not inner_args else " ".join(i.message for i in issues)
+                        detail = (
+                            "execute يحتاج args ككائن JSON."
+                            if not inner_args
+                            else " ".join(i.message for i in issues)
+                        )
                         obs = f"[فشل التحقق قبل التنفيذ] {detail}"
                         await _persist_tool_result(persist, session_id, call, ToolResult(ok=False, error="inner_tool_validation", observation=obs))
                         thread.append(ChatMessage(role="tool", tool_call_id=call.id, name=inner_tool, content=obs, tool_error=True))
