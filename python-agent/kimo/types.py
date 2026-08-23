@@ -3,8 +3,54 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from typing import Any, Optional
+
+
+def parse_tool_args(raw: Any) -> Any:
+    """Parse a model-supplied tool argument block.
+
+    Accepts already-decoded objects or a JSON string (possibly wrapped in
+    markdown fences / stray prose, which some models emit).
+    """
+    if raw is None:
+        return {}
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, list):
+        return raw
+    if not isinstance(raw, str):
+        return raw
+    s = raw.strip()
+    if not s:
+        return {}
+    # Strip markdown code fences if present.
+    fence = re.match(r"^```(?:json)?\s*(.*?)\s*```$", s, re.DOTALL)
+    if fence:
+        s = fence.group(1).strip()
+    try:
+        return json.loads(s)
+    except (json.JSONDecodeError, ValueError):
+        pass
+    # Try to recover the first balanced {...} or [...] block.
+    for opener, closer in (("{", "}"), ("[", "]")):
+        start = s.find(opener)
+        if start == -1:
+            continue
+        depth = 0
+        for i in range(start, len(s)):
+            if s[i] == opener:
+                depth += 1
+            elif s[i] == closer:
+                depth -= 1
+                if depth == 0:
+                    candidate = s[start : i + 1]
+                    try:
+                        return json.loads(candidate)
+                    except (json.JSONDecodeError, ValueError):
+                        break
+    return {}
 
 
 def _coerce_text(content: Any) -> str:
