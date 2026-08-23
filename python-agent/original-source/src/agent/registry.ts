@@ -1,0 +1,931 @@
+import { ALL_ENTITIES, ENTITY_LABELS, getEntityDef, searchCatalog } from './catalog'
+import { queryEntities, queryEntityById } from './query'
+import { agentCreate, agentUpdate, agentDelete } from './crud'
+import { getDB } from '../database/db'
+import {
+  projectTree,
+  projectFinancials,
+  installmentSchedule,
+  buyerSummary,
+  paymentLedger,
+  dashboardKpis,
+  reviewMyWork,
+} from './analytics'
+import {
+  listWorkspaces,
+  getWorkspace,
+  createWorkspace,
+  updateWorkspace,
+  deleteWorkspace,
+  createTable,
+  renameTable,
+  deleteTable,
+  addColumn,
+  renameColumn,
+  removeColumn,
+  createRow,
+  updateRow,
+  deleteRow,
+  bulkInsertRows,
+  findRowByValues,
+  setColumnMeta,
+  createFullTable,
+  duplicateTable,
+  duplicateWorkspace,
+  listAttachments,
+  filePreview,
+  importProjectFile,
+  removeAttachment,
+} from '../database/workspace'
+import { queryChangeLog, changeLogStats, dailyActorStats } from '../database/audit'
+import { setCustomValue } from '../database/projects'
+import { DOMAIN_TOOLS } from './domainTools'
+import { getScreenCatalog } from './screenCatalog'
+import type { EntityKey } from './catalog'
+import { getAsset, listAssetDerivatives, listAssets } from '../assistant/assetStore'
+import { runAssetIngestion } from '../assistant/ingestion'
+
+type QueryFilterInput = { field?: string; op?: string; value?: any; value2?: any }
+
+const SEARCH_EVERYTHING_ENTITIES: EntityKey[] = ['properties', 'clients', 'offers', 'campaigns', 'viewings', 'waypoints', 'areas', 'projects', 'blocks', 'plots']
+
+async function searchEverything(query: string): Promise<Record<string, any[]>> {
+  const needle = query.trim()
+  const result: Record<string, any[]> = {}
+  await Promise.all(SEARCH_EVERYTHING_ENTITIES.map(async (entity) => {
+    const page = await queryEntities({ entity, search: needle, limit: 100, offset: 0, withCustomValues: false })
+    result[entity] = page.rows
+  }))
+  return result
+}
+
+async function resolveOfferRelationFilters(filters: QueryFilterInput[] | undefined): Promise<QueryFilterInput[] | undefined> {
+  if (!Array.isArray(filters) || !filters.length) return filters
+  const db = await getDB()
+  const relationTables: Record<string, string> = { property_id: 'properties', client_id: 'clients' }
+  const resolved: QueryFilterInput[] = []
+  for (const filter of filters) {
+    const field = String(filter?.field ?? '')
+    const table = relationTables[field]
+    const op = String(filter?.op ?? 'eq')
+    const value = filter?.value
+    if (!table || (op !== 'eq' && op !== 'contains' && op !== 'starts_with') || value === undefined || value === null || Array.isArray(value)) {
+      resolved.push(filter)
+      continue
+    }
+    const needle = String(value).trim()
+    if (!needle) {
+      resolved.push(filter)
+      continue
+    }
+    const like = op === 'starts_with' ? `${needle}%` : `%${needle}%`
+    const rows = await db.getAllAsync<{ id: string }>(
+      `SELECT id FROM ${table} WHERE id = ? OR name = ? OR name LIKE ? LIMIT 200`,
+      [needle, needle, like],
+    )
+    const ids = rows.map((row) => String(row.id)).filter(Boolean)
+    resolved.push(ids.length ? { ...filter, op: 'in', value: ids } : filter)
+  }
+  return resolved
+}
+
+export interface ToolArg {
+  name: string
+  type: 'string' | 'number' | 'boolean' | 'object' | 'array'
+  required?: boolean
+  description?: string
+}
+
+export interface ToolDef {
+  name: string
+  description: string
+  args: ToolArg[]
+  handler: (args: Record<string, any>) => Promise<Record<string, any> | Record<string, any>[] | null>
+}
+
+export const TOOLS: ToolDef[] = [
+  ...DOMAIN_TOOLS,
+  {
+    name: 'app_screen_catalog',
+    description: 'خريطة تشغيلية لكل شاشات التطبيق: الهدف، الكيانات، أدوات القراءة والكتابة، مستوى الخطر، سياسة التعديل الآمن، وأدوات التحقق. اقرأها قبل تنظيم أو تعديل بيانات شاشة غير معروفة.',
+    args: [{ name: 'screen', type: 'string', description: 'معرف أو اسم الشاشة، أو اتركه فارغاً للدليل الكامل' }],
+    handler: async (args) => ({ screens: getScreenCatalog(args.screen ? String(args.screen) : undefined) }),
+  },
+  {
+    name: 'list_entities',
+    description: 'قائمة بجميع الكيانات (الجداول) المدعومة في التطبيق مع وصفها بالعربية',
+    args: [],
+    handler: async () => {
+      return ALL_ENTITIES.map((e) => ({
+        entity: e.key,
+        label: ENTITY_LABELS[e.key],
+        table: e.table,
+        title_field: e.titleField,
+        has_custom_values: e.customFieldEntities ?? false,
+        parent: e.parent ?? null,
+        fields: e.fields.map((x) => ({
+          name: x.name,
+          label: x.label,
+          type: x.type,
+          searchable: x.searchable ?? false,
+          filterable: x.filterable ?? false,
+          sortable: x.sortable ?? false,
+          values: x.values ?? null,
+        })),
+      }))
+    },
+  },
+  {
+    name: 'schema_inspect',
+    description: 'اكتشاف آمن لبنية SQLite المحلية عند الحاجة: يعيد الجداول الفعلية والأعمدة والأنواع والحقول المطلوبة والعلاقات والفهارس وعدد الصفوف، ويقارنها بكتالوج التطبيق. لا يقبل SQL ولا يغيّر أي بيانات؛ الجداول غير المعروفة للكتالوج للقراءة التشخيصية فقط.',
+    args: [
+      { name: 'entities', type: 'array', description: 'كيانات محددة مثل ["properties","clients"]؛ اتركها فارغة لفحص كل الكيانات المعروفة' },
+      { name: 'includeSystem', type: 'boolean', description: 'إظهار جداول SQLite الداخلية المساندة مثل change_log وreminders للقراءة فقط (افتراضي false)' },
+    ],
+    handler: async (args) => {
+      const requested = Array.isArray(args.entities)
+        ? args.entities.map((value: any) => String(value ?? '').trim()).filter(Boolean)
+        : []
+      const known = requested.length ? requested.map((key) => getEntityDef(key)).filter(Boolean) : ALL_ENTITIES
+      if (requested.length && known.length !== requested.length) {
+        const unknown = requested.filter((key) => !getEntityDef(key))
+        throw new Error(`كيانات غير مدعومة في schema_inspect: ${unknown.join('، ')}`)
+      }
+      const d = await getDB()
+      const safe = (name: string) => name.replace(/"/g, '""')
+      const rows = await d.getAllAsync<any>(`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name`)
+      const actualNames = rows.map((row: any) => String(row.name))
+      const targetNames = requested.length
+        ? known.map((entity: any) => entity.table)
+        : known.map((entity: any) => entity.table)
+      const systemNames = args.includeSystem === true ? actualNames.filter((name) => !targetNames.includes(name)) : []
+      const inspectNames = [...new Set([...targetNames, ...systemNames])]
+      const knownByTable = new Map(known.map((entity: any) => [entity.table, entity]))
+      const tables = []
+      for (const table of inspectNames) {
+        const tableSql = safe(table)
+        const columns = await d.getAllAsync<any>(`PRAGMA table_info("${tableSql}")`)
+        const foreignKeys = await d.getAllAsync<any>(`PRAGMA foreign_key_list("${tableSql}")`)
+        const indexes = await d.getAllAsync<any>(`PRAGMA index_list("${tableSql}")`)
+        let rowCount: number | null = null
+        try {
+          const countRow = await d.getFirstAsync<any>(`SELECT COUNT(*) AS count FROM "${tableSql}"`)
+          rowCount = Number(countRow?.count ?? 0)
+        } catch {}
+        const entity = knownByTable.get(table)
+        const declared = entity?.fields ?? []
+        const actualColumnNames = columns.map((column: any) => String(column.name))
+        tables.push({
+          table,
+          entity: entity?.key ?? null,
+          label: entity?.label ?? table,
+          access: entity ? 'catalog_query_get_and_guarded_mutation' : 'read_only_diagnostic',
+          row_count: rowCount,
+          columns: columns.map((column: any) => ({ name: column.name, type: column.type, not_null: Boolean(column.notnull), default: column.dflt_value, primary_key: Boolean(column.pk) })),
+          declared_fields_missing_from_sqlite: declared.map((field: any) => field.name).filter((name: string) => !actualColumnNames.includes(name)),
+          sqlite_columns_not_in_catalog: entity ? actualColumnNames.filter((name: string) => !declared.some((field: any) => field.name === name)) : actualColumnNames,
+          foreign_keys: foreignKeys.map((foreignKey: any) => ({ column: foreignKey.from, target_table: foreignKey.table, target_column: foreignKey.to, on_update: foreignKey.on_update, on_delete: foreignKey.on_delete })),
+          indexes: indexes.map((index: any) => ({ name: index.name, unique: Boolean(index.unique), origin: index.origin })),
+        })
+      }
+      return { source: 'sqlite-local', requested_entities: requested, include_system: args.includeSystem === true, tables }
+    },
+  },
+  {
+    name: 'catalog',
+    description:
+      'دليل أقسام التطبيق: كل قسم (العقارات/العملاء/العروض/المشاهدات/الحملات/المشاريع/القطع/المالية/مساحات العمل/الملفات) مع بياناته وحقوله القابلة للبحث والفلاتر والقيم والعلاقات. اقرأه لتقرر ما إذا كان قسم يلزم مهمتك، أو لتتأكد من بنية كيان قبل الاستعلام عنه أو قبل الحفظ فيه.',
+    args: [
+      { name: 'section', type: 'string', description: 'اسم القسم أو الكيان (مثل: عقارات، عملاء، مشاريع، قطع، مالية، مساحات عمل، ملفات...) — أو اتركه فارغاً للدليل الكامل' },
+      { name: 'query', type: 'string', description: 'بحث حر في الدليل بكلمة (اختياري)' },
+    ],
+    handler: async (args) => ({
+      guide: searchCatalog(
+        args.section ? String(args.section) : undefined,
+        args.query ? String(args.query) : undefined
+      ),
+    }),
+  },
+  {
+    name: 'preview_update',
+    description: 'معاينة آمنة لتعديل سجل: تقرأ الحالة الحالية وتعرض الفرق المقترح دون أي كتابة. استخدمها قبل update في العقارات والعملاء والعروض والحملات وأي كيان غير مغطى بأداة مجال متخصصة.',
+    args: [
+      { name: 'entity', type: 'string', required: true },
+      { name: 'id', type: 'string', required: true },
+      { name: 'data', type: 'object', required: true, description: 'الحقول التي تريد تعديلها فقط' },
+    ],
+    handler: async (args) => {
+      const entity = String(args.entity ?? '')
+      const id = String(args.id ?? '')
+      const data = args.data && typeof args.data === 'object' ? args.data as Record<string, any> : {}
+      if (!entity || !id || Object.keys(data).length === 0) throw new Error('preview_update يتطلب كياناً ومعرفاً وحقول تعديل غير فارغة.')
+      const def = getEntityDef(entity as EntityKey)
+      if (!def) throw new Error(`الكيان غير مدعوم: ${entity}`)
+      const allowed = new Set(def.fields.map((field) => field.name))
+      const unknownFields = Object.keys(data).filter((key) => !allowed.has(key))
+      if (unknownFields.length) throw new Error(`حقول غير معروفة في ${entity}: ${unknownFields.join('، ')}. لم تتم أي كتابة.`)
+      const current = await queryEntityById(entity as EntityKey, id)
+      if (!current) throw new Error('السجل المطلوب غير موجود؛ لم تتم أي كتابة.')
+      const before = current as Record<string, any>
+      const changedFields = Object.keys(data).filter((key) => JSON.stringify(before[key]) !== JSON.stringify(data[key]))
+      return { entity, id, before, proposed: data, changedFields, unknownFields: [], noChanges: changedFields.length === 0 }
+    },
+  },
+  {
+    name: 'query',
+    description: 'بحث متعدد الطبقات في أي كيان: فلاتر AND، نص حر، ترتيب، ترقيم صفحات، وقيم الحقول المخصصة',
+    args: [
+      { name: 'entity', type: 'string', required: true, description: 'اسم الكيان: properties|clients|offers|campaigns|viewings|waypoints|areas|projects|blocks|plots|plot_payments|custom_fields|custom_field_values' },
+      { name: 'search', type: 'string', description: 'نص حر يبحث في الحقول القابلة للبحث (الاسم، الوصف، الحدود...) مثل: "قطعة 3"' },
+      { name: 'filters', type: 'array', description: 'مصفوفة شروط: [{field, op, value, value2}] — op: eq|neq|contains|starts_with|ends_with|gt|gte|lt|lte|between|in|not_in|is_empty|not_empty' },
+      { name: 'sort', type: 'object', description: 'مثال: {field:"created_at", dir:"desc"} — الحقل يجب أن يكون قابلاً للترتيب' },
+      { name: 'limit', type: 'number', description: 'الحد الأقصى للنتائج (افتراضي 2000)' },
+      { name: 'offset', type: 'number', description: 'إزاحة الترقيم' },
+      { name: 'withCustomValues', type: 'boolean', description: 'اجلب قيم الحقول المخصصة للمشاريع/البلوكات/القطع (افتراضي true)' },
+    ],
+    handler: async (args) => {
+      const spec = {
+        entity: String(args.entity ?? ''),
+        search: args.search ? String(args.search) : undefined,
+        filters: await resolveOfferRelationFilters(args.filters as QueryFilterInput[] | undefined),
+        sort: args.sort as any,
+        limit: args.limit ? Number(args.limit) : undefined,
+        offset: args.offset ? Number(args.offset) : undefined,
+        withCustomValues: args.withCustomValues !== false,
+      }
+      return await queryEntities(spec as any)
+    },
+  },
+  {
+    name: 'get',
+    description: 'جلب سجل واحد بالمعرف مع قيم الحقول المخصصة وأسماء العلاقات المرتبطة',
+    args: [
+      { name: 'entity', type: 'string', required: true, description: 'اسم الكيان' },
+      { name: 'id', type: 'string', required: true, description: 'معرف السجل' },
+    ],
+    handler: async (args) => {
+      return await queryEntityById(args.entity as any, String(args.id))
+    },
+  },
+  {
+    name: 'mutate_record',
+    description: 'بوابة البيانات الموحدة للكيانات الأساسية: operation=create لإنشاء سجل، operation=update لتعديل جزئي، operation=delete لطلب حذف سجل. أرسل entity دائماً، وأرسل data عند الإنشاء أو التعديل، وid عند التعديل أو الحذف. في offers يكون property_id اختياري لعرض طلب الشراء، ولا يُنسخ من بيانات العقار؛ أما عرض البيع فيحتاج عقاراً. لا تستخدمها للدفعات المالية الخام؛ استخدم ledger_record_payment، ولا تستخدمها لبنية الجداول الحرة؛ استخدم أدوات مساحة العمل المتخصصة. قبل الإنشاء أو التعديل اقرأ الكيان عند الحاجة، وقبل الحذف يعرض التطبيق معاينة وموافقة المستخدم تلقائياً.',
+    args: [
+      { name: 'operation', type: 'string', required: true, description: 'create أو update أو delete' },
+      { name: 'entity', type: 'string', required: true, description: 'اسم الكيان الأساسي مثل properties أو clients أو offers أو projects أو blocks أو plots' },
+      { name: 'id', type: 'string', description: 'معرف السجل؛ مطلوب في update وdelete' },
+      { name: 'data', type: 'object', description: 'الحقول الجديدة؛ مطلوب في create، ويحتوي فقط الحقول المراد تغييرها في update. لبلوك أو قطع يمكن أن يتضمن plots.' },
+    ],
+    handler: async (args) => {
+      const operation = String(args.operation ?? '').trim().toLowerCase()
+      const entity = String(args.entity ?? '').trim() as any
+      const data = args.data && typeof args.data === 'object' ? { ...args.data } : {}
+      if (!['create', 'update', 'delete'].includes(operation)) throw new Error('operation يجب أن يكون create أو update أو delete.')
+      if (!entity) throw new Error('entity مطلوب.')
+      if (operation === 'create') {
+        for (const [key, value] of Object.entries(args)) if (!['operation', 'entity', 'id', 'data'].includes(key) && value !== undefined && data[key] === undefined) data[key] = value
+        return await agentCreate({ entity, data })
+      }
+      const id = String(args.id ?? '').trim()
+      if (!id) throw new Error(`id مطلوب عند operation=${operation}.`)
+      if (operation === 'update') {
+        return await agentUpdate({ entity, id, data })
+      }
+      return await agentDelete({ entity, id })
+    },
+  },
+  {
+    name: 'create',
+    description: 'توافق خلفي: استخدم mutate_record مع operation=create بدلاً من هذه الأداة.',
+    args: [
+      { name: 'entity', type: 'string', required: true, description: 'اسم الكيان' },
+      { name: 'data', type: 'object', description: 'القيم: {اسم_العمود: القيمة}' },
+    ],
+    handler: async (args) => {
+      const data = (args.data && typeof args.data === 'object') ? { ...args.data } : {}
+      for (const [k, v] of Object.entries(args)) if (k !== 'entity' && k !== 'data' && v !== undefined && data[k] === undefined) data[k] = v
+      return await agentCreate({ entity: String(args.entity) as any, data })
+    },
+  },
+  {
+    name: 'update',
+    description: 'تحديث سجل موجود (تعديل جزئي — أرسل الحقول المراد تغييرها فقط)',
+    args: [
+      { name: 'entity', type: 'string', required: true, description: 'اسم الكيان' },
+      { name: 'id', type: 'string', required: true, description: 'معرف السجل' },
+      { name: 'data', type: 'object', description: 'القيم الجديدة' },
+    ],
+    handler: async (args) => {
+      const data = (args.data && typeof args.data === 'object') ? { ...args.data } : {}
+      for (const [k, v] of Object.entries(args)) {
+        if (k !== 'entity' && k !== 'id' && k !== 'data' && v !== undefined) {
+          if (data[k] === undefined) data[k] = v
+        }
+      }
+      return await agentUpdate({ entity: String(args.entity) as any, id: String(args.id), data })
+    },
+  },
+  {
+    name: 'delete',
+    description: 'حذف سجل (حذف سلسلة للقطعة/البلوك/المشروع يمسح الأقساط والقيم المخصصة المرتبطة)',
+    args: [
+      { name: 'entity', type: 'string', required: true, description: 'اسم الكيان' },
+      { name: 'id', type: 'string', required: true, description: 'معرف السجل' },
+    ],
+    handler: async (args) => {
+      return await agentDelete({ entity: String(args.entity) as any, id: String(args.id) })
+    },
+  },
+  {
+    name: 'project_tree',
+    description: 'شجرة مشروع كاملة: مشروع ← بلوكات ← قطع ← أقساط، مع إحصائيات (قيم، مدفوع، متبقي، فرق العمود عن السجل الفعلي)',
+    args: [
+      { name: 'project_id', type: 'string', required: true, description: 'معرف المشروع' },
+    ],
+    handler: async (args) => {
+      return await projectTree(String(args.project_id))
+    },
+  },
+  {
+    name: 'project_financials',
+    description: 'جدول مالي لكل قطعة في مشروع: القيمة، المدفوع (العمود)، المتبقي، مجموع الأقساط المسجلة، الفرق بين العمود والسجل، ونسبة التحصيل',
+    args: [
+      { name: 'project_id', type: 'string', required: true, description: 'معرف المشروع' },
+    ],
+    handler: async (args) => {
+      return await projectFinancials(String(args.project_id))
+    },
+  },
+  {
+    name: 'installment_schedule',
+    description: 'جدولة التقسيط لقطعة: دفعات متبقية مقسمة على نوع التقسيط (شهري/ربع سنوي/نصف سنوي/سنوي) مع مبلغ الدفعة التالية',
+    args: [
+      { name: 'plot_id', type: 'string', required: true, description: 'معرف القطعة أو رقمها الظاهر للمستخدم مثل A-01' },
+      { name: 'project_id', type: 'string', description: 'اسم المشروع أو معرفه لتضييق البحث عند تكرار رقم القطعة' },
+    ],
+    handler: async (args) => {
+      return await installmentSchedule(String(args.plot_id), args.project_id ? String(args.project_id) : undefined)
+    },
+  },
+  {
+    name: 'review_my_work',
+    description: 'مراجعة تدقيقية ذاتية لأحدث ما نفّذه الوكيل: تقرأ آخر العمليات من سجل التدقيق للجلسة أو الفترة، وتتأكد من سلامة الروابط (منع البيانات اليتيمة)، وفروق عدّادات plot_count مع عدد القطع الفعلي، وفروق (مدفوع + متبقي) مع القيمة للقطع المبيعة/التقسيط، وتُرجع تقريراً منظماً بما تم وما تبقى أو يحتاج إصلاحاً — تُستدعى إلزامياً قبل إعلان إتمام أي مهمة كتابة متعددة الخطوات',
+    args: [
+      { name: 'session_id', type: 'string', required: false, description: 'معرف جلسة الوكيل (إن لم يُذكر يُراجع آخر 30 دقيقة)' },
+      { name: 'project_id', type: 'string', required: false, description: 'معرف المشروع للتركيز على سلامة هذا المشروع فقط' },
+      { name: 'minutes', type: 'number', required: false, description: 'نافذة الزمن بالدقائق لمراجعة آخر العمليات (افتراضي 30، أقصى 1440)' },
+    ],
+    handler: async (args) => {
+      return await reviewMyWork({
+        sessionId: args.session_id ? String(args.session_id) : undefined,
+        projectId: args.project_id ? String(args.project_id) : undefined,
+        minutes: args.minutes != null ? Number(args.minutes) : undefined,
+      })
+    },
+  },
+  {
+    name: 'buyer_summary',
+    description: 'ملخص لكل مشتري: عدد القطع، إجمالي القيمة، المدفوع، المتبقي — يمكن تضييقه باسم المشروع أو جزء من اسم المشتري، ويقرأ بيانات القطع المحلية مباشرة',
+    args: [
+      { name: 'project_id', type: 'string', description: 'اختياري: اسم المشروع أو معرفه للتصفية' },
+      { name: 'buyer_query', type: 'string', description: 'اختياري: جزء من اسم المشتري للتصفية' },
+    ],
+    handler: async (args) => {
+      return await buyerSummary(
+        args.buyer_query ? String(args.buyer_query) : undefined,
+        args.project_id ? String(args.project_id) : undefined,
+      )
+    },
+  },
+  {
+    name: 'payment_ledger',
+    description: 'دفتر الأقساط: كل دفعة مع رقم القطعة والبلوك والمشروع — يمكن التصفية بالمشروع/البلوك/القطعة/الوسيلة/الفترة',
+    args: [
+      { name: 'project_id', type: 'string', description: 'تصفية بمشروع' },
+      { name: 'block_id', type: 'string', description: 'تصفية ببلوك' },
+      { name: 'plot_id', type: 'string', description: 'تصفية بقطعة' },
+      { name: 'method', type: 'string', description: 'cash|bank' },
+      { name: 'from_date', type: 'string', description: 'من تاريخ (YYYY-MM-DD)' },
+      { name: 'to_date', type: 'string', description: 'إلى تاريخ (YYYY-MM-DD)' },
+      { name: 'limit', type: 'number', description: 'الحد الأقصى (افتراضي 2000)' },
+    ],
+    handler: async (args) => {
+      return await paymentLedger(args)
+    },
+  },
+  {
+    name: 'dashboard_kpis',
+    description: 'لوحة مؤشرات شاملة: عدد السجلات في كل كيان + القيم المالية الإجمالية للقطع والأقساط',
+    args: [],
+    handler: async () => {
+      return await dashboardKpis()
+    },
+  },
+  {
+    name: 'audit_log_query',
+    description: 'الاستعلام في سجل التدقيق (التغييرات): كل عملية إنشاء/تعديل/حذف/استيراد/تراجع جرت على البيانات، مع من نفّذها (وكيل/مستخدم/نظام/تراجع)، والأداة، والملخص — تُستخدم للمراجعة وتقييم الأداء وتتبع من غيّر ماذا ومتى',
+    args: [
+      { name: 'action', type: 'string', description: 'create|update|delete|import|restore' },
+      { name: 'scope', type: 'string', description: 'نطاق العملية: entity name (مثل projects/plots) أو workspace/workspace_table/workspace_row/attachment/custom_field_value' },
+      { name: 'scope_id', type: 'string', description: 'معرف العنصر المتأثر' },
+      { name: 'actor', type: 'string', description: 'من نفّذ: agent|user|system|undo' },
+      { name: 'session_id', type: 'string', description: 'جلسة الوكيل — لا تطلب من المستخدم؛ استخدم current_session بدلاً منها في الطلب الطبيعي' },
+      { name: 'current_session', type: 'boolean', description: 'اجعلها true عندما يطلب المستخدم عمليات «هذه الجلسة»؛ يحقن التطبيق معرف الجلسة محلياً' },
+      { name: 'tool', type: 'string', description: 'الأداة المنفّذة (create/update/workspace_import_rows...)' },
+      { name: 'from_date', type: 'number', description: 'من زمن (ميللي ثانية)' },
+      { name: 'to_date', type: 'number', description: 'إلى زمن (ميللي ثانية)' },
+      { name: 'search', type: 'string', description: 'بحث نصي في الملخص والنطاق والأداة' },
+      { name: 'limit', type: 'number', description: 'الحد الأقصى (افتراضي 200، أقصى 2000)' },
+      { name: 'offset', type: 'number', description: 'إزاحة الترقيم' },
+    ],
+    handler: async (args) => {
+      const q: Record<string, any> = {}
+      if (args.action) q.action = String(args.action)
+      if (args.scope) q.scope = String(args.scope)
+      if (args.scope_id) q.scopeId = String(args.scope_id)
+      if (args.actor) q.actor = String(args.actor)
+      if (args.session_id) q.sessionId = String(args.session_id)
+      if (args.tool) q.tool = String(args.tool)
+      if (args.from_date != null) q.fromDate = Number(args.from_date)
+      if (args.to_date != null) q.toDate = Number(args.to_date)
+      if (args.search) q.search = String(args.search)
+      if (args.limit != null) q.limit = Number(args.limit)
+      if (args.offset != null) q.offset = Number(args.offset)
+      const entries = await queryChangeLog(q as any)
+      return {
+        count: entries.length,
+        entries,
+        stats: await changeLogStats({ fromDate: q.fromDate, toDate: q.toDate }),
+        daily: await dailyActorStats(14),
+      }
+    },
+  },
+  {
+    name: 'audit_log_summary',
+    description: 'إحصائيات سجل التدقيق: عدد العمليات لكل نوع (إنشاء/تعديل/حذف/استيراد/تراجع) خلال فترة — لتقييم الأداء',
+    args: [
+      { name: 'from_date', type: 'number', description: 'من زمن (ميللي ثانية)' },
+      { name: 'to_date', type: 'number', description: 'إلى زمن (ميللي ثانية)' },
+    ],
+    handler: async (args) => {
+      const fromDate = args.from_date != null ? Number(args.from_date) : undefined
+      const toDate = args.to_date != null ? Number(args.to_date) : undefined
+      return {
+        stats: await changeLogStats({ fromDate, toDate }),
+        daily: await dailyActorStats(14),
+      }
+    },
+  },
+  {
+    name: 'search_everything',
+    description: 'بحث نصي شامل في بيانات التطبيق الأساسية (عقارات وعملاء وعروض ومشاريع وبلوكات وقطع وغيرها) — يعيد تصنيفات منفصلة لكل نوع',
+    args: [
+      { name: 'query', type: 'string', required: true, description: 'النص المراد البحث عنه' },
+    ],
+    handler: async (args) => {
+      return await searchEverything(String(args.query ?? ''))
+    },
+  },
+  {
+    name: 'custom_field_set',
+    description: 'تعيين قيمة حقل مخصص لكيان (مشروع/بلوك/قطعة) — إضافة أو تحديث',
+    args: [
+      { name: 'entity_type', type: 'string', required: true, description: 'project|block|plot' },
+      { name: 'entity_id', type: 'string', required: true, description: 'معرف الكيان' },
+      { name: 'field_id', type: 'string', required: true, description: 'معرف الحقل المخصص' },
+      { name: 'value', type: 'string', required: true, description: 'القيمة الجديدة' },
+    ],
+    handler: async (args) => {
+      await setCustomValue(
+        String(args.entity_type) as any,
+        String(args.entity_id),
+        String(args.field_id),
+        String(args.value ?? '')
+      )
+      return { ok: true }
+    },
+  },
+  {
+    name: 'list_workspaces',
+    description: 'قائمة مساحات العمل المرنة (مشاريع بجداول/أعمدة حرة) مع عدد الجداول والصفوف',
+    args: [],
+    handler: async () => listWorkspaces(),
+  },
+  {
+    name: 'workspace_get',
+    description: 'عرض مساحة عمل كاملة: جداولها وأعمدتها وصفوفها (include_rows: true يرسل كل الصفوف)',
+    args: [
+      { name: 'id', type: 'string', required: true, description: 'معرف مساحة العمل' },
+      { name: 'include_rows', type: 'boolean', description: 'افتراضي false — يعيد القصات مع العمود row_counts فقط' },
+    ],
+    handler: async (args) => getWorkspace(String(args.id), { includeRows: args.include_rows === true }),
+  },
+  {
+    name: 'workspace_create',
+    description: 'إنشاء مساحة عمل مرنة من الصفر (مشروع حر) بجداول وأعمدة مخصصة غير محدودة. مثال: {name:"مشروع النخبة", tables:[{name:"القطع", columns:["رقم القطعة","المساحة","السعر","الحالة"]},{name:"المبيعات", columns:["القطعة","المشتري"]}]}',
+    args: [
+      { name: 'name', type: 'string', required: true, description: 'اسم المشروع/مساحة العمل' },
+      { name: 'description', type: 'string', description: 'وصف مختصر' },
+      { name: 'tables', type: 'array', description: 'جداول أولية: [{name, columns: ["رأس"] أو [{label, key?, type?: text|number|date|boolean|select}]}]' },
+    ],
+    handler: async (args) => {
+      const name = String(args.name)
+      const existing = await listWorkspaces()
+      const dupWs = existing.find((w) => w.name.trim().toLowerCase() === name.trim().toLowerCase())
+      if (dupWs) return { id: dupWs.id, name, duplicate: true }
+      const id = await createWorkspace({ name, description: args.description ? String(args.description) : undefined })
+      if (Array.isArray(args.tables)) {
+        for (const t of args.tables) {
+          const cols = Array.isArray(t?.columns) ? t.columns : []
+          if (!t?.name) continue
+          const tableId = await createTable(id, String(t.name), cols as any)
+          void tableId
+        }
+      }
+      return { id, name }
+    },
+  },
+  {
+    name: 'workspace_update',
+    description: 'تحديث اسم/وصف مساحة عمل',
+    args: [
+      { name: 'id', type: 'string', required: true },
+      { name: 'name', type: 'string' },
+      { name: 'description', type: 'string' },
+    ],
+    handler: async (args) => {
+      await updateWorkspace(String(args.id), { name: args.name ? String(args.name) : undefined, description: args.description ? String(args.description) : undefined })
+      return { ok: true, id: String(args.id) }
+    },
+  },
+  {
+    name: 'workspace_delete',
+    description: 'حذف مساحة عمل كاملة بجداولها (يتطلب موافقة المستخدم قبل التنفيذ)',
+    args: [{ name: 'id', type: 'string', required: true }],
+    handler: async (args) => {
+      await deleteWorkspace(String(args.id))
+      return { ok: true, id: String(args.id) }
+    },
+  },
+  {
+    name: 'workspace_add_table',
+    description: 'إضافة جدول داخل مساحة عمل بإنشاء أعمدة مرنة',
+    args: [
+      { name: 'workspace_id', type: 'string', required: true },
+      { name: 'name', type: 'string', required: true, description: 'اسم الجدول' },
+      { name: 'columns', type: 'array', required: true, description: 'أسماء الأعمدة أو [{label, key, type}]' },
+    ],
+    handler: async (args) => {
+      const workspaceId = String(args.workspace_id)
+      const name = String(args.name)
+      const ws = await getWorkspace(workspaceId)
+      const dupTable = (ws?.tables ?? []).find((t: any) => t.name.trim().toLowerCase() === name.trim().toLowerCase())
+      if (dupTable) return { id: dupTable.id, workspace_id: workspaceId, duplicate: true }
+      const id = await createTable(workspaceId, name, args.columns as any)
+      return { id, workspace_id: workspaceId }
+    },
+  },
+  {
+    name: 'workspace_rename_table',
+    description: 'إعادة تسمية جدول',
+    args: [
+      { name: 'table_id', type: 'string', required: true },
+      { name: 'name', type: 'string', required: true },
+    ],
+    handler: async (args) => {
+      await renameTable(String(args.table_id), String(args.name))
+      return { ok: true }
+    },
+  },
+  {
+    name: 'workspace_delete_table',
+    description: 'حذف جدول بصفوفه (يتطلب موافقة المستخدم)',
+    args: [{ name: 'table_id', type: 'string', required: true }],
+    handler: async (args) => {
+      await deleteTable(String(args.table_id))
+      return { ok: true }
+    },
+  },
+  {
+    name: 'workspace_add_column',
+    description: 'إضافة عمود جديد لجدول',
+    args: [
+      { name: 'table_id', type: 'string', required: true },
+      { name: 'column', type: 'object', required: true, description: '{label, key?, type?}' },
+    ],
+    handler: async (args) => {
+      await addColumn(String(args.table_id), args.column as any)
+      return { ok: true }
+    },
+  },
+  {
+    name: 'workspace_rename_column',
+    description: 'إعادة تسمية عمود (المفتاح والملصق)',
+    args: [
+      { name: 'table_id', type: 'string', required: true },
+      { name: 'key', type: 'string', required: true, description: 'المفتاح الحالي' },
+      { name: 'new_key', type: 'string', description: 'المفتاح الجديد (إن تغيّر)' },
+      { name: 'new_label', type: 'string', description: 'الملصق الجديد' },
+    ],
+    handler: async (args) => {
+      await renameColumn(String(args.table_id), String(args.key), args.new_key ? String(args.new_key) : String(args.key), args.new_label ? String(args.new_label) : undefined)
+      return { ok: true }
+    },
+  },
+  {
+    name: 'workspace_remove_column',
+    description: 'حذف عمود وقيمه من كل الصفوف',
+    args: [
+      { name: 'table_id', type: 'string', required: true },
+      { name: 'key', type: 'string', required: true },
+    ],
+    handler: async (args) => {
+      await removeColumn(String(args.table_id), String(args.key))
+      return { ok: true }
+    },
+  },
+  {
+    name: 'workspace_add_row',
+    description: 'إضافة صف جديد بجدول (القيم مفاتيح الأعمدة)',
+    args: [
+      { name: 'table_id', type: 'string', required: true },
+      { name: 'row', type: 'object', required: true, description: '{column_key: value}' },
+    ],
+    handler: async (args) => {
+      const tableId = String(args.table_id)
+      const row = (args.row ?? {}) as Record<string, any>
+      // قبل الإضافة نتحقق مسبقاً إن كان الصف موجوداً بنفس القيم — نعلّم النتيجة
+      // صراحةً بأنه مكرر حتى يدرك الوكيل ذلك من الملاحظة ولا يعيد إدخاله.
+      const dupId = await findRowByValues(tableId, row)
+      if (dupId) return { id: dupId, table_id: tableId, skipped: 1, duplicate: true }
+      const id = await createRow(tableId, row)
+      return { id, table_id: tableId }
+    },
+  },
+  {
+    name: 'workspace_update_row',
+    description: 'تحديث قيم صف موجود',
+    args: [
+      { name: 'row_id', type: 'string', required: true },
+      { name: 'row', type: 'object', required: true },
+    ],
+    handler: async (args) => {
+      await updateRow(String(args.row_id), args.row as any)
+      return { ok: true }
+    },
+  },
+  {
+    name: 'workspace_delete_row',
+    description: 'حذف صف (يتطلب موافقة المستخدم)',
+    args: [{ name: 'row_id', type: 'string', required: true }],
+    handler: async (args) => {
+      await deleteRow(String(args.row_id))
+      return { ok: true }
+    },
+  },
+  {
+    name: 'workspace_import_rows',
+    description: 'استيراد دفعة صفوف لجدول: مصفوفة كائنات أو صفوف رأسية',
+    args: [
+      { name: 'table_id', type: 'string', required: true },
+      { name: 'rows', type: 'array', required: true, description: '[{key:value}, ...] أو [[v1,v2], ...]' },
+    ],
+    handler: async (args) => {
+      const res = await bulkInsertRows(String(args.table_id), (args.rows ?? []) as any)
+      return { inserted: res.inserted, skipped: res.skipped ?? 0, row_ids: res.rowIds }
+    },
+  },
+  {
+    name: 'workspace_add_columns',
+    description: 'إضافة عدة أعمدة دفعة واحدة لجدول',
+    args: [
+      { name: 'table_id', type: 'string', required: true },
+      { name: 'columns', type: 'array', required: true, description: '[{label, key?, type?}, ...] — type: text|number|date|boolean|options' },
+    ],
+    handler: async (args) => {
+      const cols = (args.columns ?? []) as any[]
+      for (const c of cols) await addColumn(String(args.table_id), c as any)
+      return { added: cols.length }
+    },
+  },
+  {
+    name: 'workspace_alter_column',
+    description: 'تعديل تعريف عمود: مفتاحه أو ملصقه أو نوعه (مع ترحيل قيم الصفوف تلقائياً)',
+    args: [
+      { name: 'table_id', type: 'string', required: true },
+      { name: 'key', type: 'string', required: true, description: 'مفتاح العمود الحالي' },
+      { name: 'new_key', type: 'string', description: 'المفتاح الجديد إن تغيّر' },
+      { name: 'new_label', type: 'string', description: 'الملصق الجديد' },
+      { name: 'type', type: 'string', description: 'النوع الجديد: text|number|date|boolean|options' },
+    ],
+    handler: async (args) => {
+      await setColumnMeta(String(args.table_id), String(args.key), {
+        new_key: args.new_key ? String(args.new_key) : undefined,
+        new_label: args.new_label ? String(args.new_label) : undefined,
+        type: args.type ? String(args.type) : undefined,
+      })
+      return { ok: true }
+    },
+  },
+  {
+    name: 'workspace_create_full_table',
+    description: 'إنشاء جدول متكامل دفعة واحدة: الاسم + الأعمدة + البيانات الأولية — الأسرع لبناء جداول كاملة',
+    args: [
+      { name: 'workspace_id', type: 'string', required: true },
+      { name: 'name', type: 'string', required: true, description: 'اسم الجدول' },
+      { name: 'columns', type: 'array', required: true, description: '[{label, key?, type?}, ...] أو ["الاسم", "الهاتف"]' },
+      { name: 'rows', type: 'array', description: '[{key:value}, ...] بيانات أولية اختيارية' },
+    ],
+    handler: async (args) => {
+      const res = await createFullTable(String(args.workspace_id), String(args.name), (args.columns ?? []) as any, (args.rows ?? undefined) as any)
+      return { table_id: res.tableId, inserted: res.inserted }
+    },
+  },
+  {
+    name: 'workspace_duplicate_table',
+    description: 'نسخ جدول كامل (هيكله وصفوفه) إلى جدول جديد بنفس المساحة',
+    args: [
+      { name: 'table_id', type: 'string', required: true },
+      { name: 'name', type: 'string', description: 'اسم الجدول الجديد (افتراضياً: الاسم + نسخة)' },
+    ],
+    handler: async (args) => {
+      return duplicateTable(String(args.table_id), args.name ? String(args.name) : undefined)
+    },
+  },
+  {
+    name: 'workspace_duplicate_workspace',
+    description: 'نسخ مساحة عمل كاملة بكل جداولها وصفوفها إلى مساحة جديدة',
+    args: [
+      { name: 'workspace_id', type: 'string', required: true },
+      { name: 'name', type: 'string', description: 'اسم المساحة الجديدة (افتراضياً: الاسم + نسخة)' },
+    ],
+    handler: async (args) => {
+      return duplicateWorkspace(String(args.workspace_id), args.name ? String(args.name) : undefined)
+    },
+  },
+  {
+    name: 'list_attachments',
+    description: 'قائمة الملفات المرفوعة في كل الجلسات (Excel/CSV/نصوص...) مع معرف الأصل وحالته إن كان مسجلاً في Asset Store.',
+    args: [],
+    handler: async () => listAttachments(),
+  },
+  {
+    name: 'inspect_asset',
+    description: 'فحص أصل محلي موحد قبل أي قراءة أو استيراد: يعيد kind وMIME والحجم والحالة والمشتقات والتحذيرات دون تحميل الملف كاملاً إلى سياق النموذج.',
+    args: [
+      { name: 'asset_id', type: 'string', description: 'معرف الأصل أو المرفق' },
+      { name: 'name', type: 'string', description: 'اسم الملف عند عدم توفر المعرف' },
+    ],
+    handler: async (args) => {
+      const assetId = args.asset_id ? String(args.asset_id) : ''
+      const asset = assetId ? await getAsset(assetId) : null
+      const fallback = !asset && args.name
+        ? (await listAssets()).find((candidate) => candidate.name === String(args.name).trim()) ?? null
+        : null
+      const target = asset ?? fallback
+      if (!target) return { ok: false, error: 'الأصل المطلوب غير موجود في Asset Store. استخدم list_attachments أولاً.' }
+      const ingestion = await runAssetIngestion(target.id, 'manifest')
+      const refreshed = await getAsset(target.id)
+      const derivatives = await listAssetDerivatives(target.id)
+      return {
+        ok: ingestion.status === 'completed',
+        asset: refreshed ?? target,
+        ingestion,
+        derivatives,
+        warnings: [
+          ...(target.state === 'failed' ? ['فشل أحد مسارات المعالجة؛ لا تعتبر الأصل جاهزاً للاستيراد.'] : []),
+          ...(target.state === 'stored' ? ['الأصل محفوظ محلياً ولم يكتمل التحليل الدلالي بعد.'] : []),
+        ],
+      }
+    },
+  },
+  {
+    name: 'read_uploaded_file',
+    description: 'معاينة ملف مرفوع من قِبل المستخدم (أوراق Excel/أول صفوف CSV/نص) لفهم محتواه وبنيته. استخدمها دائماً أولاً قبل استيراد أو التعامل مع أي ملف مرفوع، ثم قرر بناءً على المحتوى: إن كان جدولياً منظماً فاستخدم import_project_file، وإن كان عشوائياً أو مجرد معلومات فاستخرج ما تحتاجه منه وأجب مباشرة دون إنشاء مساحات عمل',
+    args: [{ name: 'name', type: 'string', required: true, description: 'اسم الملف المرفوع' }],
+    handler: async (args) => filePreview(String(args.name)),
+  },
+  {
+    name: 'import_project_file',
+    description: 'استيراد ملف مرفوع (Excel/CSV) جدولي منظم بوضوح (رؤوس أعمدة + صفوف) إلى مساحة عمل: كل ورقة تصبح جدولاً. لا تستخدمها إلا إذا أكدت عبر read_uploaded_file أن الملف بيانات جدولية منظمة فعلية — الملفات العشوائية/غير المنظمة لا تُستورد كمساحة عمل، بل يستخرج منها ما يلزم مباشرة',
+    args: [
+      { name: 'name', type: 'string', required: true, description: 'اسم الملف المرفوع' },
+      { name: 'workspace_name', type: 'string', description: 'اسم مساحة العمل (افتراضياً اسم الملف)' },
+      { name: 'max_rows_per_sheet', type: 'number', description: 'الحد الأقصى للصفوف لكل جدول' },
+    ],
+    handler: async (args) =>
+      importProjectFile(String(args.name), {
+        workspaceName: args.workspace_name ? String(args.workspace_name) : undefined,
+        maxRowsPerSheet: args.max_rows_per_sheet ? Number(args.max_rows_per_sheet) : undefined,
+      }),
+  },
+  {
+    name: 'remove_attachment',
+    description: 'حذف ملف مرفوع',
+    args: [{ name: 'name', type: 'string', required: true }],
+    handler: async (args) => ({
+      removed: await removeAttachment(String(args.name)),
+    }),
+  },
+  {
+    name: 'data_snapshot',
+    description: 'لقطة حقيقية لكل بيانات النظام مقروءة من قاعدة البيانات مباشرة: عدّادات الجداول، الإجماليات المالية (مجموع قيم القطع/المدفوع/المتبقي/مبالغ العروض/أسعار العقارات)، عدد مساحات العمل والجداول والصفوف، وآخر السجلات بأسمائها من كل كيان رئيسي (مشاريع، عقارات، عملاء، مساحات عمل). استخدمها قبل أي جواب يتضمن أرقاماً أو إحصاءات لتكون معلّقة على الواقع',
+    args: [],
+    handler: async () => {
+      const db = await getDB()
+      const count = async (table: string): Promise<number> => {
+        const r = await db.getFirstAsync<{ c: number }>(`SELECT COUNT(*) as c FROM ${table}`)
+        return r?.c ?? 0
+      }
+      const sum = async (table: string, column: string): Promise<number> => {
+        const r = await db.getFirstAsync<{ s: number | null }>(`SELECT SUM(${column}) as s FROM ${table}`)
+        return r?.s ?? 0
+      }
+      const recent = async (table: string, nameCol: string, limit = 5): Promise<string[]> => {
+        try {
+          const rows = await db.getAllAsync<{ name: string }>(`SELECT ${nameCol} as name FROM ${table} ORDER BY created_at DESC LIMIT ${limit}`)
+          return rows.map((r) => r.name).filter(Boolean)
+        } catch {
+          return []
+        }
+      }
+      return {
+        counts: {
+          properties: await count('properties'),
+          clients: await count('clients'),
+          offers: await count('offers'),
+          campaigns: await count('campaigns'),
+          viewings: await count('viewings'),
+          waypoints: await count('waypoints'),
+          areas: await count('areas'),
+          projects: await count('projects'),
+          blocks: await count('blocks'),
+          plots: await count('plots'),
+          plot_payments: await count('plot_payments'),
+          workspaces: await count('workspaces'),
+          workspace_tables: await count('workspace_tables'),
+          workspace_rows: await count('workspace_rows'),
+          change_log_entries: await count('change_log'),
+        },
+        financial_totals: {
+          plots_value: await sum('plots', 'value'),
+          plots_paid: await sum('plots', 'paid_amount'),
+          plots_remaining: await sum('plots', 'remaining_amount'),
+          plot_payments_received: await sum('plot_payments', 'amount'),
+          properties_price: await sum('properties', 'price'),
+          offers_amount: await sum('offers', 'amount'),
+        },
+        recent_records: {
+          projects: await recent('projects', 'name'),
+          properties: await recent('properties', 'name'),
+          clients: await recent('clients', 'name'),
+          workspaces: await recent('workspaces', 'name'),
+        },
+      }
+    },
+  },
+]
+
+export function validateToolArgs(tool: ToolDef, args: Record<string, any>): string | null {
+  const input = args ?? {}
+  for (const spec of tool.args) {
+    const value = input[spec.name]
+    const missing = value === undefined || value === null || (spec.type === 'string' && !String(value).trim())
+    if (missing && spec.required) return `الحقل الإلزامي مفقود: ${spec.name}`
+    if (missing) continue
+    const actual = Array.isArray(value) ? 'array' : typeof value
+    if (actual !== spec.type) return `نوع الحقل غير صحيح: ${spec.name} — المتوقع ${spec.type}، الوارد ${actual}`
+  }
+  return null
+}
+
+export async function executeTool(
+  name: string,
+  args: Record<string, any>
+): Promise<{ ok: true; result: any } | { ok: false; error: string }> {
+  const tool = TOOLS.find((t) => t.name === name)
+  if (!tool) {
+    const available = TOOLS.map((t) => t.name).join(', ')
+    return { ok: false, error: `أداة غير معروفة: ${name}. المتاح: ${available}` }
+  }
+  const validationError = validateToolArgs(tool, args ?? {})
+  if (validationError) return { ok: false, error: `[TOOL_INPUT_INVALID] ${validationError}` }
+  try {
+    const result = await tool.handler(args ?? {})
+    return { ok: true, result }
+  } catch (e: any) {
+    return { ok: false, error: e?.message ?? String(e) }
+  }
+}
+
+export function toolNames(): string[] {
+  return TOOLS.map((t) => t.name)
+}
+
+export function getTool(name: string): ToolDef | undefined {
+  return TOOLS.find((t) => t.name === name)
+}
+
+export function getEntityMeta(entity: string) {
+  return getEntityDef(entity) ?? null
+}
