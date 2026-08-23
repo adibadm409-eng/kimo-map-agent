@@ -55,6 +55,7 @@ __all__ = [
     "ChatResult",
     "FunctionDef",
     "ToolCall",
+    "ToolResult",
     "parse_tool_args",
     "ToolDef",
     "ToolArg",
