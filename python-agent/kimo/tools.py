@@ -261,6 +261,7 @@ class Registry:
         if not tool:
             return ToolResult(ok=False, error="unknown_tool", observation=f"[فشل التحقق قبل التنفيذ] الأداة غير معروفة: {call.name}.")
         args = parse_tool_args(call.arguments)
+        args = coerce_args(tool, args)
         issues = validate_args(tool, args)
         if issues:
             detail = " ".join(i.message for i in issues)
