@@ -94,6 +94,49 @@ async def main() -> int:
     assert obs and "غير معروفة" in (obs[0].detail or ""), "unknown tool must be blocked"
     print("Scenario C OK — unknown tool blocked")
 
+    # Scenario D: malformed tool args -> the loop repairs and retries (resilience).
+    events_d: list[EngineEvent] = []
+    script_d = [
+        ChatResult(content=None, tool_calls=[tc("execute", '{"tool": "greet", "args": {}}')]),  # missing required "name"
+        ChatResult(content=None, tool_calls=[tc("execute", '{"tool": "greet", "args": {"name": "علي"}}')]),  # valid
+        ChatResult(content="تم الترحيب بعلي.", tool_calls=[]),
+    ]
+    engine4 = AgentEngine(settings, client=ScriptedClient(script_d))
+    engine4.on_event(events_d.append)
+
+    def greet(args, ctx):
+        return ToolResult(ok=True, data={"name": args.get("name")}, observation=f"مرحباً {args.get('name')}")
+
+    engine4.registry.register_handler(
+        "greet", "أداة ترحيب للاختبار.", [ToolArg("name", "string", required=True)], greet
+    )
+    s4 = await engine4.create_session("اختبار د")
+    await engine4.send_user_message(s4.id, "رحّب بعلي")
+    assert any(e.type == "recovery" for e in events_d), "expected a repair/recovery event"
+    assert any(e.type == "text" for e in events_d), "expected final answer after repair"
+    print("Scenario D OK — malformed args repaired")
+
+    # Scenario E: parallel tool calls execute concurrently.
+    events_e: list[EngineEvent] = []
+    script_e = [
+        ChatResult(
+            content=None,
+            tool_calls=[
+                tc("current_local_time", "{}", id="c1"),
+                tc("echo", '{"value": "hi"}', id="c2"),
+            ],
+        ),
+        ChatResult(content="أنجزت.", tool_calls=[]),
+    ]
+    engine5 = AgentEngine(settings, client=ScriptedClient(script_e))
+    engine5.on_event(events_e.append)
+    s5 = await engine5.create_session("اختبار ه")
+    await engine5.send_user_message(s5.id, "نفّذ أداتين معاً")
+    obs_e = [e for e in events_e if e.type == "observation"]
+    assert len(obs_e) >= 2, "expected two tool observations from parallel execution"
+    assert any(e.type == "text" for e in events_e)
+    print("Scenario E OK — parallel tool execution")
+
     print("\nALL SMOKE TESTS PASSED")
     return 0
 
