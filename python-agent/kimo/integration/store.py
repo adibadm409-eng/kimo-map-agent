@@ -231,7 +231,7 @@ class SqliteStore:
         known = {k: v for k, v in data.items() if k in whitelist}
         extra = {k: v for k, v in data.items() if k not in whitelist and k not in ("id",)}
         now = str(int(time.time() * 1000))
-        cols = ["id", "sys_created_at", "sys_updated_at", "extra"] + list(known.keys())
+        cols = ["id", "sys_created_at", "sys_updated_at", "sys_extra"] + list(known.keys())
         vals = [record_id, now, now, json.dumps(extra, ensure_ascii=False)] + [known[k] for k in known.keys()]
         placeholders = ", ".join("?" * len(cols))
         col_sql = ", ".join(f'"{c}"' for c in cols)
