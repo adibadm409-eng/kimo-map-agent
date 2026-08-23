@@ -93,12 +93,12 @@ async def main() -> int:
     assert routed in SKILLS, routed
 
     # 12) read cache: repeats served, and invalidated by writes
-    before = (await call(reg, "query", '{"entity":"clients"}'))["data"]["total"]
+    before = (await call(reg, "query", '{"entity":"clients"}')).data["total"]
     _ = await call(reg, "query", '{"entity":"clients"}')  # warm cache
-    same = (await call(reg, "query", '{"entity":"clients"}'))["data"]["total"]
+    same = (await call(reg, "query", '{"entity":"clients"}')).data["total"]
     assert same == before, "cache must return consistent read"
     await call(reg, "mutate_record", '{"entity":"clients","action":"create","data":{"name":"جديد"}}')
-    after = (await call(reg, "query", '{"entity":"clients"}'))["data"]["total"]
+    after = (await call(reg, "query", '{"entity":"clients"}')).data["total"]
     assert after == before + 1, "write must invalidate read cache"
 
     print("INTEGRATION_OK: all 12 checks passed")
