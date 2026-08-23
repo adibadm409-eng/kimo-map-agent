@@ -134,3 +134,67 @@ async def dashboard_kpis(store: SqliteStore) -> dict[str, Any]:
         "projects": projects, "blocks": blocks, "plots": plots,
         "payments": payments, "total_collected": total_paid,
     }
+
+
+async def record_payment(
+    store: SqliteStore, plot_ref: str, amount: float, method: str = "تحويل", pay_date: str = ""
+) -> dict[str, Any]:
+    """Record a plot payment and recompute ``paid_amount`` atomically.
+
+    Mirrors the old ``ledger_record_payment`` tool: one write, then a derived
+    recompute so the plot's cached ``paid_amount`` always matches its ledger.
+    """
+    plot = store.get("plots", plot_ref)
+    if not plot:
+        raise ValueError(f"القطعة غير موجودة: {plot_ref}")
+    created = store.create("plot_payments", {
+        "plot_id": plot_ref, "amount": amount, "method": method, "pay_date": pay_date or "today",
+    })
+    payments = store.query(QuerySpec(entity="plot_payments", filters=[{"field": "plot_id", "op": "eq", "value": plot_ref}], limit=10000))["rows"]
+    total = sum(_num(p.get("amount")) for p in payments)
+    store.update("plots", plot_ref, {"paid_amount": total})
+    value = _num(plot.get("value"))
+    return {
+        "payment_id": created["id"],
+        "plot_id": plot_ref,
+        "paid_amount": total,
+        "remaining": max(0.0, value - total),
+        "value": value,
+    }
+
+
+async def project_integrity_check(store: SqliteStore, project_ref: str) -> dict[str, Any]:
+    """Referential + financial integrity report for a project.
+
+    Catches the failure classes the old ``project_integrity_check`` did:
+    orphan blocks/plots/payments, and ``paid_amount`` drift from the ledger.
+    """
+    tree = await project_tree(store, project_ref)
+    issues: list[dict[str, Any]] = []
+    plots = [p for b in tree["blocks"] for p in b["plots"]]
+
+    for b in tree["blocks"]:
+        if b.get("project_id") != project_ref:
+            issues.append({"severity": "high", "kind": "orphan_block", "ref": b["id"], "detail": "بلوك بلا مشروع أب."})
+    for p in plots:
+        if not p.get("block_id") or p.get("block_id") not in {b["id"] for b in tree["blocks"]}:
+            issues.append({"severity": "high", "kind": "orphan_plot", "ref": p["id"], "detail": "قطعة بلا بلوك أب."})
+        summed = sum(_num(pm.get("amount")) for pm in p.get("payments", []))
+        if abs(_num(p.get("paid_amount")) - summed) > 0.01:
+            issues.append({"severity": "medium", "kind": "paid_mismatch", "ref": p["id"],
+                           "detail": f"paid_amount={p.get('paid_amount')} لكن مجموع الدفاتير={summed}."})
+        if _num(p.get("value")) <= 0:
+            issues.append({"severity": "low", "kind": "zero_value", "ref": p["id"], "detail": "قيمة القطعة صفر أو سالبة."})
+        for pm in p.get("payments", []):
+            if not pm.get("plot_id") or pm.get("plot_id") != p["id"]:
+                issues.append({"severity": "high", "kind": "orphan_payment", "ref": pm["id"], "detail": "دفعة بلا قطعة أب."})
+            if _num(pm.get("amount")) <= 0:
+                issues.append({"severity": "medium", "kind": "nonpositive_payment", "ref": pm["id"], "detail": "مبلغ دفعة غير موجب."})
+
+    return {
+        "project_ref": project_ref,
+        "checked_plots": len(plots),
+        "checked_payments": sum(len(p.get("payments", [])) for p in plots),
+        "issues": issues,
+        "ok": len(issues) == 0,
+    }
