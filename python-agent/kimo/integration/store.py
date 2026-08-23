@@ -139,7 +139,7 @@ class SqliteStore:
             order_sql = f' ORDER BY "{spec.sort["field"]}" {direction}'
 
         base = f'FROM "{entity.table}" e{extra_join}'
-        total = self._q(f"SELECT COUNT(*) AS c {base}{where_sql}")[0]["c"]
+        total = self._q(f"SELECT COUNT(*) AS c {base}{where_sql}", params)[0]["c"]
         rows = self._q(
             f'SELECT e.*{extra_select} {base}{where_sql}{order_sql} LIMIT ? OFFSET ?',
             params + [spec.limit, spec.offset],
