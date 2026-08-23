@@ -243,14 +243,14 @@ class SqliteStore:
     def update(self, entity_key: str, record_id: str, data: dict[str, Any]) -> dict[str, Any]:
         entity = self._entity(entity_key)
         whitelist = _col_whitelist(entity)
-        existing = self._q(f'SELECT extra FROM "{entity.table}" WHERE id = ?', (record_id,))
+        existing = self._q(f'SELECT sys_extra FROM "{entity.table}" WHERE id = ?', (record_id,))
         if not existing:
             raise ValueError("السجل المطلوب غير موجود؛ لم تتم أي كتابة.")
         known = {k: v for k, v in data.items() if k in whitelist}
-        extra = json.loads(existing[0].get("extra") or "{}")
+        extra = json.loads(existing[0].get("sys_extra") or "{}")
         extra.update({k: v for k, v in data.items() if k not in whitelist and k not in ("id",)})
         now = str(int(time.time() * 1000))
-        sets = [f'"{k}" = ?' for k in known] + ['"sys_updated_at" = ?', '"extra" = ?']
+        sets = [f'"{k}" = ?' for k in known] + ['"sys_updated_at" = ?', '"sys_extra" = ?']
         params = list(known.values()) + [now, json.dumps(extra, ensure_ascii=False), record_id]
         self.conn.execute(f'UPDATE "{entity.table}" SET {", ".join(sets)} WHERE id = ?', params)
         self._log("update", entity_key, record_id, "agent")
