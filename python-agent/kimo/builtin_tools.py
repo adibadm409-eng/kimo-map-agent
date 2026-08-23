@@ -89,7 +89,7 @@ def register_builtins(registry: Registry) -> None:
         "execute",
         "غلاف موحّد لتشغيل أداة داخلية: { tool: <الاسم>, args: <الوسائط> }.",
         [
-            ToolArg(name="tool", type="string", description="اسم الأداة الداخلية", type_ := "string"),
+            ToolArg(name="tool", type="string", description="اسم الأداة الداخلية"),
             ToolArg(name="args", type="object", description="وسائط الأداة الداخلية", required=True),
         ],
         _execute,
