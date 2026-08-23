@@ -158,5 +158,14 @@ class EngineEvent:
     content: Optional[str] = None
     done: bool = False
     detail: Optional[str] = None
-    **_extra: Any
+    message: Optional[str] = None
+    label: Optional[str] = None
+    phase: Optional[str] = None
+    status: Optional[str] = None
+    strategy: Optional[str] = None
+    skill: Any = None
+    plan: Any = None
+    title: Optional[str] = None
+    outcome: Any = None
+    payload: dict[str, Any] = field(default_factory=dict)
 
