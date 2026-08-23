@@ -18,7 +18,7 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from kimo.config_store import load_settings, save_settings, providers_catalog
-from kimo.config import AgentSettings
+from kimo.config import AgentSettings, default_provider
 from kimo.llm import ChatClient, chat_with_retry
 from kimo.types import ChatMessage
 
