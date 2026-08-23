@@ -55,6 +55,13 @@ class SqliteStore:
     def close(self) -> None:
         self.conn.close()
 
+    def _whitelist(self, entity: EntityDef) -> set[str]:
+        cached = self._whitelist_cache.get(entity.key)
+        if cached is None:
+            cached = _col_whitelist(entity)
+            self._whitelist_cache[entity.key] = cached
+        return cached
+
     # --- schema --------------------------------------------------------------
 
     def bootstrap(self) -> None:
