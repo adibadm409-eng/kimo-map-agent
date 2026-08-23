@@ -45,6 +45,7 @@ class SqliteStore:
     def __init__(self, db_path: str = ":memory:", seed: bool = True):
         self.conn = sqlite3.connect(db_path)
         self.conn.row_factory = sqlite3.Row
+        self._whitelist_cache: dict[str, set[str]] = {}
         if seed:
             self.bootstrap()
 
