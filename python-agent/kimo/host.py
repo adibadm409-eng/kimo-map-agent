@@ -61,7 +61,7 @@ def make_mock_client() -> ChatClient:
     It emits one tool call to ``dashboard_kpis`` then a final answer, proving
     the engine + backend are wired end-to-end without a real provider.
     """
-    from .types import ChatMessage
+    from .types import ChatResult, ToolCall
 
     class _Mock(ChatClient):
         def __init__(self) -> None:
@@ -83,17 +83,10 @@ def make_mock_client() -> ChatClient:
         ):
             self._turn += 1
             if self._turn == 1:
-                return {
-                    "role": "assistant",
-                    "content": None,
-                    "tool_calls": [
-                        {"id": "c1", "name": "dashboard_kpis", "arguments": "{}"}
-                    ],
-                }
-            return {
-                "role": "assistant",
-                "content": "تم استعراض مؤشرات لوحة التحكم بنجاح.",
-                "tool_calls": [],
-            }
+                return ChatResult(
+                    content=None,
+                    tool_calls=[ToolCall(id="c1", name="dashboard_kpis", arguments="{}")],
+                )
+            return ChatResult(content="تم استعراض مؤشرات لوحة التحكم بنجاح.", tool_calls=[])
 
     return _Mock()
