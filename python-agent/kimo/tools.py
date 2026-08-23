@@ -107,10 +107,47 @@ class Issue:
     message: str
 
 
+def coerce_args(tool: ToolDef, args: Any) -> Any:
+    """Best-effort coercion so small model slips don't fail validation.
+
+    * fills defaults for missing optional args;
+    * parses ``"123"`` -> 123 / ``"true"`` -> True when the schema expects a
+      number / integer / boolean;
+    * keeps arrays/objects untouched.
+    """
+    if not isinstance(args, dict):
+        return args
+    out = dict(args)
+    for arg in tool.args:
+        present = arg.name in out
+        value = out.get(arg.name, None)
+        if not present:
+            if arg.default is not None:
+                out[arg.name] = arg.default
+            continue
+        if value is None:
+            if arg.default is not None:
+                out[arg.name] = arg.default
+            continue
+        if arg.type in ("number", "integer") and isinstance(value, str):
+            try:
+                out[arg.name] = int(value) if arg.type == "integer" else float(value)
+            except ValueError:
+                pass
+        elif arg.type == "boolean" and isinstance(value, str):
+            if value.lower() in ("true", "1", "yes"):
+                out[arg.name] = True
+            elif value.lower() in ("false", "0", "no", ""):
+                out[arg.name] = False
+    return out
+
+
 def validate_args(tool: ToolDef, args: Any) -> list[Issue]:
     """Validate a decoded argument value against a tool definition."""
     if not isinstance(args, dict):
         return [Issue(f"الأداة «{tool.name}» تتوقع كائناً للوسائط، استلمت {type(args).__name__}.")]
+
+    args = coerce_args(tool, args)
 
     if not tool.args:
         return []
@@ -127,7 +164,7 @@ def validate_args(tool: ToolDef, args: Any) -> list[Issue]:
             continue
         if arg.type != "any" and not _matches_type(value, arg.type):
             issues.append(
-                Issue(f"الوسيطة «{arg.name}» من النوع {arg.type} but استلمت {type(value).__name__}.")
+                Issue(f"الوسيطة «{arg.name}» من النوع {arg.type} لكن استلمت {type(value).__name__}.")
             )
             continue
         if arg.enum is not None and value not in arg.enum:
