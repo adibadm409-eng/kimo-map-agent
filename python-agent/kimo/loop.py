@@ -18,12 +18,13 @@ with the same guardrails as the original engine:
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 import time
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, Optional
 
-from .config import AgentSettings, ModelProfile, ProviderDef, resolve_profile
+from .config import AgentSettings, ModelProfile, ProviderDef, WireFamily, default_provider, resolve_profile
 from .intent import analyze_intent, build_context_summary
 from .llm import ChatClient, chat_with_retry
 from .prompts import build_system_prompt
