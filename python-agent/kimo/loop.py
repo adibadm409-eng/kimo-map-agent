@@ -323,8 +323,16 @@ async def run_loop(
                     phase = "verify" if (skill and inner_tool in skill.verification_tools) else ("ask" if inner_tool in ("ask_user", "request_confirmation") else "execute")
                     emit(EngineEvent(type="phase", phase=phase, label="أنفذ الآن" if phase == "execute" else ("أراجع النتيجة" if phase == "verify" else "أحتاج قرارك")))
 
+                # Route the (possibly enveloped) call to its effective tool.
+                effective_args = inner_args0 if call.name != "execute" else (outer.get("args") if (call.name == "execute" and isinstance(inner_args0, dict)) else {})
+                effective_call = ToolCall(
+                    id=call.id,
+                    name=inner_tool,
+                    arguments=json.dumps(effective_args if isinstance(effective_args, dict) else {}, ensure_ascii=False),
+                )
+
                 # execute the tool
-                tool_result = await registry.execute(call, ctx)
+                tool_result = await registry.execute(effective_call, ctx)
                 obs_text = tool_result.to_observation()
 
                 # evidence tracking
