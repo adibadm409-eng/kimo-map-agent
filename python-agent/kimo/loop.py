@@ -305,7 +305,7 @@ async def run_loop(
                         arguments=json.dumps(inner_args or {}, ensure_ascii=False),
                     )
                     issues = registry.validate(inner_call, profile.supports_parallel_tools)
-                    if not isinstance(outer, dict) or not inner_args or issues:
+                    if not isinstance(outer, dict) or inner_args is None or issues:
                         detail = (
                             "execute يحتاج args ككائن JSON."
                             if not inner_args
