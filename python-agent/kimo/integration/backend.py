@@ -40,6 +40,78 @@ def _fail(msg: str) -> dict:
     return {"ok": False, "error": msg}
 
 
+class _ReadCache:
+    """LRU cache for read-only tool results, invalidated on any write.
+
+    The old engine *blocked* repeated calls (wasting a model turn); this cache
+    instead *serves* identical repeated reads instantly — a strict efficiency
+    win for the read-before-write pattern — while staying safe because every
+    write tool call clears it.
+    """
+
+    def __init__(self, max_size: int = 256) -> None:
+        self._max = max(0, max_size)
+        self._store: dict[str, Any] = {}
+        self._order: list[str] = []
+        import inspect
+        self._inspect = inspect
+
+    def _key(self, name: str, args: dict) -> str:
+        return name + ":" + json.dumps(args, sort_keys=True, ensure_ascii=False)
+
+    def get(self, name: str, args: dict) -> Any:
+        k = self._key(name, args)
+        if k in self._store:
+            self._order.remove(k)
+            self._order.append(k)
+            return self._store[k]
+        return None
+
+    def put(self, name: str, args: dict, value: Any) -> None:
+        if self._max == 0:
+            return
+        k = self._key(name, args)
+        if k in self._store:
+            self._order.remove(k)
+        elif len(self._store) >= self._max:
+            old = self._order.pop(0)
+            self._store.pop(old, None)
+        self._store[k] = value
+        self._order.append(k)
+
+    def invalidate(self) -> None:
+        self._store.clear()
+        self._order.clear()
+
+
+def _wrap_with_cache(reg: Registry, cache: _ReadCache) -> None:
+    import inspect
+    for name in list(reg._tools.keys()):
+        tool = reg._tools[name]
+
+        async def _cached(args, ctx, _h=tool.handler, _ro=tool.read_only, _n=name):
+            if _ro:
+                hit = cache.get(_n, args)
+                if hit is not None:
+                    return hit
+                result = _h(args, ctx)
+                if inspect.isawaitable(result):
+                    result = await result
+                cache.put(_n, args, result)
+                return result
+            cache.invalidate()
+            result = _h(args, ctx)
+            if inspect.isawaitable(result):
+                result = await result
+            return result
+
+        reg.register(tool.__class__(
+            name=tool.name, description=tool.description, args=tool.args,
+            handler=_cached, read_only=tool.read_only, category=tool.category,
+            verification=tool.verification,
+        ))
+
+
 def build_integration_registry(store: SqliteStore) -> Registry:
     reg = Registry()
 
