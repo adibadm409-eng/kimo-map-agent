@@ -281,4 +281,7 @@ def build_integration_registry(store: SqliteStore, max_cache: int = 256) -> Regi
         [], h_kpis, read_only=True, category="projects",
     )
 
+    if max_cache:
+        _wrap_with_cache(reg, _ReadCache(max_cache))
+
     return reg
