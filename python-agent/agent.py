@@ -37,7 +37,7 @@ async def _run(db_path: str, mock: bool) -> int:
     session = await engine.create_session(title="محادثة كيمو")
 
     def _on_event(e: EngineEvent) -> None:
-        if e.type in ("stream", "text", "token"):
+        if e.type in ("text", "token"):
             sys.stdout.write(e.content or "")
             sys.stdout.flush()
         elif e.type == "observation":
