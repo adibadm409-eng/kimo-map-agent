@@ -37,14 +37,13 @@ async def _run(db_path: str, mock: bool) -> int:
     session = await engine.create_session(title="محادثة كيمو")
 
     def _on_event(e: EngineEvent) -> None:
-        if e.type == "token":
+        if e.type in ("stream", "text", "token"):
             sys.stdout.write(e.content or "")
             sys.stdout.flush()
-        elif e.type == "tool_call":
-            print(f"\n[أداة] {e.name}({e.arguments})")
-        elif e.type == "tool_result":
-            ok = "✓" if e.ok else "✗"
-            print(f"  {ok} نتيجة: {(e.observation or '')[:160]}")
+        elif e.type == "observation":
+            status = "✓" if getattr(e, "status", None) == "success" else "•"
+            detail = getattr(e, "detail", "") or ""
+            print(f"\n  {status} {getattr(e, 'title', '')}: {detail[:160]}")
         elif e.type == "error":
             print(f"\n[خطأ] {e.message}", file=sys.stderr)
         elif e.type == "done":
