@@ -1,26 +1,28 @@
 """LLM wiring: provider chat client + retry/backoff (mirrors ``assistant/llm.ts``).
 
-The client speaks the OpenAI chat-completions wire format with tool calling,
-which is also what Gemini/DeepSeek/Mistral/OpenAI-compatible endpoints accept.
-Anthropic is normalised to the same shape by the ``anthropic`` adapter.
-
-Network calls use the standard library only (``urllib``) so the package has
-**zero hard dependencies** and runs anywhere Python 3.9+ runs. For higher
-throughput, swap :class:`HttpChatClient` for an ``httpx``-backed one — the
-interface is identical.
+Design goals: **reliability + speed**.
+* Speaks the OpenAI tool-calling wire format, which Gemini/DeepSeek/Mistral/
+  Alibaba/OpenRouter/NVIDIA all accept (Anthropic is normalised to it).
+* Uses a pluggable *transport*: the default ``UrllibTransport`` needs only the
+  standard library (zero dependencies), while ``HttpxTransport`` (used
+  automatically when ``httpx`` is installed) gives connection pooling and true
+  concurrent requests for much higher throughput.
+* Captures provider-specific metadata (e.g. Gemini thought signatures) so the
+  loop can preserve them across turns.
 """
 
 from __future__ import annotations
 
 import asyncio
 import json
+import re
 import time
 import urllib.request
 import urllib.error
 from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
-from .config import ProviderDef
+from .config import ProviderDef, resolve_profile, WireFamily
 from .types import ChatMessage, ChatResult, FunctionDef, ToolCall, parse_tool_args
 
 DEFAULT_RETRY_DELAYS = (3, 5, 10, 30)
@@ -35,7 +37,7 @@ class LlmError(Exception):
 
 
 def _classify_error(status: int, body: str) -> str:
-    if status == 401 or status == 403:
+    if status in (401, 403):
         return "auth"
     if status == 400 or status == 422:
         return "invalid_request"
@@ -50,16 +52,76 @@ def _classify_error(status: int, body: str) -> str:
     return "unknown"
 
 
-class ChatClient:
-    """Minimal async chat client speaking the OpenAI tool-calling protocol."""
+# --- transport abstraction --------------------------------------------------
 
-    def __init__(self, timeout: float = 120.0):
+
+class BaseTransport:
+    async def request(self, method: str, url: str, headers: dict, body: bytes, timeout: float) -> tuple[int, str]:
+        raise NotImplementedError
+
+
+class UrllibTransport(BaseTransport):
+    """Standard-library transport (no extra dependencies)."""
+
+    async def request(self, method: str, url: str, headers: dict, body: bytes, timeout: float) -> tuple[int, str]:
+        def _do() -> tuple[int, str]:
+            req = urllib.request.Request(url, data=body or None, headers=headers, method=method)
+            try:
+                with urllib.request.urlopen(req, timeout=timeout) as resp:
+                    return resp.status, resp.read().decode("utf-8", "replace")
+            except urllib.error.HTTPError as e:
+                return e.code, e.read().decode("utf-8", "replace")
+            except urllib.error.URLError as e:
+                raise LlmError(f"network error: {e.reason}", kind="network")
+
+        status, text = await asyncio.to_thread(_do)
+        if status >= 400:
+            raise LlmError(f"{status}: {text[:500]}", kind=_classify_error(status, text), status=status)
+        return status, text
+
+
+class HttpxTransport(BaseTransport):
+    """High-throughput transport with connection pooling (requires ``httpx``)."""
+
+    def __init__(self) -> None:
+        import httpx  # lazy import so the package works without it
+
+        self._client = httpx.AsyncClient(timeout=httpx.Timeout(120.0))
+
+    async def request(self, method: str, url: str, headers: dict, body: bytes, timeout: float) -> tuple[int, str]:
+        try:
+            resp = await self._client.request(method, url, headers=headers, content=body, timeout=timeout)
+            text = resp.text
+            if resp.status_code >= 400:
+                raise LlmError(f"{resp.status_code}: {text[:500]}", kind=_classify_error(resp.status_code, text), status=resp.status_code)
+            return resp.status_code, text
+        except LlmError:
+            raise
+        except Exception as e:  # httpx network errors
+            raise LlmError(f"network error: {e}", kind="network")
+
+
+def _default_transport() -> BaseTransport:
+    try:
+        return HttpxTransport()
+    except Exception:
+        return UrllibTransport()
+
+
+# --- client -----------------------------------------------------------------
+
+
+class ChatClient:
+    """Async chat client speaking the OpenAI tool-calling protocol."""
+
+    def __init__(self, timeout: float = 120.0, transport: Optional[BaseTransport] = None):
         self.timeout = timeout
+        self.transport = transport or _default_transport()
 
     async def chat(
         self,
         provider: ProviderDef,
-        *,  # noqa: D401
+        *,
         base_url: str,
         api_key: str,
         model: str,
@@ -70,39 +132,24 @@ class ChatClient:
         on_delta: Optional[Callable[[ChatResult], None]] = None,
         signal: Any = None,
     ) -> ChatResult:
-        payload = self._build_payload(provider, model, messages, functions, max_tokens, temperature)
+        profile = resolve_profile(provider, model)
+        payload = self._build_payload(provider, profile, model, messages, functions, max_tokens, temperature)
         headers = self._headers(provider, api_key)
         url = self._endpoint(provider, base_url)
-
-        def _request() -> dict[str, Any]:
-            data = json.dumps(payload).encode("utf-8")
-            req = urllib.request.Request(url, data=data, headers=headers, method="POST")
-            try:
-                with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-                    return json.loads(resp.read().decode("utf-8"))
-            except urllib.error.HTTPError as e:  # pragma: no cover - network
-                body = e.read().decode("utf-8", "replace")
-                raise LlmError(
-                    f"{e.code} {e.reason}: {body[:500]}",
-                    kind=_classify_error(e.code, body),
-                    status=e.code,
-                )
-            except urllib.error.URLError as e:  # pragma: no cover - network
-                raise LlmError(f"network error: {e.reason}", kind="network")
-
-        raw = await asyncio.to_thread(_request)
-        return self._parse_response(raw, on_delta)
+        body = json.dumps(payload).encode("utf-8")
+        _, raw_text = await self.transport.request("POST", url, headers, body, self.timeout)
+        return self._parse_response(json.loads(raw_text), on_delta)
 
     # --- wire formatting -----------------------------------------------------
 
     def _endpoint(self, provider: ProviderDef, base_url: str) -> str:
         base = (base_url or provider.base_url).rstrip("/")
-        if provider.wire_family.value == "anthropic":
+        if provider.wire_family == WireFamily.ANTHROPIC:
             return f"{base}/messages"
         return f"{base}/chat/completions"
 
     def _headers(self, provider: ProviderDef, api_key: str) -> dict[str, str]:
-        if provider.wire_family.value == "anthropic":
+        if provider.wire_family == WireFamily.ANTHROPIC:
             return {
                 "x-api-key": api_key or "",
                 "anthropic-version": "2023-06-01",
@@ -128,6 +175,7 @@ class ChatClient:
                             "id": tc.id,
                             "type": "function",
                             "function": {"name": tc.name, "arguments": tc.arguments},
+                            **({"provider": tc.extra.get("provider")} if tc.extra.get("provider") else {}),
                         }
                         for tc in m.tool_calls
                     ]
@@ -146,6 +194,7 @@ class ChatClient:
     def _build_payload(
         self,
         provider: ProviderDef,
+        profile: Any,
         model: str,
         messages: list[ChatMessage],
         functions: list[FunctionDef],
@@ -153,9 +202,10 @@ class ChatClient:
         temperature: float,
     ) -> dict[str, Any]:
         wire_messages = self._messages_to_wire(messages)
+        tokens_field = getattr(profile, "max_tokens_field", "max_tokens")
         if functions:
             tools = [f.to_wire() for f in functions]
-            if provider.wire_family.value == "anthropic":
+            if provider.wire_family == WireFamily.ANTHROPIC:
                 return {
                     "model": model,
                     "max_tokens": max_tokens,
@@ -169,10 +219,10 @@ class ChatClient:
                 "messages": wire_messages,
                 "tools": tools,
                 "tool_choice": "auto",
-                "max_tokens": max_tokens,
+                tokens_field: max_tokens,
                 "temperature": temperature,
             }
-        if provider.wire_family.value == "anthropic":
+        if provider.wire_family == WireFamily.ANTHROPIC:
             return {
                 "model": model,
                 "max_tokens": max_tokens,
@@ -183,7 +233,7 @@ class ChatClient:
         return {
             "model": model,
             "messages": wire_messages,
-            "max_tokens": max_tokens,
+            tokens_field: max_tokens,
             "temperature": temperature,
         }
 
@@ -194,7 +244,7 @@ class ChatClient:
     def _parse_response(
         self, raw: dict[str, Any], on_delta: Optional[Callable[[ChatResult], None]] = None
     ) -> ChatResult:
-        # Normalize Anthropic → OpenAI shape.
+        # Normalize Anthropic -> OpenAI shape.
         if "content" in raw and isinstance(raw.get("content"), list) and "choices" not in raw:
             text_parts = []
             tool_calls = []
@@ -203,11 +253,15 @@ class ChatClient:
                 if t == "text":
                     text_parts.append(block.get("text", ""))
                 elif t == "tool_use":
+                    extra = {}
+                    if block.get("provider"):
+                        extra["provider"] = block["provider"]
                     tool_calls.append(
                         ToolCall(
                             id=block.get("id", f"call_{len(tool_calls)}"),
                             name=block.get("name", ""),
                             arguments=json.dumps(block.get("input", {}), ensure_ascii=False),
+                            extra=extra,
                         )
                     )
             return ChatResult(content="".join(text_parts) or None, tool_calls=tool_calls, raw=raw)
@@ -218,11 +272,15 @@ class ChatClient:
         tool_calls = []
         for tc in message.get("tool_calls", []) or []:
             fn = tc.get("function", {})
+            extra = {}
+            if tc.get("provider"):
+                extra["provider"] = tc["provider"]
             tool_calls.append(
                 ToolCall(
                     id=tc.get("id", f"call_{len(tool_calls)}"),
                     name=fn.get("name", ""),
                     arguments=fn.get("arguments", "{}"),
+                    extra=extra,
                 )
             )
         if on_delta:
@@ -240,15 +298,15 @@ async def chat_with_retry(
     messages: list[ChatMessage],
     functions: list[FunctionDef],
     max_tokens: int = 4000,
+    temperature: float = 0.2,
     on_delta: Optional[Callable[[ChatResult], None]] = None,
     signal: Any = None,
     retry_delays: tuple[int, ...] = DEFAULT_RETRY_DELAYS,
 ) -> ChatResult:
     """Call the model with exponential backoff over transient failures.
 
-    Mirrors ``chatWithRetry``: retries network/timeout/rate-limit/server errors
-    with the given delays, then raises :class:`LlmError`. Auth and
-    invalid-request errors are raised immediately (no point retrying).
+    Auth/invalid-request errors are raised immediately (no point retrying);
+    network/timeout/rate-limit/server errors are retried with the given delays.
     """
     last_err: Optional[LlmError] = None
     for attempt, delay in enumerate(retry_delays):
@@ -261,6 +319,7 @@ async def chat_with_retry(
                 messages=messages,
                 functions=functions,
                 max_tokens=max_tokens,
+                temperature=temperature,
                 on_delta=on_delta,
                 signal=signal,
             )
@@ -272,5 +331,4 @@ async def chat_with_retry(
             if signal is not None and getattr(signal, "cancelled", False):
                 raise
             await asyncio.sleep(delay)
-    # Should be unreachable; satisfy type checkers.
     raise last_err or LlmError("unknown chat failure")
