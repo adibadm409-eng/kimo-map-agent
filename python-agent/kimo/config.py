@@ -118,8 +118,24 @@ def default_provider(provider_id: str) -> ProviderDef:
 
 def provider_label(provider_id: str, custom_name: Optional[str] = None) -> str:
     if provider_id.startswith("custom:"):
-        return custom_name or "مزود مخصص"
+        return _BUILTINS.get(provider_id[7:], _BUILTINS["openai"]).name
     return _BUILTINS.get(provider_id, _BUILTINS["openai"]).name
+
+
+def list_providers() -> list[dict[str, Any]]:
+    """Public catalogue for UIs (mirrors the RN provider picker)."""
+    out = []
+    for pid, p in _BUILTINS.items():
+        out.append({
+            "id": pid,
+            "name": p.name,
+            "color": p.color,
+            "base_url": p.base_url,
+            "default_models": list(p.default_models),
+            "models_kind": p.models_kind,
+            "hint": p.hint,
+        })
+    return out
 
 
 # --- model capabilities (mirrors providerCapabilities) -----------------------
