@@ -361,7 +361,18 @@ async def _execute_one(
     return inner_tool, tool_result, tool_result.to_observation()
 
 
+def _is_unknown_tool(registry: Registry, call: ToolCall) -> bool:
+    name = call.name
+    if name == "execute":
+        try:
+            name = str(parse_tool_args(call.arguments).get("tool", "execute"))
+        except Exception:
+            return True
+    return registry.get(name) is None
+
+
 def _schema_hint(registry: Registry, calls: list[ToolCall]) -> str:
+    lines = []
     for call in calls:
         name = call.name
         if name == "execute":
