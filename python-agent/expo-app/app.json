@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "وكيل كيمو",
+    "slug": "kimo-agent",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": ["android", "ios"],
+    "android": { "package": "com.kimo.agent" },
+    "ios": { "bundleIdentifier": "com.kimo.agent" },
+    "scheme": "kimoagent",
+    "userInterfaceStyle": "dark"
+  }
+}
