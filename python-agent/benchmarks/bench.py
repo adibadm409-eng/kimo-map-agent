@@ -208,6 +208,9 @@ async def main() -> int:
             print(f"     urllib (صفري الاعتمادية، متسلسل): {_fmt(http['urllib_seq_s'])}")
         if http.get("httpx_pooled_s") is not None:
             print(f"     httpx (تجميع اتصالات)          : {_fmt(http['httpx_pooled_s'])}")
+        else:
+            print("     * httpx اختياري: لم يُثبَّت (pip install httpx) — يوفّر تجميع اتصالات")
+            print("       ويقلل زمن الطلبات المتكررة للنماذج البعيدة بدرجة كبيرة.")
         print()
 
     print("-" * 74)
