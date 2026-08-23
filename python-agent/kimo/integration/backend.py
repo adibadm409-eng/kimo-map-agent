@@ -125,7 +125,7 @@ def build_integration_registry(store: SqliteStore) -> Registry:
         h_mutate, read_only=False, category="data",
     )
 
-    def h_tree(args, ctx):
+    async def h_tree(args, ctx):
         return _ok(await project_tree(store, args["project_ref"]))
 
     reg.register_handler(
@@ -134,7 +134,7 @@ def build_integration_registry(store: SqliteStore) -> Registry:
         h_tree, read_only=True, category="projects",
     )
 
-    def h_fin(args, ctx):
+    async def h_fin(args, ctx):
         return _ok(await project_financials(store, args["project_ref"]))
 
     reg.register_handler(
@@ -143,7 +143,7 @@ def build_integration_registry(store: SqliteStore) -> Registry:
         h_fin, read_only=True, category="projects",
     )
 
-    def h_inst(args, ctx):
+    async def h_inst(args, ctx):
         return _ok(await installment_schedule(store, args["plot_ref"]))
 
     reg.register_handler(
@@ -152,7 +152,7 @@ def build_integration_registry(store: SqliteStore) -> Registry:
         h_inst, read_only=True, category="projects",
     )
 
-    def h_buyer(args, ctx):
+    async def h_buyer(args, ctx):
         return _ok(await buyer_summary(store, args["client_ref"]))
 
     reg.register_handler(
@@ -161,7 +161,7 @@ def build_integration_registry(store: SqliteStore) -> Registry:
         h_buyer, read_only=True, category="projects",
     )
 
-    def h_ledger(args, ctx):
+    async def h_ledger(args, ctx):
         return _ok(await payment_ledger(store, args["entity_type"], args["entity_ref"]))
 
     reg.register_handler(
@@ -173,7 +173,7 @@ def build_integration_registry(store: SqliteStore) -> Registry:
         h_ledger, read_only=True, category="projects",
     )
 
-    def h_kpis(args, ctx):
+    async def h_kpis(args, ctx):
         return _ok(await dashboard_kpis(store))
 
     reg.register_handler(
