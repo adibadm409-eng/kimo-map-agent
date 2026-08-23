@@ -24,6 +24,14 @@ class Message:
     tool_calls: list[Any] = field(default_factory=list)
     created_at: int = field(default_factory=lambda: int(time.time() * 1000))
 
+    @property
+    def text(self) -> str:
+        if self.content is None:
+            return ""
+        if isinstance(self.content, str):
+            return self.content
+        return str(self.content)
+
 
 @dataclass
 class SessionMeta:
