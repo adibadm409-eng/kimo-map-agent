@@ -12,6 +12,7 @@ import os
 from typing import Optional
 
 from .config import AgentSettings, default_provider
+from .config_store import resolve_settings
 from .engine import AgentEngine
 from .integration.backend import build_integration_registry
 from .integration.store import SqliteStore
@@ -29,7 +30,7 @@ def build_agent(
     The old TS engine (``reference/engine-preview``) is fully superseded: the
     model now talks to the new Python engine wired to ``SqliteStore``.
     """
-    settings = settings or _settings_from_env()
+    settings = settings or resolve_settings()
     engine = AgentEngine(settings, include_builtins=False)
     db = store or SqliteStore(db_path)
     int_reg = build_integration_registry(db)
