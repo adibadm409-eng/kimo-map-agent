@@ -195,7 +195,9 @@ class SqliteStore:
         return row
 
     def _unpack_extra(self, row: dict[str, Any]) -> None:
-        extra = row.pop("extra", None)
+        extra = row.pop("sys_extra", None)
+        row.pop("sys_created_at", None)
+        row.pop("sys_updated_at", None)
         if extra:
             try:
                 row.update(json.loads(extra))
@@ -229,7 +231,7 @@ class SqliteStore:
         known = {k: v for k, v in data.items() if k in whitelist}
         extra = {k: v for k, v in data.items() if k not in whitelist and k not in ("id",)}
         now = str(int(time.time() * 1000))
-        cols = ["id", "created_at", "updated_at", "extra"] + list(known.keys())
+        cols = ["id", "sys_created_at", "sys_updated_at", "extra"] + list(known.keys())
         vals = [record_id, now, now, json.dumps(extra, ensure_ascii=False)] + [known[k] for k in known.keys()]
         placeholders = ", ".join("?" * len(cols))
         col_sql = ", ".join(f'"{c}"' for c in cols)
@@ -248,7 +250,7 @@ class SqliteStore:
         extra = json.loads(existing[0].get("extra") or "{}")
         extra.update({k: v for k, v in data.items() if k not in whitelist and k not in ("id",)})
         now = str(int(time.time() * 1000))
-        sets = [f'"{k}" = ?' for k in known] + ['"updated_at" = ?', '"extra" = ?']
+        sets = [f'"{k}" = ?' for k in known] + ['"sys_updated_at" = ?', '"extra" = ?']
         params = list(known.values()) + [now, json.dumps(extra, ensure_ascii=False), record_id]
         self.conn.execute(f'UPDATE "{entity.table}" SET {", ".join(sets)} WHERE id = ?', params)
         self._log("update", entity_key, record_id, "agent")
