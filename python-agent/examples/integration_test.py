@@ -77,7 +77,22 @@ async def main() -> int:
     res = await call(reg, "get", '{"entity":"nope","id":"x"}')
     assert not res.ok, "should reject unknown entity"
 
-    print("INTEGRATION_OK: all 8 checks passed")
+    # 9) record_payment records + recomputes paid_amount atomically
+    res = await call(reg, "record_payment", f'{{"plot_ref":"{plot_id}","amount":25000}}')
+    assert res.ok and res.data["paid_amount"] == 25000 + 60000, res.observation
+    assert res.data["remaining"] == 15000, res.observation
+
+    # 10) project_integrity_check passes on a coherent project
+    res = await call(reg, "project_integrity_check", f'{{"project_ref":"{pid}"}}')
+    assert res.ok and res.data["ok"] is True, res.observation
+
+    # 11) skill catalog parity (12 skills, routing works)
+    from kimo.skills import SKILLS, assess_skill
+    assert len(SKILLS) == 12, f"expected 12 skills, got {len(SKILLS)}"
+    routed = assess_skill("سجّل دفعة على القطعة").skill.id
+    assert routed in SKILLS, routed
+
+    print("INTEGRATION_OK: all 11 checks passed")
     return 0
 
 

@@ -145,7 +145,7 @@ def build_integration_registry(store: SqliteStore) -> Registry:
         h_fin, read_only=True, category="projects",
     )
 
-    def h_integrity(args, ctx):
+    async def h_integrity(args, ctx):
         return _ok(await project_integrity_check(store, args["project_ref"]))
 
     reg.register_handler(
@@ -154,7 +154,7 @@ def build_integration_registry(store: SqliteStore) -> Registry:
         h_integrity, read_only=True, category="projects", verification=True,
     )
 
-    def h_record(args, ctx):
+    async def h_record(args, ctx):
         return _ok(await record_payment(
             store, args["plot_ref"], float(args["amount"]),
             method=args.get("method", "تحويل"), pay_date=args.get("pay_date", ""),
