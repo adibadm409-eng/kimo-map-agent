@@ -369,3 +369,11 @@
 - **ترتيب الأولوية في اللوحة**: المشاريع ← [فاصل] ← التقارير/الأدوات/النسخ ← [فاصل]
   ← إشراف Kimo/المشاهدات/التذكيرات/الحملات ← [فاصل] ← الإعدادات/حقوق الملكية.
 - **التحقق**: `tsc` (0) + `eslint App.tsx` (0) + الفحوصات الثلاثة PASS.
+
+## 2026-08-19 — تنظيف مساحة تيرمكس (~13G)
+- حذف proot-distro كامل (Debian containers 4.4G + Ubuntu rootfs 1.5G + dlcache 144M) — آخر استخدام مايو 2026، معزول عن العمل.
+- حذف metasploit-framework (240M، مهجور منذ 2022).
+- حذف ملفات بناء 384 فقط: `embedding-app/node_modules` (742M) + `~/node_modules` (156M)؛ أُبقي model.safetensors و memory/ و .git.
+- حذف كاشات npm (~/.npm _cacache+_npx 3.65G)، node-gyp/pnpm/pip/prisma (~1.08G)، ومؤقتات usr/tmp (~380M).
+- المحفوظ: ذاكرة opencode (opencode.db 572M)، usr/tmp/opencode، ~/.config/opencode، matcher بـ opencode 1.17.7.
+- النتيجة: 23G متاح → 36G (85%).
