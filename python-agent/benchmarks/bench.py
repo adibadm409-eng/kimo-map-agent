@@ -157,6 +157,7 @@ async def main() -> int:
     print("=" * 74)
 
     store = SqliteStore(":memory:", seed=False)
+    store.bootstrap()
     counts = seed_realistic(store, projects=3, blocks_per_project=6, plots_per_block=80, payments_per_plot=2)
     pid = store.query(QuerySpec(entity="projects", limit=1))["rows"][0]["id"]
     print(f"مجموعة البيانات: {counts['projects']} مشاريع، {counts['blocks']} بلوك، "
