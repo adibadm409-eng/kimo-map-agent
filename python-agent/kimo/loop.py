@@ -226,7 +226,7 @@ async def run_loop(
 
             # Batch validation before execution.
             if result.tool_calls:
-                issues = registry.validate_batch(result.tool_calls, profile.supports_parallel_tools)
+                issues = _turn_issues(registry, result.tool_calls)
                 if issues:
                     detail = " ".join(i.message for i in issues)
                     # Unknown tools can never be repaired by the model -> block now.
