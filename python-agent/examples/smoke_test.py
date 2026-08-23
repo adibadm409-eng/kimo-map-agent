@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from kimo.engine import AgentEngine
 from kimo.config import AgentSettings
 from kimo.llm import ChatClient, ChatResult, ToolCall
+from kimo.tools import ToolArg, ToolResult
 from kimo.types import EngineEvent
 
 
