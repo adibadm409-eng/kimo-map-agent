@@ -148,3 +148,15 @@ class ToolResult:
             except (TypeError, ValueError):
                 return str(self.data)
         return f"[فشل] {self.error or 'unknown error'}"
+
+
+@dataclass
+class EngineEvent:
+    """Event emitted during a run (mirrors ``assistant/runtimeEvents.ts``)."""
+
+    type: str  # thinking | stream | text | progress | error | phase | skill | plan | observation | decision | recovery | done
+    content: Optional[str] = None
+    done: bool = False
+    detail: Optional[str] = None
+    **_extra: Any
+
