@@ -4,7 +4,7 @@ performance harness. Kept separate from the production code path.
 
 from __future__ import annotations
 
-from .store import SqliteStore
+from kimo.integration.store import SqliteStore
 
 
 def seed_realistic(store: SqliteStore, *, projects: int = 3, blocks_per_project: int = 6, plots_per_block: int = 100, payments_per_plot: int = 2) -> dict:
