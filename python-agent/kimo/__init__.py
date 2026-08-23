@@ -64,7 +64,7 @@ __all__ = [
     "Message",
     "SessionStore",
     "MemorySessionStore",
-    "Skill",
+    "AgentSkill",
     "assess_skill",
     "plan_for_skill",
     "run_loop",
