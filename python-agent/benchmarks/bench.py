@@ -118,17 +118,17 @@ async def _sequential_sessions(reg: Registry, sessions: int) -> None:
 
 async def _http_transport() -> dict:
     out: dict = {}
+    n = 30
+    url = "https://httpbin.org/get"
     try:
         from kimo.llm import HttpxTransport, UrllibTransport
     except Exception:
         return out
-    n = 30
-    url = "https://httpbin.org/get"
     try:
         tr = UrllibTransport()
         t0 = _t()
         for _ in range(n):
-            asyncio.run(tr.request("GET", url, {}, b"", 5))
+            await tr.request("GET", url, {}, b"", 5)
         out["urllib_seq_s"] = _t() - t0
     except Exception:
         out["urllib_seq_s"] = None
