@@ -96,6 +96,7 @@ class ToolCall:
     id: str
     name: str
     arguments: str  # JSON string
+    extra: dict[str, Any] = field(default_factory=dict)  # provider-specific metadata
 
     def parsed_args(self) -> Any:
         return parse_tool_args(self.arguments)
