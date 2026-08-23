@@ -136,13 +136,39 @@ def build_integration_registry(store: SqliteStore) -> Registry:
         h_tree, read_only=True, category="projects",
     )
 
-    async def h_fin(args, ctx):
+    async     def h_fin(args, ctx):
         return _ok(await project_financials(store, args["project_ref"]))
 
     reg.register_handler(
         "project_financials", "ملخّص مالي للمشروع (قيم، محصّل، متبقّي).",
         [ToolArg("project_ref", "string", "معرّف المشروع.", required=True)],
         h_fin, read_only=True, category="projects",
+    )
+
+    def h_integrity(args, ctx):
+        return _ok(await project_integrity_check(store, args["project_ref"]))
+
+    reg.register_handler(
+        "project_integrity_check", "تقرير سلامة المشروع: روابط مفقودة وفروقات مالية.",
+        [ToolArg("project_ref", "string", "معرّف المشروع.", required=True)],
+        h_integrity, read_only=True, category="projects", verification=True,
+    )
+
+    def h_record(args, ctx):
+        return _ok(await record_payment(
+            store, args["plot_ref"], float(args["amount"]),
+            method=args.get("method", "تحويل"), pay_date=args.get("pay_date", ""),
+        ))
+
+    reg.register_handler(
+        "record_payment", "تسجيل دفعة على قطعة وإعادة حساب المحصّل تلقائياً.",
+        [
+            ToolArg("plot_ref", "string", "معرّف القطعة.", required=True),
+            ToolArg("amount", "number", "المبلغ.", required=True),
+            ToolArg("method", "string", "طريقة الدفع."),
+            ToolArg("pay_date", "string", "تاريخ الدفع (YYYY-MM-DD)."),
+        ],
+        h_record, read_only=False, category="projects",
     )
 
     async def h_inst(args, ctx):
