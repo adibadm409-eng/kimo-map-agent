@@ -71,7 +71,7 @@ async def main() -> int:
 
     # 7) dashboard kpis
     res = await call(reg, "dashboard_kpis", "{}")
-    assert res.ok and res.data["data"]["projects"] == 1, res.observation
+    assert res.ok and res.data["projects"] == 1, res.observation
 
     # 8) validation guard: unknown entity is rejected before execution
     res = await call(reg, "get", '{"entity":"nope","id":"x"}')
