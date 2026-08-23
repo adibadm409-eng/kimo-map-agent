@@ -229,23 +229,26 @@ async def run_loop(
                 issues = registry.validate_batch(result.tool_calls, profile.supports_parallel_tools)
                 if issues:
                     detail = " ".join(i.message for i in issues)
-                    if tool_repairs < MAX_TOOL_REPAIRS:
-                        tool_repairs += 1
-                        schema_hint = _schema_hint(registry, result.tool_calls)
-                        repair = (
-                            f"[تصحيح أدوات] بعض النداءات غير صالحة: {detail}. "
-                            f"صحّح الوسائط لتطابق المخطط التالي ثم أعد النداء:\n{schema_hint}"
-                        )
-                        thread.append(ChatMessage(role="user", content=repair))
+                    # Unknown tools can never be repaired by the model -> block now.
+                    unknown = any(_is_unknown_tool(registry, call) for call in result.tool_calls)
+                    if unknown or tool_repairs >= MAX_TOOL_REPAIRS:
+                        for call in result.tool_calls:
+                            obs = f"[فشل التحقق قبل التنفيذ] {detail}"
+                            await _persist_tool_result(persist, session_id, call, ToolResult(ok=False, error="tool_validation", observation=obs))
+                            thread.append(ChatMessage(role="tool", tool_call_id=call.id, name=call.name, content=obs, tool_error=True))
                         if emit_events:
-                            emit(EngineEvent(type="recovery", title="أعيد الطلب للنموذج لتصحيح الأدوات", detail=detail, strategy="retry"))
+                            emit(EngineEvent(type="observation", title="حُجبت أداة قبل التنفيذ", detail=detail, status="error"))
                         continue
-                    for call in result.tool_calls:
-                        obs = f"[فشل التحقق قبل التنفيذ] {detail}"
-                        await _persist_tool_result(persist, session_id, call, ToolResult(ok=False, error="tool_validation", observation=obs))
-                        thread.append(ChatMessage(role="tool", tool_call_id=call.id, name=call.name, content=obs, tool_error=True))
+                    # Known tools with malformed args -> let the model self-repair.
+                    tool_repairs += 1
+                    schema_hint = _schema_hint(registry, result.tool_calls)
+                    repair = (
+                        f"[تصحيح أدوات] بعض النداءات غير صالحة: {detail}. "
+                        f"صحّح الوسائط لتطابق المخطط التالي ثم أعد النداء:\n{schema_hint}"
+                    )
+                    thread.append(ChatMessage(role="user", content=repair))
                     if emit_events:
-                        emit(EngineEvent(type="observation", title="حُجبت أداة قبل التنفيذ", detail=detail, status="error"))
+                        emit(EngineEvent(type="recovery", title="أعيد الطلب للنموذج لتصحيح الأدوات", detail=detail, strategy="retry"))
                     continue
 
             if not result.tool_calls:
