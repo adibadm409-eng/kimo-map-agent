@@ -64,11 +64,9 @@ class SqliteStore:
             )"""
         )
         for entity in ALL_ENTITIES:
-            cols = ["id TEXT PRIMARY KEY", "created_at TEXT", "updated_at TEXT", "extra TEXT"]
-            for fld in entity.fields:
-                if fld.name == "id":
-                    continue
-                cols.append(f"{fld.name} {_sql_type(fld)}")
+            cols = ["id TEXT PRIMARY KEY", "sys_created_at TEXT", "sys_updated_at TEXT", "sys_extra TEXT"]
+            import sqlite3 as _sq
+            cur.execute(f'CREATE TABLE IF NOT EXISTS "{entity.table}" ({", ".join(cols)})')
             cur.execute(f'CREATE TABLE IF NOT EXISTS "{entity.table}" ({", ".join(cols)})')
         # custom fields
         cur.execute(
