@@ -40,7 +40,7 @@ from .types import (
 )
 from .tools import ToolDef, ToolArg, Registry, ToolBackend
 from .session import Message, SessionStore, MemorySessionStore
-from .skills import Skill, assess_skill, plan_for_skill
+from .skills import AgentSkill, assess_skill, plan_for_skill
 from .loop import run_loop
 
 __all__ = [
