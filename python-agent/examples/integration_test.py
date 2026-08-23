@@ -27,7 +27,7 @@ def seed(store: SqliteStore) -> str:
 
 
 async def call(reg, name, args):
-    return await reg.execute(ToolCall(name=name, arguments=parse_tool_args(args)), ctx=None)
+    return await reg.execute(ToolCall(name=name, arguments=args), ctx=None)
 
 
 async def main() -> int:
