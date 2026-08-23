@@ -67,7 +67,20 @@ def make_mock_client() -> ChatClient:
         def __init__(self) -> None:
             self._turn = 0
 
-        async def chat(self, messages, tools, conn):  # type: ignore[override]
+        async def chat(  # type: ignore[override]
+            self,
+            provider,
+            *,
+            base_url: str,
+            api_key: str,
+            model: str,
+            messages: list,
+            functions: list,
+            max_tokens: int,
+            temperature: float,
+            on_delta=None,
+            signal=None,
+        ):
             self._turn += 1
             if self._turn == 1:
                 return {
