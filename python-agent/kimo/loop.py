@@ -291,17 +291,52 @@ async def run_loop(
 
             # --- execute tool calls (parallel when supported) ----------------
             calls = result.tool_calls
-            if profile.supports_parallel_tools and len(calls) > 1:
+            collected_client_calls: list[dict] = []
+
+            # وضع العميل (إكسبو غو): المحرك يطلب الأدوات وينفّذها التطبيق.
+            if client_mode and client_results is None:
+                for call in calls:
+                    total_calls += 1
+                    if total_calls > settings.max_tool_calls:
+                        await _fail(emit, persist, session_id, f"أوقفت التنفيذ الوقائي بعد {settings.max_tool_calls} استدعاء أداة.")
+                        return
+                    collected_client_calls.append(
+                        {"id": call.id, "name": call.name, "arguments": call.arguments}
+                    )
+                if collected_client_calls:
+                    raise PauseForClient(collected_client_calls)
+                continue
+
+            if client_results is not None:
+                # النتائج أتت من التطبيق: نثبّتها ونكمل (قد تطلب جولة أدوات تالية).
+                outcomes = []
+                for call in calls:
+                    total_calls += 1
+                    if total_calls > settings.max_tool_calls:
+                        await _fail(emit, persist, session_id, f"أوقفت التنفيذ الوقائي بعد {settings.max_tool_calls} استدعاء أداة.")
+                        return
+                    cres = client_results.get(call.id)
+                    if cres is None:
+                        outcomes.append(await _execute_one(call, registry, ctx, conn, profile))
+                        continue
+                    tr = ToolResult(
+                        ok=bool(cres.get("ok", False)),
+                        observation=str(cres.get("observation", "")),
+                        error=cres.get("error"),
+                    )
+                    outcomes.append((str(cres.get("name", call.name)), tr, tr.to_observation()))
+            elif profile.supports_parallel_tools and len(calls) > 1:
                 outcomes = await asyncio.gather(*[_execute_one(call, registry, ctx, conn, profile) for call in calls])
             else:
                 outcomes = [await _execute_one(call, registry, ctx, conn, profile) for call in calls]
 
             paused = False
             for call, (inner_tool, tool_result, obs_text) in zip(calls, outcomes):
-                total_calls += 1
-                if total_calls > settings.max_tool_calls:
-                    await _fail(emit, persist, session_id, f"أوقفت التنفيذ الوقائي بعد {settings.max_tool_calls} استدعاء أداة.")
-                    return
+                if client_results is None:
+                    total_calls += 1
+                    if total_calls > settings.max_tool_calls:
+                        await _fail(emit, persist, session_id, f"أوقفت التنفيذ الوقائي بعد {settings.max_tool_calls} استدعاء أداة.")
+                        return
 
                 sig = tool_sig(call)
                 call_counts[sig] = call_counts.get(sig, 0) + 1
