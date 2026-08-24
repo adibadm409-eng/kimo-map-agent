@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
