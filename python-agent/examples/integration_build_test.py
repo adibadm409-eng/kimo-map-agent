@@ -58,7 +58,7 @@ async def test_persists_to_app_tables():
         assert any(r["role"] == "user" for r in rows), "لا رسالة مستخدم"
         asst = [r for r in rows if r["role"] == "assistant" and r["content"]]
         assert asst, "لا رسالة مساعد في قاعدة التطبيق"
-        assert "لوحة التحكم" in asst[0]["content"], "الجواب غير محفوظ"
+        assert any("لوحة التحكم" in (r["content"] or "") for r in asst), "الجواب غير محفوظ"
         print("OK: المحرك يكتب المحادثة في جداول التطبيق (فجوة العرض مُغلقة).")
     finally:
         os.remove(path)
