@@ -1,0 +1,14 @@
+Starting project at /data/data/com.termux/files/home/my-app/python-agent/expo-app
+● Validation Warning:
+
+  Unknown option "watcher.unstable_lazySha1" with value true was found.
+  This is probably a typing mistake. Fixing it will remove this message.
+
+● Validation Warning:
+
+  Unknown option "watcher.unstable_autoSaveCache" with value {"debounceMs": 5000, "enabled": true} was found.
+  This is probably a typing mistake. Fixing it will remove this message.
+
+Starting Metro Bundler
+Waiting on http://localhost:8081
+Logs for your project will appear below.

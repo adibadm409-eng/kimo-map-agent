@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "مدير العقارات",
+    "slug": "realestate-app",
+    "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "scheme": "realestate",
+    "plugins": [
+      "expo-audio",
+      "expo-contacts",
+      "./plugins/androidOptimize"
+    ],
+    "android": {
+      "package": "com.realestate.app",
+      "softwareKeyboardLayoutMode": "resize",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon-adaptive-white-bg.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "POST_NOTIFICATIONS",
+        "READ_CONTACTS"
+      ]
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Allow $(PRODUCT_NAME) to use your location while the app is open.",
+        "NSCameraUsageDescription": "This app needs camera access to scan property documents."
+      },
+      "bundleIdentifier": "com.realestate.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
