@@ -648,13 +648,15 @@ async function runGuarded(sessionId: string, conn: ConnConfig, emitEvents = true
 /** إرسال رسالة مستخدم وتشغيل حلقة الوكيل. */
 export async function sendUserMessage(sessionId: string, text: string, opts?: SendOptions): Promise<void> {
   if (isAgentBusy(sessionId)) return
-  let conn: ConnConfig
-  try {
-    conn = await withConfig(async (c) => c)
-  } catch (e: any) {
-    await persistAssistantText(sessionId, e?.message ?? 'إعداد ناقص', 'error')
-    emitForSession(sessionId, { type: 'error', message: e?.message ?? 'إعداد ناقص' })
-    return
+  let conn: ConnConfig | null = null
+  if (!KIMO_ENGINE_ENABLED) {
+    try {
+      conn = await withConfig(async (c) => c)
+    } catch (e: any) {
+      await persistAssistantText(sessionId, e?.message ?? 'إعداد ناقص', 'error')
+      emitForSession(sessionId, { type: 'error', message: e?.message ?? 'إعداد ناقص' })
+      return
+    }
   }
 
   let content = text.trim()
