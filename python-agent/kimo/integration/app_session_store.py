@@ -124,6 +124,9 @@ class AppSessionStore(SessionStore):
                 {"id": tc.id, "name": tc.name, "arguments": tc.arguments}
                 for tc in message.tool_calls
             ]
+        content = message.content
+        if not isinstance(content, str):
+            content = json.dumps(content, ensure_ascii=False) if content is not None else None
         self.conn.execute(
             "INSERT INTO agent_messages (id, session_id, role, kind, content, meta, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
             (
@@ -131,7 +134,7 @@ class AppSessionStore(SessionStore):
                 message.session_id,
                 message.role,
                 message.kind,
-                message.content if isinstance(message.content, str) else json.dumps(message.content, ensure_ascii=False),
+                content,
                 json.dumps(meta, ensure_ascii=False),
                 message.created_at,
             ),
