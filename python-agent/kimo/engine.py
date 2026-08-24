@@ -198,7 +198,7 @@ class AgentEngine:
     async def last_assistant_text(self, session_id: str) -> str:
         msgs = await self.store.get_messages(session_id)
         for m in reversed(msgs):
-            if m.role == "assistant" and (m.k.a if False else (m.kind == "text" or m.kind is None)) and m.content:
+            if m.role == "assistant" and (m.kind == "text" or m.kind is None) and m.content:
                 return m.content
         return ""
 
