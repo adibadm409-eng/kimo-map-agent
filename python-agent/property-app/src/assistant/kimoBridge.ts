@@ -3,6 +3,7 @@
 // فيُعاد توجيهها كما هي إلى واجهة التطبيق دون أي تحويل.
 
 import { emitForSession, markRunning, clearRunning, type AgentOutcome } from './agentRun'
+import { persistAssistantText } from './store'
 
 // عنوان خادم المحرك البايثوني. الافتراضي localhost يناسب تشغيلاً على نفس
 // الجهاز (ترمكس + إكسبو غو على الهاتف). إن اتصلت من جهاز مختلف على الشبكة،
