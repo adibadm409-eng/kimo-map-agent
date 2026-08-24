@@ -28,6 +28,7 @@ from kimo.config_store import load_settings, save_settings, providers_catalog
 from kimo.config import AgentSettings
 from kimo.host import build_agent
 from kimo.integration.store import SqliteStore
+from kimo.integration.app_session_store import AppSessionStore
 
 
 PORT = 8000
