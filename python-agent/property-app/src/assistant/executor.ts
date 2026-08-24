@@ -859,7 +859,15 @@ export async function answerConfirmation(sessionId: string, approve: boolean, se
     await persistUser(sessionId, '[رفض المستخدم للإجراء]')
     await deleteRefused(sessionId)
   }
-  const outcome = await runGuarded(sessionId, conn)
+  let outcome: AgentOutcome = 'failed'
+  if (KIMO_ENGINE_ENABLED) {
+    outcome = await runViaKimo(
+      sessionId,
+      approve ? '[موافقة المستخدم على الإجراء]' : '[رفض المستخدم للإجراء]',
+    )
+  } else {
+    outcome = await runGuarded(sessionId, conn!)
+  }
   emitForSession(sessionId, { type: 'done', outcome })
 }
 
