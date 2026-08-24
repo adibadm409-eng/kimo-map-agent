@@ -118,6 +118,11 @@ class AppSessionStore(SessionStore):
         return out
 
     async def add_message(self, message: Message) -> Message:
+        now = int(time.time() * 1000)
+        self.conn.execute(
+            "INSERT OR IGNORE INTO agent_sessions (id, title, created_at, updated_at, mode) VALUES (?, ?, ?, ?, ?)",
+            (message.session_id, "محادثة", now, now, "agent"),
+        )
         meta = dict(message.meta or {})
         if message.tool_calls:
             meta["tool_calls"] = [
