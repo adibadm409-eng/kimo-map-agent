@@ -20,10 +20,6 @@ async def _run_chat(session_id: str, text: str, db_path: str, mock: bool) -> dic
     store = AppSessionStore(db_path)
     engine = build_agent(session_store=store)
 
-    existing = await store.get_session(session_id)
-    if not existing:
-        await store.create_session(session_id, "محادثة", None, None, "agent")
-
     result = await engine.run_chat(session_id, text, emit_events=True)
     return {"answer": result.get("answer"), "events": result.get("events", [])}
 
