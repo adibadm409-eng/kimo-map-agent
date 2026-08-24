@@ -798,17 +798,24 @@ export async function answerAsk(sessionId: string, answer: string): Promise<void
   if (isAgentBusy(sessionId)) return
   const pending = await getPending(sessionId)
   if (!pending || pending.kind !== 'ask_user') return
-  let conn: ConnConfig
-  try {
-    conn = await withConfig(async (c) => c)
-  } catch (e: any) {
-    await persistAssistantText(sessionId, e?.message ?? 'إعداد ناقص', 'error')
-    emitForSession(sessionId, { type: 'error', message: e?.message ?? 'إعداد ناقص' })
-    return
+  let conn: ConnConfig | null = null
+  if (!KIMO_ENGINE_ENABLED) {
+    try {
+      conn = await withConfig(async (c) => c)
+    } catch (e: any) {
+      await persistAssistantText(sessionId, e?.message ?? 'إعداد ناقص', 'error')
+      emitForSession(sessionId, { type: 'error', message: e?.message ?? 'إعداد ناقص' })
+      return
+    }
   }
   await clearPending(sessionId)
   await persistUser(sessionId, `[إجابة المستخدم على سؤالك] ${answer}`)
-  const outcome = await runGuarded(sessionId, conn)
+  let outcome: AgentOutcome = 'failed'
+  if (KIMO_ENGINE_ENABLED) {
+    outcome = await runViaKimo(sessionId, `[إجابة المستخدم على سؤالك] ${answer}`)
+  } else {
+    outcome = await runGuarded(sessionId, conn!)
+  }
   emitForSession(sessionId, { type: 'done', outcome })
 }
 
