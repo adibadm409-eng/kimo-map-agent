@@ -80,7 +80,7 @@ HUB: EngineHub | None = None
 def _get_hub() -> EngineHub:
     global HUB
     if HUB is None:
-        HUB = EngineHub()
+        HUB = EngineHub(os.environ.get("KIMO_DB_PATH", "kimo.db"))
     return HUB
 
 
