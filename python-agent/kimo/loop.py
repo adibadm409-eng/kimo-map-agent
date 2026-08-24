@@ -33,6 +33,19 @@ from .types import ChatMessage, ChatResult, EngineEvent, ToolResult, parse_tool_
 
 EmitFn = Callable[[EngineEvent], None]
 
+
+class PauseForClient(Exception):
+    """Raised by the run loop when tools must be executed by the host app.
+
+    Carries the list of calls (each ``{"id", "name", "arguments"}``) so the
+    client (the React Native app) can run them against its own data store and
+    feed the results back via ``client_results``.
+    """
+
+    def __init__(self, calls: list[dict]) -> None:
+        self.calls = calls
+        super().__init__("paused for client-side tool execution")
+
 MAX_NO_EVIDENCE_RECOVERIES = 2
 MAX_TOOL_REPAIRS = 2
 
