@@ -38,8 +38,12 @@ class EngineHub:
     """نسخة واحدة من المحرك الكامل تخدم المحادثات."""
 
     def __init__(self, db_path: str = "kimo.db") -> None:
+        # في التطبيق المبني يشارك المحرك قاعدة التطبيق: نفس الملف لبيانات
+        # المجال (SqliteStore) ومخزن الجلسات (AppSessionStore)، فيكتب المحرك
+        # المحادثة في جداول agent_messages/agent_sessions مباشرةً.
         self.db = SqliteStore(db_path)
-        self.engine, _ = build_agent(db_path=db_path)
+        self.session_store = AppSessionStore(db_path)
+        self.engine, _ = build_agent(db_path=db_path, session_store=self.session_store)
         if os.environ.get("KIMO_MOCK"):
             from kimo.host import make_mock_client
             self.engine.client = make_mock_client()
