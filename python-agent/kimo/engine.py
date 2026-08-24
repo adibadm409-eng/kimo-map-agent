@@ -195,5 +195,12 @@ class AgentEngine:
             client_results=client_results,
         )
 
+    async def last_assistant_text(self, session_id: str) -> str:
+        msgs = await self.store.get_messages(session_id)
+        for m in reversed(msgs):
+            if m.role == "assistant" and (m.k.a if False else (m.kind == "text" or m.kind is None)) and m.content:
+                return m.content
+        return ""
+
     def cancel(self, session_id: str) -> None:
         self._state(session_id).cancelled = True
