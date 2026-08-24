@@ -163,5 +163,37 @@ class AgentEngine:
         await self.store.add_message(Message(session_id=session_id, role="user", content=f"[{verb} الإجراء]", kind="text"))
         await self._run(session_id)
 
+    # --- client-driven round (built app: app executes the tools) -----------
+
+    async def run_round(
+        self,
+        session_id: str,
+        *,
+        client_mode: bool = False,
+        client_results: Optional[dict] = None,
+        initial_content: Optional[str] = None,
+    ) -> None:
+        """شغّل جولة واحدة من النموذج.
+
+        في ``client_mode`` (وبلا ``client_results``) تتوقف الحلقة وترفع
+        :class:`PauseForClient` بالأدوات المطلوبة؛ التطبيق ينفّذها على قاعدته
+        ويعيد النتيجة عبر ``client_results``.
+        """
+        conn = self._resolve_conn()
+        ctx = RunContext(session_id=session_id, settings=self.settings)
+        await run_loop(
+            session_id,
+            conn,
+            registry=self.registry,
+            store=self.store,
+            client=self.client,
+            emit=self._emit,
+            ctx=ctx,
+            initial_content=initial_content,
+            emit_events=True,
+            client_mode=client_mode,
+            client_results=client_results,
+        )
+
     def cancel(self, session_id: str) -> None:
         self._state(session_id).cancelled = True
