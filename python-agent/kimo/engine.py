@@ -8,7 +8,7 @@ from typing import Any, Callable, Optional
 
 from .builtin_tools import register_builtins
 from .config import AgentSettings, provider_label
-from .loop import ConnConfig, RunContext, run_loop
+from .loop import ConnConfig, RunContext, run_loop, PauseForClient
 from .llm import ChatClient
 from .session import MemorySessionStore, SessionStore, Message
 from .tools import Registry, ToolBackend
