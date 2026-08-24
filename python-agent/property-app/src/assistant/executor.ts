@@ -784,7 +784,12 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
   if (initialContent === undefined) initialContent = content
   await persistUser(sessionId, content, userImages.length ? { images: userImages } : undefined)
   // لا رسائل تقدم ثابتة — المساعد نفسه يخاطب المستخدم بما يقرره هو.
-  const outcome = await runGuarded(sessionId, conn, true, initialContent)
+  let outcome: AgentOutcome = 'failed'
+  if (KIMO_ENGINE_ENABLED) {
+    outcome = await runViaKimo(sessionId, content)
+  } else {
+    outcome = await runGuarded(sessionId, conn!, true, initialContent)
+  }
   emitForSession(sessionId, { type: 'done', outcome })
 }
 
