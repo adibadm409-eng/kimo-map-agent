@@ -15,8 +15,10 @@ from kimo.integration.app_session_store import AppSessionStore
 
 
 async def _run_chat(session_id: str, text: str, db_path: str, mock: bool) -> dict:
+    if mock:
+        os.environ["KIMO_MOCK"] = "1"
     store = AppSessionStore(db_path)
-    engine = build_agent(session_store=store, mock=mock)
+    engine = build_agent(session_store=store)
 
     existing = await store.get_session(session_id)
     if not existing:
