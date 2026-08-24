@@ -712,7 +712,7 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
   })
 
   const audioAsset = assets.find((asset) => asset.kind === 'audio')
-  if (opts?.audio && audioAsset) {
+  if (conn && opts?.audio && audioAsset) {
     const voiceLabel = audioAsset?.name ?? opts.audio.name ?? 'تسجيل صوتي'
     try {
       const audio = await readAudioInput(opts.audio.uri, opts.audio.format ?? 'm4a')
