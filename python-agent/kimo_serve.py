@@ -39,6 +39,9 @@ class EngineHub:
     def __init__(self, db_path: str = "kimo.db") -> None:
         self.db = SqliteStore(db_path)
         self.engine, _ = build_agent(db_path=db_path)
+        if os.environ.get("KIMO_MOCK"):
+            from kimo.host import make_mock_client
+            self.engine.client = make_mock_client()
 
     def create_session(self) -> str:
         return asyncio.run(self.engine.create_session(title="محادثة كيمو")).id
