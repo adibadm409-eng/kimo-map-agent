@@ -39,7 +39,7 @@ def patch_root_gradle():
         # أضف classpath إلى أول كتلة dependencies (buildscript)
         s = s.replace(
             "dependencies {",
-            'dependencies {\n        classpath "com.chaquo.python:gradle:15.0.1"',
+            'dependencies {\n        classpath "com.chaquo.python:gradle:16.1.0"',
             1,
         )
     if "maven.chaquo.com" not in s:
@@ -56,30 +56,18 @@ def patch_app_gradle():
         fail("android/app/build.gradle غير موجود")
     s = open(APP_GRADLE).read()
     if "com.chaquo.python" not in s:
-        inserted = False
-        # أدخل إضافة chaquopy بعد سطر plugin تطبيق أندرويد (مهما كانت صيغته)
-        for needle in [
-            'id("com.android.application")',
-            "id('com.android.application')",
-            'id "com.android.application"',
-            "id 'com.android.application'",
-        ]:
-            if needle in s:
-                s = s.replace(needle, needle + '\nid("com.chaquo.python")', 1)
-                inserted = True
-                break
-        if not inserted:
-            # احتياط: تطبيق صريح في أعلى الملف
-            s = 'apply plugin: "com.chaquo.python"\n' + s
-    if "python {" not in s:
+        # نطبّق الإضافة بأسلوب apply plugin (يُحلّ من buildscript classpath
+        # المضاف في build.gradle الجذر) — بلوك plugins{} يقرأ من pluginManagement
+        # ولن يجد الإضافة هناك.
         s += (
-            "\n\npython {\n"
+            "\n\n// kimo embedded engine (Chaquopy)\n"
+            'apply plugin: "com.chaquo.python"\n'
+            "python {\n"
             "    version \"3.11\"\n"
-            "    pip { /* kimo uses stdlib only */ }\n"
             "}\n"
         )
     open(APP_GRADLE, "w").write(s)
-    print("patched android/app/build.gradle (chaquopy plugin + python block)")
+    print("patched android/app/build.gradle (apply chaquopy + python block)")
 
 
 def patch_main_application():
