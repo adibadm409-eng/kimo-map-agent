@@ -19,7 +19,7 @@ async def _run_chat(session_id: str, text: str, db_path: str, mock: bool) -> dic
     if mock:
         os.environ["KIMO_MOCK"] = "1"
     store = AppSessionStore(db_path)
-    engine = build_agent(session_store=store)
+    engine, _db = build_agent(session_store=store, store=SqliteStore(db_path))
 
     result = await engine.run_chat(session_id, text, emit_events=True)
     return {"answer": result.get("answer"), "events": result.get("events", [])}
