@@ -30,7 +30,8 @@ import { handleToolCall, deleteOne, deleteApproved, deleteRefused } from './invo
 import { performUndo, toolSig } from './undo'
 import { appendTaskEvidence, createTaskRun, getLatestTaskRun, transitionTaskRun } from './store'
 import { emitForSession, subscribeAgent, isAgentBusy, cancelAgent, markRunning, clearRunning, isCancelled, setAborter, clearAborter, deriveAgentOutcome, type AgentEvent, type AgentOutcome } from './agentRun'
-import { runViaKimo, KIMO_ENGINE_ENABLED } from './kimoBridge'
+import { runViaKimoNative } from './kimoNative'
+import { KIMO_ENGINE_ENABLED } from './kimoBridge'
 import { MAX_AGENT_RUNTIME_MS, MAX_REPEATED_TOOL_CALLS, MAX_TOOL_CALLS, MAX_TOOL_ROUNDS } from './constants'
 
 function providerProxy(conn: { providerId: string; baseUrl: string; providerName: string }): ProviderDef {
