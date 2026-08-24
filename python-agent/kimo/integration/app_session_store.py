@@ -98,7 +98,11 @@ class AppSessionStore(SessionStore):
         out: list[Message] = []
         for r in rows:
             meta = json.loads(r["meta"]) if r["meta"] else {}
-            tool_calls = meta.pop("tool_calls", []) if isinstance(meta, dict) else []
+            raw_tc = meta.pop("tool_calls", []) if isinstance(meta, dict) else []
+            tool_calls = [
+                ToolCall(id=t.get("id", ""), name=t.get("name", ""), arguments=t.get("arguments", ""))
+                for t in raw_tc
+            ]
             out.append(
                 Message(
                     id=r["id"],
@@ -116,7 +120,10 @@ class AppSessionStore(SessionStore):
     async def add_message(self, message: Message) -> Message:
         meta = dict(message.meta or {})
         if message.tool_calls:
-            meta["tool_calls"] = message.tool_calls
+            meta["tool_calls"] = [
+                {"id": tc.id, "name": tc.name, "arguments": tc.arguments}
+                for tc in message.tool_calls
+            ]
         self.conn.execute(
             "INSERT INTO agent_messages (id, session_id, role, kind, content, meta, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
             (
