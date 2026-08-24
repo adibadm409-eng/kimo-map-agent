@@ -284,3 +284,4 @@
 - 2026-08-20 | eaa7940 | إصلاح ثابت: تحديث فحص false_progress ليطابق موقع منطق done الفعلي (agentChatStore)
 - 2026-08-20 | 77eb53a | تعديل تلقائي: unified_reminder_target_invariants.mjs
 - 2026-08-24 | d014abb | تعديل تلقائي: تطبيق مدير العقارات بمحرك كيمو المضمَّن (Chaquopy) — فرع kimo-embedded-build
+- 2026-08-24 | 4ddf158 | تعديل تلقائي: إصلاح استيراد persistAssistantText (من ./persist)

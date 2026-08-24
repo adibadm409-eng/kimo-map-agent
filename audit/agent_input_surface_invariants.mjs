@@ -13,7 +13,7 @@ for (const marker of [
   'audio?:',
   'readAudioInput(',
   'initialContent =',
-  'runGuarded(sessionId, conn, true, initialContent)',
+  'runGuarded(sessionId, conn!, true, initialContent)',
   'export async function answerAsk',
   'export async function answerConfirmation',
   'isCancelled(sessionId)',
