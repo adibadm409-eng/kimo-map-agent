@@ -24,6 +24,7 @@ def build_agent(
     db_path: str = "kimo.db",
     settings: Optional[AgentSettings] = None,
     store: Optional[SqliteStore] = None,
+    session_store: Optional[SessionStore] = None,
 ) -> tuple[AgentEngine, SqliteStore]:
     """Create an agent whose tool surface *is* the real domain backend.
 
