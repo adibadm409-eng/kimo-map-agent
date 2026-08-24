@@ -770,7 +770,7 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
     }
   }
 
-  await updateSessionMeta(sessionId, { providerLabel: conn.providerName, model: conn.model })
+  if (conn) await updateSessionMeta(sessionId, { providerLabel: conn.providerName, model: conn.model })
   const first = await getMessages(sessionId).catch(() => [])
   if (!first.length) {
     const title = text.replace(/\s+/g, ' ').slice(0, 40) || (assets[0]?.name ?? 'محادثة جديدة')
