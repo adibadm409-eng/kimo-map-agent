@@ -19,6 +19,7 @@ import uuid
 from typing import Any, Optional
 
 from ..session import Message, SessionMeta, SessionStore
+from ..types import ToolCall
 
 
 def _gen_id(prefix: str = "") -> str:
