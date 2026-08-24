@@ -813,7 +813,7 @@ export async function answerAsk(sessionId: string, answer: string): Promise<void
   await persistUser(sessionId, `[إجابة المستخدم على سؤالك] ${answer}`)
   let outcome: AgentOutcome = 'failed'
   if (KIMO_ENGINE_ENABLED) {
-    outcome = await runViaKimo(sessionId, `[إجابة المستخدم على سؤالك] ${answer}`)
+    outcome = await runViaKimoNative(sessionId, `[إجابة المستخدم على سؤالك] ${answer}`)
   } else {
     outcome = await runGuarded(sessionId, conn!)
   }
