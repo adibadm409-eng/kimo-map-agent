@@ -1,6 +1,6 @@
 import { NativeModules } from 'react-native'
 import { emitForSession, type AgentOutcome } from './agentRun'
-import { persistAssistantText } from './store'
+import { persistAssistantText } from './persist'
 import { runViaKimo } from './kimoBridge'
 
 // اسم قاعدة بيانات expo-sqlite في التطبيق؛ تطبّقه الطبقة الأصلية لتحديد مسار
