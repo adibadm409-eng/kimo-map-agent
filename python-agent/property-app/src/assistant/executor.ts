@@ -824,13 +824,15 @@ export async function answerConfirmation(sessionId: string, approve: boolean, se
   if (isAgentBusy(sessionId)) return
   const pending = await getPending(sessionId)
   if (!pending || pending.kind !== 'confirmation') return
-  let conn: ConnConfig
-  try {
-    conn = await withConfig(async (c) => c)
-  } catch (e: any) {
-    await persistAssistantText(sessionId, e?.message ?? 'إعداد ناقص', 'error')
-    emitForSession(sessionId, { type: 'error', message: e?.message ?? 'إعداد ناقص' })
-    return
+  let conn: ConnConfig | null = null
+  if (!KIMO_ENGINE_ENABLED) {
+    try {
+      conn = await withConfig(async (c) => c)
+    } catch (e: any) {
+      await persistAssistantText(sessionId, e?.message ?? 'إعداد ناقص', 'error')
+      emitForSession(sessionId, { type: 'error', message: e?.message ?? 'إعداد ناقص' })
+      return
+    }
   }
 
   await clearPending(sessionId)
