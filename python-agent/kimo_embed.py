@@ -12,6 +12,7 @@ import os
 
 from kimo.host import build_agent
 from kimo.integration.app_session_store import AppSessionStore
+from kimo.integration.store import SqliteStore
 
 
 async def _run_chat(session_id: str, text: str, db_path: str, mock: bool) -> dict:
