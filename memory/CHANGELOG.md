@@ -290,3 +290,4 @@
 - 2026-08-24 | 94d4ddf | تعديل تلقائي: دعم MainApplication.kt (كوتلن) في ربط Chaquopy
 - 2026-08-24 | fb93cde | تعديل تلقائي: apply plugin لـ Chaquopy (يحل من buildscript) + ترقية 16.1.0
 - 2026-08-24 | 562975c | تعديل تلقائي: تصحيح مستودع chaquopy (/maven) + طباعة تشخيصية لملفات gradle
+- 2026-08-24 | 76d4a8f | تعديل تلقائي: بلوك chaquopy.defaultConfig (الصيغة الصحيحة لـ16.x) + إصلاح مستودع chaquo.com/maven
