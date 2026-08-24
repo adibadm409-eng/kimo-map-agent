@@ -52,22 +52,22 @@ def patch_app_gradle():
     if not os.path.exists(APP_GRADLE):
         fail("android/app/build.gradle غير موجود")
     s = open(APP_GRADLE).read()
-    if "id 'com.chaquo.python'" not in s and 'id("com.chaquo.python")' not in s:
-        # أضف plugin بعد plugin react
-        if "id 'com.facebook.react'" in s:
-            s = s.replace(
-                "id 'com.facebook.react'",
-                "id 'com.facebook.react'\nid 'com.chaquo.python'",
-                1,
-            )
-        elif 'id("com.facebook.react")' in s:
-            s = s.replace(
-                'id("com.facebook.react")',
-                'id("com.facebook.react")\nid("com.chaquo.python")',
-                1,
-            )
-        else:
-            fail("لم أجد سطر plugin react في app/build.gradle")
+    if "com.chaquo.python" not in s:
+        inserted = False
+        # أدخل إضافة chaquopy بعد سطر plugin تطبيق أندرويد (مهما كانت صيغته)
+        for needle in [
+            'id("com.android.application")',
+            "id('com.android.application')",
+            'id "com.android.application"',
+            "id 'com.android.application'",
+        ]:
+            if needle in s:
+                s = s.replace(needle, needle + '\nid("com.chaquo.python")', 1)
+                inserted = True
+                break
+        if not inserted:
+            # احتياط: تطبيق صريح في أعلى الملف
+            s = 'apply plugin: "com.chaquo.python"\n' + s
     if "python {" not in s:
         s += (
             "\n\npython {\n"
