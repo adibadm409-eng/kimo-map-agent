@@ -47,6 +47,11 @@ export async function runViaKimo(
     for (const e of j.events ?? []) {
       emitForSession(appSessionId, e as any)
     }
+    // نحفظ الجواب في قاعدة التطبيق كي يظهر بعد إعادة التحميل (احتياط للوضع
+    // المفصول عبر HTTP؛ وفي التطبيق المبني يكتبه المحرك مباشرةً في نفس القاعدة).
+    if (j.answer) {
+      await persistAssistantText(appSessionId, j.answer, 'text').catch(() => {})
+    }
     const outcome: AgentOutcome = j.answer ? 'completed' : 'failed'
     emitForSession(appSessionId, { type: 'done', outcome } as any)
     return outcome
