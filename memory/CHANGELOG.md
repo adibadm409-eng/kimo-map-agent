@@ -288,3 +288,4 @@
 - 2026-08-24 | 7123c48 | تعديل تلقائي: مزامنة علامة فحص agent_input_surface مع استدعاء runGuarded الفعلي
 - 2026-08-24 | f1eecd1 | تعديل تلقائي: تثبيت إدراج plugin Chaquopy بصيغة مرنة في app/build.gradle
 - 2026-08-24 | 94d4ddf | تعديل تلقائي: دعم MainApplication.kt (كوتلن) في ربط Chaquopy
+- 2026-08-24 | fb93cde | تعديل تلقائي: apply plugin لـ Chaquopy (يحل من buildscript) + ترقية 16.1.0

@@ -45,7 +45,7 @@ def patch_root_gradle():
     if "maven.chaquo.com" not in s:
         s = s.replace(
             "repositories {",
-            'repositories {\n        maven { url "https://maven.chaquo.com" }',
+            'repositories {\n        maven { url "https://maven.chaquo.com/maven" }',
         )
     open(ROOT_GRADLE, "w").write(s)
     print("patched android/build.gradle (chaquopy classpath + repo)")

@@ -48,7 +48,16 @@ jobs:
         run: npx expo prebuild --platform android
 
       - name: Patch Chaquopy (embedded kimo engine)
-        run: python3 scripts/patch_chaquopy.py
+        run: |
+          python3 scripts/patch_chaquopy.py
+          echo "===== DEBUG: settings.gradle ====="
+          cat android/settings.gradle
+          echo "===== DEBUG: root build.gradle (head) ====="
+          head -60 android/build.gradle
+          echo "===== DEBUG: app/build.gradle (head) ====="
+          sed -n '1,40p' android/app/build.gradle
+          echo "===== DEBUG: app/build.gradle (tail) ====="
+          tail -20 android/app/build.gradle
 
       - name: Install matching NDK
         run: |
