@@ -862,7 +862,7 @@ export async function answerConfirmation(sessionId: string, approve: boolean, se
   }
   let outcome: AgentOutcome = 'failed'
   if (KIMO_ENGINE_ENABLED) {
-    outcome = await runViaKimo(
+    outcome = await runViaKimoNative(
       sessionId,
       approve ? '[موافقة المستخدم على الإجراء]' : '[رفض المستخدم للإجراء]',
     )
