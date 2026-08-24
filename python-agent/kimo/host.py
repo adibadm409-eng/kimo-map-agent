@@ -15,8 +15,10 @@ from .config import AgentSettings, default_provider
 from .config_store import resolve_settings
 from .engine import AgentEngine
 from .integration.backend import build_integration_registry
+from .integration.app_session_store import AppSessionStore
 from .integration.store import SqliteStore
 from .llm import ChatClient
+from .session import SessionStore
 from .tools import ToolDef
 
 
