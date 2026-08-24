@@ -22,12 +22,10 @@ def build(db_path):
     settings = AgentSettings(model="mock", api_key="x")
     engine = AgentEngine(settings, include_builtins=False, store=AppSessionStore(db_path))
     db = SqliteStore(db_path)
-    int_reg = build_agent.__wrapped__ if hasattr(build_agent, "__wrapped__") else None
-    # بناء يدوي للمسجّل فقط
     from kimo.integration.backend import build_integration_registry
     int_reg = build_integration_registry(db)
+    from kimo.tools import ToolDef
     for tool in int_reg._tools.values():
-        from kimo.tools import ToolDef
         engine.registry.register(ToolDef(
             name=tool.name, description=tool.description, args=tool.args,
             handler=tool.handler, read_only=tool.read_only,
