@@ -787,7 +787,7 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
   // لا رسائل تقدم ثابتة — المساعد نفسه يخاطب المستخدم بما يقرره هو.
   let outcome: AgentOutcome = 'failed'
   if (KIMO_ENGINE_ENABLED) {
-    outcome = await runViaKimo(sessionId, content)
+    outcome = await runViaKimoNative(sessionId, content)
   } else {
     outcome = await runGuarded(sessionId, conn!, true, initialContent)
   }
