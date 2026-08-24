@@ -42,10 +42,10 @@ def patch_root_gradle():
             'dependencies {\n        classpath "com.chaquo.python:gradle:16.1.0"',
             1,
         )
-    if "maven.chaquo.com" not in s:
+    if "maven.chaquo.com" not in s and "chaquo.com/maven" not in s:
         s = s.replace(
             "repositories {",
-            'repositories {\n        maven { url "https://maven.chaquo.com/maven" }',
+            'repositories {\n        maven { url "https://chaquo.com/maven" }',
         )
     open(ROOT_GRADLE, "w").write(s)
     print("patched android/build.gradle (chaquopy classpath + repo)")
@@ -57,13 +57,16 @@ def patch_app_gradle():
     s = open(APP_GRADLE).read()
     if "com.chaquo.python" not in s:
         # نطبّق الإضافة بأسلوب apply plugin (يُحلّ من buildscript classpath
-        # المضاف في build.gradle الجذر) — بلوك plugins{} يقرأ من pluginManagement
-        # ولن يجد الإضافة هناك.
+        # المضاف في build.gradle الجذر).
+        # ملاحظة: في Chaquopy 16+ اسم بلوك الـ DSL هو chaquopy مع defaultConfig
+        # (تحقّقنا من descriptor الجر نفسه)، وليس python كما في النسخ القديمة.
         s += (
             "\n\n// kimo embedded engine (Chaquopy)\n"
             'apply plugin: "com.chaquo.python"\n'
-            "python {\n"
-            "    version \"3.11\"\n"
+            "chaquopy {\n"
+            "    defaultConfig {\n"
+            "        version \"3.11\"\n"
+            "    }\n"
             "}\n"
         )
     open(APP_GRADLE, "w").write(s)
