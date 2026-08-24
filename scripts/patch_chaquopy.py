@@ -13,7 +13,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ANDROID = os.path.join(ROOT, "android")
 APP_GRADLE = os.path.join(ANDROID, "app", "build.gradle")
 ROOT_GRADLE = os.path.join(ANDROID, "build.gradle")
-MAIN_APP = os.path.join(
+MAIN_APP_KT = os.path.join(
+    ANDROID, "app", "src", "main", "java", "com", "realestate", "app", "MainApplication.kt"
+)
+MAIN_APP_JAVA = os.path.join(
     ANDROID, "app", "src", "main", "java", "com", "realestate", "app", "MainApplication.java"
 )
 NATIVE_SRC = os.path.join(ROOT, "android-native", "KimoEngineModule.kt")
@@ -80,27 +83,51 @@ def patch_app_gradle():
 
 
 def patch_main_application():
-    if not os.path.exists(MAIN_APP):
-        fail("MainApplication.java غير موجود")
-    s = open(MAIN_APP).read()
-    if "import com.realestate.app.agent.KimoEnginePackage;" not in s:
-        # أدخل الاستيراد بعد سطر package
-        s = s.replace(
-            "package com.realestate.app;",
-            "package com.realestate.app;\n\nimport com.realestate.app.agent.KimoEnginePackage;",
-            1,
-        )
-    if "new KimoEnginePackage()" not in s:
-        if "new MainReactPackage()" in s:
+    path = None
+    is_kotlin = False
+    for p, kt in ((MAIN_APP_KT, True), (MAIN_APP_JAVA, False)):
+        if os.path.exists(p):
+            path, is_kotlin = p, kt
+            break
+    if path is None:
+        # اطبع ما يوجد فعلاً في مجلد الحزمة لتشخيص أسهل
+        base = os.path.dirname(MAIN_APP_KT)
+        listing = os.listdir(base) if os.path.isdir(base) else "<المجلد غير موجود>"
+        print("محتوى", base, "->", listing)
+        fail("MainApplication (.kt/.java) غير موجود")
+    s = open(path).read()
+    if "KimoEnginePackage" not in s:
+        if is_kotlin:
             s = s.replace(
-                "new MainReactPackage()",
-                "new MainReactPackage(), new KimoEnginePackage()",
+                "package com.realestate.app",
+                "package com.realestate.app\n\nimport com.realestate.app.agent.KimoEnginePackage",
                 1,
             )
+            if "packages.apply {" in s:
+                s = s.replace(
+                    "packages.apply {",
+                    "packages.apply {\n      add(KimoEnginePackage())",
+                    1,
+                )
+            else:
+                fail("لم أجد packages.apply { في MainApplication.kt")
         else:
-            fail("لم أجد new MainReactPackage() للتسجيل")
-    open(MAIN_APP, "w").write(s)
-    print("patched MainApplication.java (registered KimoEnginePackage)")
+            s = s.replace(
+                "package com.realestate.app;",
+                "package com.realestate.app;\n\nimport com.realestate.app.agent.KimoEnginePackage;",
+                1,
+            )
+            if "new MainReactPackage()" in s:
+                s = s.replace(
+                    "new MainReactPackage()",
+                    "new MainReactPackage(), new KimoEnginePackage()",
+                    1,
+                )
+            else:
+                fail("لم أجد new MainReactPackage() للتسجيل")
+    open(path, "w").write(s)
+    name = os.path.basename(path)
+    print(f"patched {name} (registered KimoEnginePackage)")
 
 
 def copy_native_module():

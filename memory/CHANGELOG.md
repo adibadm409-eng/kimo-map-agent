@@ -286,3 +286,4 @@
 - 2026-08-24 | d014abb | تعديل تلقائي: تطبيق مدير العقارات بمحرك كيمو المضمَّن (Chaquopy) — فرع kimo-embedded-build
 - 2026-08-24 | 4ddf158 | تعديل تلقائي: إصلاح استيراد persistAssistantText (من ./persist)
 - 2026-08-24 | 7123c48 | تعديل تلقائي: مزامنة علامة فحص agent_input_surface مع استدعاء runGuarded الفعلي
+- 2026-08-24 | f1eecd1 | تعديل تلقائي: تثبيت إدراج plugin Chaquopy بصيغة مرنة في app/build.gradle
