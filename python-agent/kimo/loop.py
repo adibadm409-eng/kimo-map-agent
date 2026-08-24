@@ -110,6 +110,8 @@ async def run_loop(
     ctx: Optional[RunContext] = None,
     initial_content: Optional[Any] = None,
     emit_events: bool = True,
+    client_mode: bool = False,
+    client_results: Optional[dict] = None,
 ) -> None:
     if emit is None:
         emit = lambda e: None  # noqa: E731
