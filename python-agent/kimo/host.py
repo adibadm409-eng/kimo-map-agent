@@ -32,7 +32,7 @@ def build_agent(
     model now talks to the new Python engine wired to ``SqliteStore``.
     """
     settings = settings or resolve_settings()
-    engine = AgentEngine(settings, include_builtins=False)
+    engine = AgentEngine(settings, include_builtins=False, store=session_store)
     db = store or SqliteStore(db_path)
     int_reg = build_integration_registry(db)
     for tool in int_reg._tools.values():
