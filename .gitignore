@@ -51,3 +51,9 @@ yarn-error.*
 # مفاتيح التوقيع — لا ترفع أبداً
 /keystore/
 /credentials.json
+
+# Python cache/build artifacts
+__pycache__/
+*.pyc
+*.db
+kimo_serve.log

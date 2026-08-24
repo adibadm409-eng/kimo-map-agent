@@ -3,7 +3,7 @@ name: Build Signed APK
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [kimo-embedded-build]
 
 env:
   CI: "true"
@@ -46,6 +46,9 @@ jobs:
 
       - name: Generate Android project
         run: npx expo prebuild --platform android
+
+      - name: Patch Chaquopy (embedded kimo engine)
+        run: python3 scripts/patch_chaquopy.py
 
       - name: Install matching NDK
         run: |

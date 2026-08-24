@@ -30,6 +30,8 @@ import { handleToolCall, deleteOne, deleteApproved, deleteRefused } from './invo
 import { performUndo, toolSig } from './undo'
 import { appendTaskEvidence, createTaskRun, getLatestTaskRun, transitionTaskRun } from './store'
 import { emitForSession, subscribeAgent, isAgentBusy, cancelAgent, markRunning, clearRunning, isCancelled, setAborter, clearAborter, deriveAgentOutcome, type AgentEvent, type AgentOutcome } from './agentRun'
+import { runViaKimoNative } from './kimoNative'
+import { KIMO_ENGINE_ENABLED } from './kimoBridge'
 import { MAX_AGENT_RUNTIME_MS, MAX_REPEATED_TOOL_CALLS, MAX_TOOL_CALLS, MAX_TOOL_ROUNDS } from './constants'
 
 function providerProxy(conn: { providerId: string; baseUrl: string; providerName: string }): ProviderDef {
@@ -647,13 +649,15 @@ async function runGuarded(sessionId: string, conn: ConnConfig, emitEvents = true
 /** إرسال رسالة مستخدم وتشغيل حلقة الوكيل. */
 export async function sendUserMessage(sessionId: string, text: string, opts?: SendOptions): Promise<void> {
   if (isAgentBusy(sessionId)) return
-  let conn: ConnConfig
-  try {
-    conn = await withConfig(async (c) => c)
-  } catch (e: any) {
-    await persistAssistantText(sessionId, e?.message ?? 'إعداد ناقص', 'error')
-    emitForSession(sessionId, { type: 'error', message: e?.message ?? 'إعداد ناقص' })
-    return
+  let conn: ConnConfig | null = null
+  if (!KIMO_ENGINE_ENABLED) {
+    try {
+      conn = await withConfig(async (c) => c)
+    } catch (e: any) {
+      await persistAssistantText(sessionId, e?.message ?? 'إعداد ناقص', 'error')
+      emitForSession(sessionId, { type: 'error', message: e?.message ?? 'إعداد ناقص' })
+      return
+    }
   }
 
   let content = text.trim()
@@ -709,7 +713,7 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
   })
 
   const audioAsset = assets.find((asset) => asset.kind === 'audio')
-  if (opts?.audio && audioAsset) {
+  if (conn && opts?.audio && audioAsset) {
     const voiceLabel = audioAsset?.name ?? opts.audio.name ?? 'تسجيل صوتي'
     try {
       const audio = await readAudioInput(opts.audio.uri, opts.audio.format ?? 'm4a')
@@ -767,7 +771,7 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
     }
   }
 
-  await updateSessionMeta(sessionId, { providerLabel: conn.providerName, model: conn.model })
+  if (conn) await updateSessionMeta(sessionId, { providerLabel: conn.providerName, model: conn.model })
   const first = await getMessages(sessionId).catch(() => [])
   if (!first.length) {
     const title = text.replace(/\s+/g, ' ').slice(0, 40) || (assets[0]?.name ?? 'محادثة جديدة')
@@ -781,7 +785,12 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
   if (initialContent === undefined) initialContent = content
   await persistUser(sessionId, content, userImages.length ? { images: userImages } : undefined)
   // لا رسائل تقدم ثابتة — المساعد نفسه يخاطب المستخدم بما يقرره هو.
-  const outcome = await runGuarded(sessionId, conn, true, initialContent)
+  let outcome: AgentOutcome = 'failed'
+  if (KIMO_ENGINE_ENABLED) {
+    outcome = await runViaKimoNative(sessionId, content)
+  } else {
+    outcome = await runGuarded(sessionId, conn!, true, initialContent)
+  }
   emitForSession(sessionId, { type: 'done', outcome })
 }
 
@@ -790,17 +799,24 @@ export async function answerAsk(sessionId: string, answer: string): Promise<void
   if (isAgentBusy(sessionId)) return
   const pending = await getPending(sessionId)
   if (!pending || pending.kind !== 'ask_user') return
-  let conn: ConnConfig
-  try {
-    conn = await withConfig(async (c) => c)
-  } catch (e: any) {
-    await persistAssistantText(sessionId, e?.message ?? 'إعداد ناقص', 'error')
-    emitForSession(sessionId, { type: 'error', message: e?.message ?? 'إعداد ناقص' })
-    return
+  let conn: ConnConfig | null = null
+  if (!KIMO_ENGINE_ENABLED) {
+    try {
+      conn = await withConfig(async (c) => c)
+    } catch (e: any) {
+      await persistAssistantText(sessionId, e?.message ?? 'إعداد ناقص', 'error')
+      emitForSession(sessionId, { type: 'error', message: e?.message ?? 'إعداد ناقص' })
+      return
+    }
   }
   await clearPending(sessionId)
   await persistUser(sessionId, `[إجابة المستخدم على سؤالك] ${answer}`)
-  const outcome = await runGuarded(sessionId, conn)
+  let outcome: AgentOutcome = 'failed'
+  if (KIMO_ENGINE_ENABLED) {
+    outcome = await runViaKimoNative(sessionId, `[إجابة المستخدم على سؤالك] ${answer}`)
+  } else {
+    outcome = await runGuarded(sessionId, conn!)
+  }
   emitForSession(sessionId, { type: 'done', outcome })
 }
 
@@ -809,13 +825,15 @@ export async function answerConfirmation(sessionId: string, approve: boolean, se
   if (isAgentBusy(sessionId)) return
   const pending = await getPending(sessionId)
   if (!pending || pending.kind !== 'confirmation') return
-  let conn: ConnConfig
-  try {
-    conn = await withConfig(async (c) => c)
-  } catch (e: any) {
-    await persistAssistantText(sessionId, e?.message ?? 'إعداد ناقص', 'error')
-    emitForSession(sessionId, { type: 'error', message: e?.message ?? 'إعداد ناقص' })
-    return
+  let conn: ConnConfig | null = null
+  if (!KIMO_ENGINE_ENABLED) {
+    try {
+      conn = await withConfig(async (c) => c)
+    } catch (e: any) {
+      await persistAssistantText(sessionId, e?.message ?? 'إعداد ناقص', 'error')
+      emitForSession(sessionId, { type: 'error', message: e?.message ?? 'إعداد ناقص' })
+      return
+    }
   }
 
   await clearPending(sessionId)
@@ -842,7 +860,15 @@ export async function answerConfirmation(sessionId: string, approve: boolean, se
     await persistUser(sessionId, '[رفض المستخدم للإجراء]')
     await deleteRefused(sessionId)
   }
-  const outcome = await runGuarded(sessionId, conn)
+  let outcome: AgentOutcome = 'failed'
+  if (KIMO_ENGINE_ENABLED) {
+    outcome = await runViaKimoNative(
+      sessionId,
+      approve ? '[موافقة المستخدم على الإجراء]' : '[رفض المستخدم للإجراء]',
+    )
+  } else {
+    outcome = await runGuarded(sessionId, conn!)
+  }
   emitForSession(sessionId, { type: 'done', outcome })
 }
 
