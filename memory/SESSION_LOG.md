@@ -5,6 +5,46 @@
 
 ---
 
+## 2026-08-24 — تجهيز التطبيق للبناء الكامل بمحرك كيمو المضمَّن (بلا خادم)
+- **المُلخّص**: المستخدم أكّد: انسَ Expo Go/Termux، حضّر التطبيق للبناء الكامل حيث
+  يعمل محرك كيمو البايثوني **مضمَّناً داخل التطبيق** ويشارك قاعدة التطبيق ذاتها
+  (بلا خادم منفصل). أُغلقت فجوتان كانتا تمنع التوافق: (1) فجوة العرض — المحرك لم
+  يكن يكتب المحادثة في جداول التطبيق فيظهر الجواب ثم يختفي عند إعادة التحميل؛
+  (2) فجوة البيانات — المحرك كان يستخدم قاعدة `kimo.db` منفصلة عن
+  `expo-sqlite`. الحل: `AppSessionStore` يكتب في `agent_messages`/`agent_sessions`
+  بنفس مخطط `store.ts`، و`KIMO_DB_PATH` يوجّه المحرك لقاعدة التطبيق.
+- **التعديلات**:
+  1. `python-agent/kimo/loop.py`: وضع `client_mode` (يطلب الأدوات ويتوقف عبر
+     `PauseForClient`، أو يستهلك `client_results`) لنمط الإيقاف/الاستئناف.
+  2. `python-agent/kimo/engine.py`: أُضيف `run_round` (client_mode) و
+     `last_assistant_text`؛ ربط `PauseForClient`.
+  3. `python-agent/kimo/integration/app_session_store.py`: `add_message` يضمن
+     وجود صف الجلسة (INSERT OR IGNORE في `agent_sessions`)؛ تسلسل `tool_calls`
+     بأمان في `meta`.
+  4. `python-agent/kimo/host.py` + `kimo_serve.py`: `build_agent` يربط
+     `session_store`؛ `EngineHub` يستخدم `AppSessionStore` + `KIMO_DB_PATH`.
+  5. `python-agent/kimo_embed.py` (جديد): نقطة دخول **مضمَّنة بلا خادم** —
+     `run_chat_sync(session_id, text, db_path, mock)` يشغّل المحرك داخل المعالج
+     ويكتب في قاعدة التطبيق ويعيد JSON (answer+events).
+  6. `python-agent/property-app/src/assistant/kimoBridge.ts`: حفظ الجواب في
+     قاعدة التطبيق (احتياط HTTP). `kimoNative.ts` (جديد): يستدعي الوحدة الأصلية
+     `KimoEngine.runChat` إن وُجدت، وإلا يعود لـ HTTP. `executor.ts` وُجّه إلى
+     `runViaKimoNative`.
+  7. `python-agent/property-app/android/app/src/main/java/com/propertyapp/agent/KimoEngineModule.kt`
+     (جديد): وحدة RN أصلية (Chaquopy) تستدعي `kimo_embed.run_chat_sync`.
+  8. `python-agent/property-app/scripts/sync-kimo-python.mjs` (جديد): ينسخ `kimo/`
+     و`kimo_embed.py` إلى `android/app/src/main/python/`.
+  9. `python-agent/property-app/EMBEDDED_BUILD.md` (جديد): خطوات بناء أندرويد
+     عبر Chaquopy + EAS، وiOS عبر PythonKit.
+- **التحقق**: `examples/integration_build_test.py` (فجوة العرض + الإيقاف/الاستئناف)
+  PASS؛ `kimo_embed.py` يعمل بلا خادم ويكتب `agent_messages`/`agent_sessions`؛
+  `examples/integration_test.py` (12 فحص) ما زال PASS.
+- **بقي**: بناء فعلي على EAS/Chaquopy غير مُختبر هنا (لا Android SDK)؛ الوحدة
+  الأصلية و`EMBEDDED_BUILD.md` بحاجة لتشغيل بناء تجريبي للتأكيد. `my-app`
+  الأصلي لم يُمَسَّ (كل التعديلات في `python-agent/property-app`).
+
+---
+
 ## 2026-08-23 — تصحيح معمارية محرك كيمو البايثوني ليتطابق مع القديم
 - **المُلخّص**: المستخدم أوضح أن المحرك الجديد يجب أن يعمل **بنفس طريقة المحرك القديم تماماً**،
   والفرق الوحيد السرعة/الكفاءة/القوة. لذلك أُلغيت تجزئة المعمارية (تطبيق يطلب المزوّدات +

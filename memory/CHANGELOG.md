@@ -450,3 +450,4 @@
 - 2026-08-24 | 8658a2a | تعديل تلقائي: executor.ts
 - 2026-08-24 | 5623966 | تعديل تلقائي: KimoEngineModule.kt
 - 2026-08-24 | b53d885 | تعديل تلقائي: sync-kimo-python.mjs
+- 2026-08-24 | fd2d758 | تعديل تلقائي: EMBEDDED_BUILD.md
