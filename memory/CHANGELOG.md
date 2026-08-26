@@ -493,3 +493,4 @@
 - 2026-08-27 | 488e815 | تعديل تلقائي: agentWorker.ts
 - 2026-08-27 | 205e80d | تعديل تلقائي: androidOptimize.js
 - 2026-08-27 | 65a5374 | تعديل تلقائي: androidOptimize.js
+- 2026-08-27 | 221b633 | تعديل تلقائي: EMBEDDED_BUILD.md
