@@ -220,7 +220,7 @@ export class AgentWorker {
    */
   async runTask(sessionId: string, goal: string): Promise<WorkerTask> {
     const settings = await getSettings()
-    const conn = activeConfig(settings)
+    const conn = await activeConfig(settings)
     if (!conn.apiKey || !conn.model) {
       throw new Error('لم يُعدَّ المزود بعد: أضف مفتاح API واختر موديلاً.')
     }
