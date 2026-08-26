@@ -291,3 +291,6 @@
 - 2026-08-24 | fb93cde | تعديل تلقائي: apply plugin لـ Chaquopy (يحل من buildscript) + ترقية 16.1.0
 - 2026-08-24 | 562975c | تعديل تلقائي: تصحيح مستودع chaquopy (/maven) + طباعة تشخيصية لملفات gradle
 - 2026-08-24 | 76d4a8f | تعديل تلقائي: بلوك chaquopy.defaultConfig (الصيغة الصحيحة لـ16.x) + إصلاح مستودع chaquo.com/maven
+- 2026-08-24 | 17dd929 | تعديل تلقائي: استيرادات ReactPackage/NativeModule/ViewManager المفقودة في KimoEngineModule
+- 2026-08-27 | a705bb1 | إضافة Agent Worker — عامل تنفيذ مستمر في الواجهة
+- 2026-08-27 | 63539eb | إصلاح: activeConfig تعيد Promise يجب await

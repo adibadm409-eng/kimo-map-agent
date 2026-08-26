@@ -5,6 +5,28 @@
 
 ---
 
+## 2026-08-26 — إضافة Agent Worker + مراجعة التكامل
+- **المُلخّص**: مراجعة شاملة لتكامل سلسلة RN→Kotlin→Python→LLM، ثم تصميم وإنشاء
+  Agent Worker في TypeScript — عامل تنفيذ مستمر في الواجهة يبقى متصلاً بالمزود
+  وينفّذ المهام خطوة بخطوة مع تتبع الحالة (ما أنجز/فشل/متبقي) وأحداث التقدم.
+- **المراجعة**: التكامل مكتمل من RN → executor → kimoNative → KimoEngineModule →
+  kimo_embed → engine → loop → LLM → tools → app_session_store → DB.
+  الفجوة الوحيدة: المرفقات الصوتية لا تصل للمحرك المضمّن (tc).
+- **التعديلات**:
+  1. `src/assistant/agentWorker.ts` (جديد): AgentWorker class مع decomposeGoal (LLM)，
+     executeSteps， WorkerTask/WorkerStep/WorkerEvent types， getWorker() singleton。
+  2. `kimo/orchestrator.py` (جديد): وكيل تخطيط اختياري في Python مع وعي بالأدوات
+     (build_tool_awareness) ومهارة التخطيط (build_planning_prompt)。
+  3. `kimo_embed.py`: عاد للشكل الأصلي (بدون Python orchestrator) — المسار الأساسي
+     هو العامل في TypeScript。
+- **التحقق**: جميع استيرادات agentWorker.ts صحيحة، لا unused imports، git commit + push。
+- **البناء**: GitHub Actions يعمل (RUN 33016146267) على فرع kimo-embedded-build。
+- **ملاحظة مهمة**: المستخدم أوضح أن "العامل" يعني طبقة في الواجهة الأمامية (RN)
+  تبقى متصلاً بالمزود وتتبع التقدم، لا تفكيكاً في Python. التصميم الأول (Python
+  orchestrator) كان خاطئاً — أُعيد توجيهه إلى TypeScript.
+
+---
+
 ## 2026-08-19 — تنظيف شامل + تحسين بناء أندرويد + نجاح البناء في CI
 - **المُلخّص**: تنظيف التبعيات الميتة، إصلاح اسم حزمة خطوط Tajawal المعطوب (كان
   `@expo/google-fonts/tajawal` بخط مائل غير صالح في الـ scope → `@expo-google-fonts/tajawal`؛
