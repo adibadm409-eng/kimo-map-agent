@@ -494,3 +494,4 @@
 - 2026-08-27 | 205e80d | تعديل تلقائي: androidOptimize.js
 - 2026-08-27 | 65a5374 | تعديل تلقائي: androidOptimize.js
 - 2026-08-27 | 221b633 | تعديل تلقائي: EMBEDDED_BUILD.md
+- 2026-08-27 | d94e2d4 | تعديل تلقائي: build-apk.yml
