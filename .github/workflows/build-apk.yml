@@ -3,7 +3,7 @@ name: Build Signed APK
 on:
   workflow_dispatch:
   push:
-    branches: [kimo-embedded-build]
+    branches: [main, kimo-embedded-build]
 
 env:
   CI: "true"
@@ -159,3 +159,17 @@ jobs:
           name: realestate-app-release
           path: android/app/build/outputs/apk/release/*release*.apk
           if-no-files-found: error
+          retention-days: 1
+
+      - name: Create GitHub Release
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          APK=$(ls android/app/build/outputs/apk/release/*release*.apk | head -1)
+          VERSION=$(date +%Y%m%d-%H%M)
+          gh release create "v${VERSION}" "$APK" \
+            --repo "${{ github.repository }}" \
+            --title "Kimo Map Agent v${VERSION}" \
+            --notes "APK موقّع — arm64-v8a فقط — الحجم: $(du -h "$APK" | cut -f1)" \
+            --latest
