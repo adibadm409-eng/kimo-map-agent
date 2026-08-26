@@ -24,8 +24,10 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Set up Android SDK
+      - name: Set up Android SDK (minimal)
         uses: android-actions/setup-android@v3
+        with:
+          packages: build-tools;37.0.0 platform-tools
 
       - name: Export Android env
         run: |
@@ -48,21 +50,19 @@ jobs:
         run: npx expo prebuild --platform android
 
       - name: Patch Chaquopy (embedded kimo engine)
-        run: |
-          python3 scripts/patch_chaquopy.py
-          echo "===== DEBUG: settings.gradle ====="
-          cat android/settings.gradle
-          echo "===== DEBUG: root build.gradle (head) ====="
-          head -60 android/build.gradle
-          echo "===== DEBUG: app/build.gradle (head) ====="
-          sed -n '1,40p' android/app/build.gradle
-          echo "===== DEBUG: app/build.gradle (tail) ====="
-          tail -20 android/app/build.gradle
+        run: python3 scripts/patch_chaquopy.py
 
-      - name: Install matching NDK
+      - name: Install NDK (cached)
+        uses: actions/cache@v4
+        id: ndk-cache
+        with:
+          path: /usr/local/lib/android/sdk/ndk
+          key: ndk-${{ runner.os }}-${{ hashFiles('android/build.gradle') }}
+          restore-keys: ndk-${{ runner.os }}-
+      - name: Install matching NDK (if not cached)
+        if: steps.ndk-cache.outputs.cache-hit != 'true'
         run: |
           NDK_VER=$(grep -oP 'ndkVersion "\K[^"]+' android/build.gradle || true)
-          echo "NDK version: ${NDK_VER:-<unset, gradle will use default>}"
           if [ -n "$NDK_VER" ]; then sdkmanager "ndk;$NDK_VER"; fi
         env:
           ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
@@ -116,7 +116,7 @@ jobs:
           RELEASE_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}
           EOF
 
-      - name: Cache Gradle (تسريع البناءات القادمة)
+      - name: Cache Gradle
         uses: actions/cache@v4
         with:
           path: |
@@ -125,7 +125,7 @@ jobs:
           key: gradle-${{ runner.os }}-${{ hashFiles('android/gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: gradle-${{ runner.os }}-
 
-      - name: Tune Gradle (caching + memory only)
+      - name: Tune Gradle
         run: |
           cat >> android/gradle.properties <<EOF
           org.gradle.caching=true
@@ -139,27 +139,18 @@ jobs:
         env:
           ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
 
-      - name: Verify APK signature (real check, no masking)
+      - name: Verify APK signature
         working-directory: android
         run: |
           set -e
           APK=$(ls app/build/outputs/apk/release/*release*.apk | head -1)
           echo "APK: $APK"
           APKSIGNER_JAR=$(ls $ANDROID_HOME/build-tools/*/lib/apksigner.jar | tail -1)
-          echo "Using: $APKSIGNER_JAR"
           APK_DIGEST=$(java -jar "$APKSIGNER_JAR" verify --print-certs "$APK" | grep -i "sha-256 digest" | awk '{print $NF}')
-          echo "APK SHA-256 digest: $APK_DIGEST"
           KEY_DIGEST=$(keytool -list -v -keystore realestate-app.keystore -storepass "${{ secrets.KEYSTORE_PASSWORD }}" -alias "${{ secrets.KEY_ALIAS }}" 2>/dev/null | grep -i "sha256:" | awk '{print $2}' | tr -d ':' | tr 'A-Z' 'a-z')
-          echo "Keystore SHA-256:   $KEY_DIGEST"
-          [ "$APK_DIGEST" = "$KEY_DIGEST" ] && echo "SIGNATURE MATCH: APK موقّع بمفتاحنا" || { echo "MISMATCH: التوقيع لا يطابق المفتاح!"; exit 1; }
-
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: realestate-app-release
-          path: android/app/build/outputs/apk/release/*release*.apk
-          if-no-files-found: error
-          retention-days: 1
+          echo "APK: $APK_DIGEST"
+          echo "KEY: $KEY_DIGEST"
+          [ "$APK_DIGEST" = "$KEY_DIGEST" ] && echo "✓ SIGNATURE MATCH" || { echo "✗ MISMATCH"; exit 1; }
 
       - name: Create GitHub Release
         if: success()
@@ -171,5 +162,5 @@ jobs:
           gh release create "v${VERSION}" "$APK" \
             --repo "${{ github.repository }}" \
             --title "Kimo Map Agent v${VERSION}" \
-            --notes "APK موقّع — arm64-v8a فقط — الحجم: $(du -h "$APK" | cut -f1)" \
+            --notes "arm64-v8a — $(du -h "$APK" | cut -f1)" \
             --latest
