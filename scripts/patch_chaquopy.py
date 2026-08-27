@@ -127,13 +127,17 @@ def patch_main_application():
             if "import com.chaquo.python.Python" not in s:
                 s = s.replace(
                     "package com.realestate.app",
-                    "package com.realestate.app\n\nimport com.chaquo.python.Python\nimport com.chaquo.python.android.AndroidPlatform",
+                    "package com.realestate.app\n\nimport com.chaquo.python.Python\nimport com.chaquo.python.android.AndroidPlatform\nimport android.util.Log",
                     1,
                 )
-            # أضف Python.start داخل onCreate()
+            # أضف Python.start داخل onCreate() (مع try/catch لكشف أسباب الانهيار)
             chaquopy_init = (
-                "\n        if (!Python.isStarted()) {\n"
-                "            Python.start(AndroidPlatform(this))\n"
+                "\n        try {\n"
+                "            if (!Python.isStarted()) {\n"
+                "                Python.start(AndroidPlatform(this))\n"
+                "            }\n"
+                "        } catch (e: Exception) {\n"
+                "            Log.e(\"KimoChaquopy\", \"Python.start failed\", e)\n"
                 "        }"
             )
             if "override fun onCreate()" in s:
