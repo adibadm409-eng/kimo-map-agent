@@ -133,7 +133,7 @@ jobs:
 
       - name: Build signed release APK
         working-directory: android
-        run: ./gradlew assembleRelease
+        run: ./gradlew clean assembleRelease
         env:
           ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
 
