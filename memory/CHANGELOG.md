@@ -299,3 +299,10 @@
 - 2026-08-27 | e456a82 | إضافة GitHub Release كبديل لـ Artifact (حل مشكلة الحصة)
 - 2026-08-27 | 1d7ea2a | تحسين بناء: cache NDK + تقليل SDK + حذف debug output
 - 2026-08-27 | b260f3b | إضافة contents:write لصلاحيات GITHUB_TOKEN
+- 2026-08-27 | 1dbd1ec | fix: initialize Chaquopy Python.start + exclude heavy stdlib modules to shrink APK
+- 2026-08-27 | f68420a | fix: initialize Chaquopy Python.start + exclude heavy stdlib modules to shrink APK
+- 2026-08-27 | 4257ecc | fix: initialize Chaquopy Python.start + exclude heavy stdlib modules to shrink APK
+- 2026-08-27 | ce649f2 | fix: initialize Chaquopy Python.start + exclude heavy stdlib modules to shrink APK
+- 2026-08-27 | e91249b | fix: initialize Chaquopy Python.start + exclude heavy stdlib modules to shrink APK
+- 2026-08-27 | e55acb6 | fix: Python.start init in MainApplication + clean python copy (drop excludeModules)
+- 2026-08-27 | b9525e7 | fix: correct AndroidPlatform import (com.chaquo.python.android) + Python.start init

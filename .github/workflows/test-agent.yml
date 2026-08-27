@@ -1,0 +1,40 @@
+name: Agent Integration Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, kimo-embedded-build]
+  pull_request:
+    branches: [main, kimo-embedded-build]
+
+permissions:
+  contents: read
+
+jobs:
+  test-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Python deps (stdlib-only engine)
+        run: |
+          python3 -m pip install --upgrade pip
+          # المكتبة تعتمد على stdlib فقط (urllib) داخل المحرك؛
+          # نثبّت httpx اختيارياً فقط إن وُجد في المتطلبات.
+          if [ -f requirements.txt ]; then pip install -r requirements.txt || true; fi
+
+      - name: Run agent integration test (mock mode)
+        run: python3 scripts/test_agent_integration.py
+
+      - name: Run agent integration test (live mode, if key provided)
+        if: ${{ env.KIMO_TEST_API_KEY != '' }}
+        env:
+          KIMO_LIVE: "1"
+          KIMO_TEST_API_KEY: ${{ secrets.KIMO_TEST_API_KEY }}
+          KIMO_TEST_PROVIDER: ${{ secrets.KIMO_TEST_PROVIDER }}
+          KIMO_TEST_MODEL: ${{ secrets.KIMO_TEST_MODEL }}
+        run: python3 scripts/test_agent_integration.py
