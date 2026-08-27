@@ -24,11 +24,12 @@ module.exports = function androidReleaseOptimize(config) {
     }
 
     // 2) تقييد ABI: استبدل سطر abiFilters بـ arm64-v8a فقط، مهما كانت صيغته
-    // (القالب يستخدم ndk { abiFilters (*reactNativeArchitectures()) }).
+    // (قد يكون ndk { abiFilters (*reactNativeArchitectures()) } أو قائمة حرفية
+    // ndk { abiFilters "armeabi-v7a", "x86", "x86_64", "arm64-v8a" }).
     if (s.includes('abiFilters')) {
       s = s.replace(
-        /[^\n]*abiFilters\s*\([^\n]*/m,
-        (line) => line.replace(/abiFilters\s*\(.*/, "abiFilters 'arm64-v8a'")
+        /[^\n]*abiFilters[^\n]*/m,
+        (line) => line.replace(/abiFilters.*/, "abiFilters 'arm64-v8a'")
       );
     } else {
       s = s.replace(
