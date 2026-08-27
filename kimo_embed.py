@@ -10,14 +10,21 @@ import asyncio
 import json
 import os
 
+from kimo.config import AgentSettings
 from kimo.host import build_agent, make_mock_client
 from kimo.integration.app_session_store import AppSessionStore
 
 
 class EmbeddedEngine:
-    def __init__(self, db_path: str) -> None:
+    def __init__(self, db_path: str, settings: AgentSettings | None = None) -> None:
         self.session_store = AppSessionStore(db_path)
-        self.engine, _ = build_agent(db_path=db_path, session_store=self.session_store)
+        if os.environ.get("KIMO_MOCK") and settings is None:
+            settings = AgentSettings(
+                provider_id="openai", model="mock-model", api_key="mock-key"
+            )
+        self.engine, _ = build_agent(
+            db_path=db_path, session_store=self.session_store, settings=settings
+        )
         if os.environ.get("KIMO_MOCK"):
             self.engine.client = make_mock_client()
 
@@ -44,11 +51,32 @@ class EmbeddedEngine:
         return {"answer": final_text, "events": collected}
 
 
-def run_chat_sync(session_id: str, text: str, db_path: str, mock: bool = False) -> str:
-    """نسخة متزامنة للطبقة الأصلية (Chaquopy/Kotlin). ترجع JSON-string."""
+def run_chat_sync(
+    session_id: str,
+    text: str,
+    db_path: str,
+    mock: bool = False,
+    provider_id: str = "",
+    model: str = "",
+    api_key: str = "",
+    base_url: str = "",
+) -> str:
+    """نسخة متزامنة للطبقة الأصلية (Chaquopy/Kotlin). ترجع JSON-string.
+
+    تمرّر إعدادات المزود من واجهة التطبيق (المزود/الموديل/المفتاح/العنوان)
+    مباشرةً إلى المحرك، بدل الاعتماد على ملف إعدادات افتراضي بلا مفتاح.
+    """
     if mock:
         os.environ["KIMO_MOCK"] = "1"
-    data = EmbeddedEngine(db_path).chat(session_id, text)
+    settings: AgentSettings | None = None
+    if provider_id:
+        settings = AgentSettings(
+            provider_id=provider_id,
+            model=model or None,
+            api_key=api_key or None,
+            base_url=base_url or None,
+        )
+    data = EmbeddedEngine(db_path, settings=settings).chat(session_id, text)
     return json.dumps(data, ensure_ascii=False)
 
 

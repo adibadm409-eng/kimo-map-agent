@@ -20,12 +20,32 @@ class KimoEngineModule(private val reactContext: ReactApplicationContext) :
     override fun getName(): String = "KimoEngine"
 
     @ReactMethod
-    fun runChat(sessionId: String, text: String, dbName: String, mock: Int, promise: Promise) {
+    fun runChat(
+        sessionId: String,
+        text: String,
+        dbName: String,
+        mock: Int,
+        providerId: String,
+        model: String,
+        apiKey: String,
+        baseUrl: String,
+        promise: Promise,
+    ) {
         try {
             val py = Python.getInstance()
             val dbPath = reactContext.getDatabasePath(dbName).absolutePath
             val module = py.getModule("kimo_embed")
-            val result = module.callAttr("run_chat_sync", sessionId, text, dbPath, mock == 1)
+            val result = module.callAttr(
+                "run_chat_sync",
+                sessionId,
+                text,
+                dbPath,
+                mock == 1,
+                providerId ?: "",
+                model ?: "",
+                apiKey ?: "",
+                baseUrl ?: "",
+            )
             promise.resolve(result.toString())
         } catch (e: Exception) {
             promise.reject("KIMO_ERROR", e.localizedMessage ?: e.toString(), e)

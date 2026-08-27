@@ -2,6 +2,7 @@ import { NativeModules } from 'react-native'
 import { emitForSession, type AgentOutcome } from './agentRun'
 import { persistAssistantText } from './persist'
 import { runViaKimo } from './kimoBridge'
+import { activeConfig } from './store'
 
 // اسم قاعدة بيانات expo-sqlite في التطبيق؛ تطبّقه الطبقة الأصلية لتحديد مسار
 // الملف ذاته الذي يفتحه المحرك البايثوني المضمَّن (مصدر بيانات واحد).
@@ -21,11 +22,16 @@ export async function runViaKimoNative(
   opts?: { mock?: boolean },
 ): Promise<AgentOutcome> {
   if (NativeKimo && typeof NativeKimo.runChat === 'function') {
+    const cfg = await activeConfig()
     const json = await NativeKimo.runChat(
       appSessionId,
       text,
       KIMO_DB_NAME,
       opts?.mock ? 1 : 0,
+      cfg.providerId,
+      cfg.model,
+      cfg.apiKey,
+      cfg.baseUrl ?? '',
     )
     const j = typeof json === 'string' ? JSON.parse(json) : json
     for (const e of j.events ?? []) {

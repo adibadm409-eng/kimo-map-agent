@@ -129,13 +129,25 @@ jobs:
           org.gradle.caching=true
           org.gradle.daemon=true
           org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=2048m
+          # معمارية واحدة فقط (الأجهزة الحديثة) — يمنع بناء الوحدات الأصلية
+          # (react-native / expo-modules-core / hermes) بأي معمارية أخرى.
+          reactNativeArchitectures=arm64-v8a
           EOF
 
       - name: Build signed release APK
         working-directory: android
-        run: ./gradlew clean assembleRelease
+        run: ./gradlew clean assembleRelease 2>&1 | tee /tmp/gradle.log
         env:
           ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
+
+      - name: Verify no non-arm64 build tasks (root-cause gate)
+        run: |
+          echo "=== Scanning build log for non-arm64 native build tasks ==="
+          if grep -E "\[(armeabi-v7a|x86|x86_64)\]" /tmp/gradle.log; then
+            echo "✗ ERROR: معماريات غير مدعومة بُنيت (انظر السجل أعلاه). يجب ألا يُبنى أي شيء غير arm64-v8a."
+            exit 1
+          fi
+          echo "✓ لا توجد مهام بناء بمعماريات غير arm64-v8a"
 
       - name: List APK native ABIs (verify single-arch)
         working-directory: android
@@ -143,10 +155,17 @@ jobs:
           APK=$(ls app/build/outputs/apk/release/*release*.apk | head -1)
           echo "APK: $APK"
           echo "=== ABIs packaged (lib/<abi>/) ==="
-          unzip -l "$APK" | grep -oE "lib/[^/]+/" | sort -u
+          ABIS=$(unzip -l "$APK" | grep -oE "lib/[^/]+/" | sort -u)
+          echo "$ABIS"
           echo "=== native-code (aapt) ==="
           APKSIZER=$(ls $ANDROID_HOME/build-tools/*/aapt 2>/dev/null | tail -1)
           "$APKSIZER" dump badging "$APK" 2>/dev/null | grep -i "native-code" || true
+          echo "=== Gate: only arm64-v8a allowed ==="
+          if echo "$ABIS" | grep -v "lib/arm64-v8a/" | grep -q "lib/"; then
+            echo "✗ ERROR: المعماريات التالية موجودة في الـAPK:"; echo "$ABIS" | grep -v "lib/arm64-v8a/"
+            exit 1
+          fi
+          echo "✓ الـAPK يحتوي arm64-v8a فقط"
 
       - name: Verify APK signature
         working-directory: android
