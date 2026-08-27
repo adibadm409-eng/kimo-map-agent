@@ -518,3 +518,4 @@
 - 2026-08-27 | e386926 | تعديل تلقائي: package.json
 - 2026-08-27 | a4d53af | تعديل تلقائي: androidOptimize.js
 - 2026-08-27 | 3301a88 | تعديل تلقائي: androidOptimize.js
+- 2026-08-27 | 5bf539a | تعديل تلقائي: build-apk.yml
