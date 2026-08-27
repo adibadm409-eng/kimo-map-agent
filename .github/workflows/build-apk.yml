@@ -137,6 +137,17 @@ jobs:
         env:
           ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
 
+      - name: List APK native ABIs (verify single-arch)
+        working-directory: android
+        run: |
+          APK=$(ls app/build/outputs/apk/release/*release*.apk | head -1)
+          echo "APK: $APK"
+          echo "=== ABIs packaged (lib/<abi>/) ==="
+          unzip -l "$APK" | grep -oE "lib/[^/]+/" | sort -u
+          echo "=== native-code (aapt) ==="
+          APKSIZER=$(ls $ANDROID_HOME/build-tools/*/aapt 2>/dev/null | tail -1)
+          "$APKSIZER" dump badging "$APK" 2>/dev/null | grep -i "native-code" || true
+
       - name: Verify APK signature
         working-directory: android
         run: |
