@@ -91,12 +91,10 @@ jobs:
                       keyPassword 'android'
                   }
                   release {
-                      if (project.hasProperty('RELEASE_STORE_FILE')) {
-                          storeFile file(RELEASE_STORE_FILE)
-                          storePassword RELEASE_STORE_PASSWORD
-                          keyAlias RELEASE_KEY_ALIAS
-                          keyPassword RELEASE_KEY_PASSWORD
-                      }
+                      storeFile file('../realestate-app.keystore')
+                      storePassword '${{ secrets.KEYSTORE_PASSWORD }}'
+                      keyAlias '${{ secrets.KEY_ALIAS }}'
+                      keyPassword '${{ secrets.KEY_PASSWORD }}'
                   }
               }"""
           assert old_signing in s, "signingConfigs block not found"
@@ -112,12 +110,6 @@ jobs:
           open(p, 'w').write(s)
           print("signing patched OK")
           PYEOF
-          cat >> android/gradle.properties <<'EOF'
-          RELEASE_STORE_FILE=../realestate-app.keystore
-          RELEASE_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}
-          RELEASE_KEY_ALIAS=${{ secrets.KEY_ALIAS }}
-          RELEASE_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}
-          EOF
 
       - name: Cache Gradle
         uses: actions/cache@v4
