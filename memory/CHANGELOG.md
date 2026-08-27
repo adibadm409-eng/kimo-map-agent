@@ -294,3 +294,8 @@
 - 2026-08-24 | 17dd929 | تعديل تلقائي: استيرادات ReactPackage/NativeModule/ViewManager المفقودة في KimoEngineModule
 - 2026-08-27 | a705bb1 | إضافة Agent Worker — عامل تنفيذ مستمر في الواجهة
 - 2026-08-27 | 63539eb | إصلاح: activeConfig تعيد Promise يجب await
+- 2026-08-27 | a96b370 | تعمية arm64-v8a فقط + تحديث الذاكرة
+- 2026-08-27 | 0fd375f | إضافة توثيق احترافي للفرق بين الفرعين
+- 2026-08-27 | e456a82 | إضافة GitHub Release كبديل لـ Artifact (حل مشكلة الحصة)
+- 2026-08-27 | 1d7ea2a | تحسين بناء: cache NDK + تقليل SDK + حذف debug output
+- 2026-08-27 | b260f3b | إضافة contents:write لصلاحيات GITHUB_TOKEN
