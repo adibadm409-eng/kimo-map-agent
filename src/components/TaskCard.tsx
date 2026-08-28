@@ -37,7 +37,7 @@ export default function TaskCard() {
 
   const done = plan.steps.filter((s) => s.status === 'done').length
   const total = plan.steps.length
-  const busy = statusBar.visible && statusBar.thinking !== false || statusBar.phase === 'execute' || statusBar.phase === 'verify'
+  const busy = statusBar.visible && (statusBar.phase === 'execute' || statusBar.phase === 'verify' || statusBar.phase === 'understand' || statusBar.phase === 'plan')
 
   return (
     <View style={[styles.card, { backgroundColor: colors.bgSecondary, borderColor: colors.border }]}>
