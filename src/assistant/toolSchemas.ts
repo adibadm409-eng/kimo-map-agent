@@ -232,6 +232,30 @@ export function adaptToolArgs(tool: string, raw: Record<string, any>): Record<st
   if (tool === 'workspace_add_column' && args.column == null) {
     args.column = args.column_definition ?? args.column_data ?? args.field ?? args.def
   }
+  const ROW_COL_ALIASES: Record<string, string[]> = {
+    name: ['الاسم', 'اسم', 'title', 'label', 'plot_name'],
+    amount: ['المبلغ', 'مبلغ', 'price', 'value', 'cost', 'المقدار'],
+    phone: ['الهاتف', 'جوال', 'mobile', 'contact'],
+    status: ['الحالة', 'حاله', 'state'],
+    area: ['المساحة', 'مساحة', 'area_sqm', 'size'],
+  }
+  const normalizeRowKeys = (row: Record<string, any>) => {
+    const out: Record<string, any> = {}
+    for (const [k, v] of Object.entries(row)) {
+      let mapped = k
+      const lk = String(k).trim().toLowerCase()
+      for (const [canonical, aliases] of Object.entries(ROW_COL_ALIASES)) {
+        if (aliases.some((a) => a.toLowerCase() === lk) || lk === canonical) { mapped = canonical; break }
+      }
+      out[mapped] = v
+    }
+    return out
+  }
+  if (args.row && typeof args.row === 'object' && !Array.isArray(args.row)) args.row = normalizeRowKeys(args.row as Record<string, any>)
+  if (args.rows && Array.isArray(args.rows)) args.rows = args.rows.map((r: any) => r && typeof r === 'object' && !Array.isArray(r) ? normalizeRowKeys(r) : r)
+  if (args.data && typeof args.data === 'object' && !Array.isArray(args.data) && args.entity && !projectEntities.has(String(args.entity))) {
+    args.data = normalizeRowKeys(args.data as Record<string, any>)
+  }
   for (const [k, v] of Object.entries(args)) {
     if (NUMERIC_FIELDS.has(k) && typeof v === 'string' && v.trim() !== '' && !Number.isNaN(Number(v))) {
       args[k] = Number(v)
