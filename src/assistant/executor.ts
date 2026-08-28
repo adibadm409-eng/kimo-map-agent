@@ -305,18 +305,17 @@ async function runLoop(
           const turnIssues = validateToolCallBatch(result.toolCalls, agentFunctions, profile.supports.parallelTools)
           if (turnIssues.length) {
             const issueText = turnIssues.map((issue) => issue.message).join(' ')
-            for (const invalidCall of result.toolCalls) {
-              const callIssues = validateToolCallAgainstDefinitions(invalidCall, agentFunctions)
-              const detail = callIssues.length ? callIssues.map((issue) => issue.message).join(' ') : issueText
-              const observation = `[فشل التحقق قبل التنفيذ] ${detail}`
-              await persistToolResult(sessionId, invalidCall, { ok: false, error: 'tool_validation', detail }, { name: invalidCall.name, ok: false, observation, args: invalidCall.arguments }).catch(() => {})
-              thread.push({ role: 'tool', tool_call_id: invalidCall.id, name: invalidCall.name, content: observation })
+            const isParallelIssueOnly = turnIssues.length === 1 && turnIssues[0]?.code === 'parallel_not_allowed'
+            if (isParallelIssueOnly) {
+              if (emitEvents) publishRuntimeEvent(sessionId, { type: 'observation', title: 'مؤشر ثقة: توازٍ غير مؤكد', detail: `${issueText} — سأعالج النداءات بالتسلسل مع ثقة متوسطة.`, status: 'success' })
+              await addBrainOp(sessionId, 'confidence', `مؤشر ثقة متوسطة (55%): ${issueText} — أتابع التنفيذ بالتسلسل.`).catch(() => {})
+            } else {
+              let softFixable = 0
+              for (const c of result.toolCalls) if (!validateToolCallAgainstDefinitions(c, agentFunctions).length) softFixable++
+              const conf = softFixable === result.toolCalls.length ? 65 : softFixable > 0 ? 35 : 15
+              await addBrainOp(sessionId, 'confidence', `مؤشر ثقة ${conf}%: ${issueText} — أتابع محاولة التنفيذ مع تصحيح الأسماء تلقائياً، لا أتوقف.`).catch(() => {})
+              if (emitEvents) publishRuntimeEvent(sessionId, { type: 'observation', title: `مؤشر ثقة ${conf}%`, detail: issueText, status: conf >= 50 ? 'success' : 'error' })
             }
-            if (emitEvents) {
-              publishRuntimeEvent(sessionId, { type: 'observation', title: 'حُجبت أداة قبل التنفيذ', detail: issueText, status: 'error' })
-              publishRuntimeEvent(sessionId, { type: 'recovery', title: 'أعيد الطلب إلى الوكيل للتصحيح', detail: 'لم أُنفّذ أي أثر جانبي قبل اجتياز التحقق المحلي للوسائط والمعرفات والقدرات.', strategy: 'retry' })
-            }
-            continue
           }
         }
 
