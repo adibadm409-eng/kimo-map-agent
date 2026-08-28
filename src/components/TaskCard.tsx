@@ -37,7 +37,8 @@ export default function TaskCard() {
 
   const done = plan.steps.filter((s) => s.status === 'done').length
   const total = plan.steps.length
-  const busy = statusBar.visible && (statusBar.phase === 'execute' || statusBar.phase === 'verify' || statusBar.phase === 'understand' || statusBar.phase === 'plan')
+  const busy =
+    statusBar.visible && ['execute', 'verify', 'understand', 'plan', 'recover', 'ask'].includes(statusBar.phase)
 
   return (
     <View style={[styles.card, { backgroundColor: colors.bgSecondary, borderColor: colors.border }]}>

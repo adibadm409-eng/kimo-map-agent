@@ -560,3 +560,4 @@
 - 2026-08-29 | 57c9c7f | تعديل تلقائي: AssistantScreen.tsx
 - 2026-08-29 | fcfbd65 | تعديل تلقائي: TaskCard.tsx
 - 2026-08-29 | bd48ce9 | تعديل تلقائي: TaskCard.tsx
+- 2026-08-29 | 3dfcc64 | تعديل تلقائي: TaskCard.tsx
