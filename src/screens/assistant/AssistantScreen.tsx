@@ -34,6 +34,7 @@ import {
 import { shareFile, saveToDownloads } from '../../assistant'
 import AssistantHistory from './AssistantHistory'
 import Markdown from '../../components/ui/Markdown'
+import TaskCard from '../../components/TaskCard'
 import { useChatStore } from './agentChatStore'
 import { renderRegistryItem, ContextBanner, ExecutionStatusBar, AuditDrawer, type RegistryCtx } from './registry'
 import { useAgentEvents } from './useAgentEvents'
