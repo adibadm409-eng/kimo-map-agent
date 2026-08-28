@@ -344,6 +344,40 @@ export async function handleToolCall(
     return await runRegistryTool(sessionId, s, call, name, args, emitEvents)
   }
 
+  if (name === 'orchestrate') {
+    const tasks = Array.isArray(args.tasks) ? (args.tasks as SubAgentTask[]) : []
+    const mode = String(args.mode ?? 'execute')
+    try {
+      if (mode === 'review') {
+        const text = reviewSubAgentResults(await runSubAgents(sessionId, tasks).then((o) => ({ results: o.results, summary: o.summary })))
+        await persistPair(sessionId, call, text)
+        if (emitEvents) emitForSession(sessionId, { type: 'progress', text })
+        return true
+      }
+      if (mode === 'undo') {
+        const text = await undoLastSubAgent(sessionId)
+        await persistPair(sessionId, call, text)
+        if (emitEvents) emitForSession(sessionId, { type: 'progress', text })
+        return true
+      }
+      const outcome = await runSubAgents(sessionId, tasks)
+      const text = reviewSubAgentResults(outcome)
+      if (emitEvents) {
+        for (const r of outcome.results) {
+          emitForSession(sessionId, { type: 'tool', name: r.tool, args: r.result ?? {}, result: r.observation })
+        }
+        emitForSession(sessionId, { type: 'progress', text })
+      }
+      await persistPair(sessionId, call, text, undefined, { name: 'orchestrate', args, result: outcome, observation: text, ok: outcome.summary.failed === 0, verified: outcome.summary.verified === outcome.summary.total })
+      return true
+    } catch (error: any) {
+      const text = `[فشل] تعذر تنسيق الوكلاء الفرعيين: ${error?.message ?? String(error)}`
+      await persistPair(sessionId, call, text)
+      if (emitEvents) emitForSession(sessionId, { type: 'error', message: text })
+      return true
+    }
+  }
+
   if (name === 'undo_last') {
     const entry = await peekUndo(sessionId)
     let result: string
