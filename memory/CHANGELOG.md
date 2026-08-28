@@ -547,3 +547,4 @@
 - 2026-08-28 | bebf2ad | تعديل تلقائي: orchestrator.ts
 - 2026-08-28 | 235200c | تعديل تلقائي: invokeTools.ts
 - 2026-08-28 | a4ad114 | تعديل تلقائي: invokeTools.ts
+- 2026-08-29 | 287f869 | تعديل تلقائي: prompts.ts

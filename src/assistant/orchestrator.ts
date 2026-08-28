@@ -1,6 +1,7 @@
 import { runToolWithFeedback } from './toolSchemas'
 import { withAuditCtx } from '../database/audit'
-import { performUndo, peekUndo, removeUndo } from './store'
+import { peekUndo, removeUndo } from './store'
+import { performUndo } from './undo'
 import type { UndoEntry } from './store'
 
 /**
