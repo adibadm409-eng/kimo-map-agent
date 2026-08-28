@@ -23,6 +23,7 @@ import { DELETE_CONFIRM_TOOLS } from './prompts'
 import type { ToolCall } from './llm'
 import { parseToolArgumentsStrict } from './toolValidation'
 import { generateExcelFile, generateWordFile, generatePdfFile, buildHtml, type ExcelFileSpec, type WordFileSpec } from './files'
+import { runSubAgents, reviewSubAgentResults, undoLastSubAgent, type SubAgentTask } from './orchestrator'
 
 export type OpenLink = { kind: 'workspace' | 'project' | 'block' | 'plot' | 'client' | 'property'; id: string; label?: string }
 
