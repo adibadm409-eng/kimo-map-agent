@@ -35,7 +35,7 @@ export default function TaskCard() {
 
   if (!plan || !plan.steps?.length) return null
 
-  const done = plan.steps.filter((s) => s.status === 'done' || s.status === 'verified').length
+  const done = plan.steps.filter((s) => s.status === 'done').length
   const total = plan.steps.length
   const busy = statusBar.visible && statusBar.thinking !== false || statusBar.phase === 'execute' || statusBar.phase === 'verify'
 
