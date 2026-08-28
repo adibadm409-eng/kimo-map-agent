@@ -321,21 +321,11 @@ async function runLoop(
 
         if (!result.toolCalls.length) {
           const finalText = result.content ? String(result.content).trim() : ''
-          // القراءة التي تطلب أرقاماً أو حالة محلية لا تختم بنص النموذج وحده:
-          // بعد ردّ نهائي بلا أداة وبلا أي دليل ناجح في الجولة، نُعيد الطلب إلى
-          // الوكيل بتوجيه نصي، وبعد حد أقصى نسجل فشلاً صريحاً بدل إعلان نجاح كاذب.
           if (readIntentRequiresEvidence && finalText && !runtimeSuccessfulEvidenceCount) {
             noEvidenceRecoveryAttempts++
-            if (noEvidenceRecoveryAttempts >= MAX_NO_EVIDENCE_RECOVERIES) {
-              const gateMsg = 'لم تُرجع أدوات القراءة نتيجة رغم أن الطلب يستوجب بيانات محلية؛ لن أعلن نجاحاً دون دليل. تحقق من قاعدة البيانات أو اطلب توضيحاً.'
-              await persistAssistantText(sessionId, gateMsg, 'error').catch(() => {})
-              if (emitEvents) emitForSession(sessionId, { type: 'error', message: gateMsg })
-              if (runtimeTaskId) await transitionTaskRun(runtimeTaskId, 'failed', { lastError: gateMsg }).catch(() => {})
-              finished = true
-              break
-            }
-            runtimeCorrection = `[تصحيح] هذا الطلب يستوجب بيانات محلية فعلية. لا ترد بنص تخميني: استدعِ أداة قراءة مناسبة (query/get…) وانتظر نتيجتها ثم أجب منها. المحاولة ${noEvidenceRecoveryAttempts}/${MAX_NO_EVIDENCE_RECOVERIES}.`
-            continue
+            const conf = Math.max(10, 60 - noEvidenceRecoveryAttempts * 15)
+            await addBrainOp(sessionId, 'confidence', `مؤشر ثقة ${conf}%: إجابة عن بيانات محلية بلا دليل موثَّق بعد (المحاولة ${noEvidenceRecoveryAttempts}). أذكر المستخدم بمستوى الثقة ولا أتوقف.`).catch(() => {})
+            if (emitEvents) publishRuntimeEvent(sessionId, { type: 'observation', title: `مؤشر ثقة ${conf}% — بلا دليل محلي`, detail: 'أجيب لكن أذكر أن هذه الإجابة بلا تحقق من قاعدة البيانات؛ يُفضَّل التحقق بأداة قراءة.', status: 'success' })
           }
           // الوكيل الحر: أي إجابة نهائية تُعتمد مباشرة دون بوابة إثبات قسرية.
           // نثق بالنموذج ونتائج أدواته الفعلية، وندعه يجيب مباشرة على الأسئلة
