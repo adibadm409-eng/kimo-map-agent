@@ -557,3 +557,4 @@
 - 2026-08-29 | c046936 | تعديل تلقائي: prompts.ts
 - 2026-08-29 | c62c5ce | تعديل تلقائي: TaskCard.tsx
 - 2026-08-29 | edbff15 | تعديل تلقائي: AssistantScreen.tsx
+- 2026-08-29 | 57c9c7f | تعديل تلقائي: AssistantScreen.tsx

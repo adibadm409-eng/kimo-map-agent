@@ -7,19 +7,18 @@ import { useChatStore } from '../screens/assistant/agentChatStore'
 import type { AgentPlan } from '../assistant/agentContract'
 
 function stepIcon(status?: string): { name: string; color: string } {
-  if (status === 'done' || status === 'verified') return { name: 'checkmark-circle', color: '#16A34A' }
-  if (status === 'running' || status === 'active') return { name: 'sync', color: '#2563EB' }
-  if (status === 'failed') return { name: 'close-circle', color: '#DC2626' }
-  if (status === 'blocked' || status === 'awaiting_user') return { name: 'pause-circle', color: '#F59E0B' }
+  if (status === 'done') return { name: 'checkmark-circle', color: '#16A34A' }
+  if (status === 'active') return { name: 'sync', color: '#2563EB' }
+  if (status === 'blocked') return { name: 'pause-circle', color: '#F59E0B' }
+  if (status === 'skipped') return { name: 'close-circle', color: '#94A3B8' }
   return { name: 'ellipse-outline', color: '#94A3B8' }
 }
 
 function statusLabel(status?: string): string {
-  if (status === 'done' || status === 'verified') return 'منجز'
-  if (status === 'running' || status === 'active') return 'قيد التنفيذ'
-  if (status === 'failed') return 'تعثر'
+  if (status === 'done') return 'منجز'
+  if (status === 'active') return 'قيد التنفيذ'
   if (status === 'blocked') return 'معلّق'
-  if (status === 'awaiting_user') return 'بانتظارك'
+  if (status === 'skipped') return 'متجاوز'
   return 'معلّق'
 }
 
