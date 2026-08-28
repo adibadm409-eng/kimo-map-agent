@@ -120,57 +120,11 @@ def patch_main_application():
                 fail("لم أجد new MainReactPackage() للتسجيل")
         patched = True
 
-    # 2) ابدأ Chaquopy Python في onCreate() قبل أي استخدام
-    if "Python.start" not in s:
-        if is_kotlin:
-            # أضف imports في أعلى الملف (بجانب باقي Imports)
-            if "import com.chaquo.python.Python" not in s:
-                s = s.replace(
-                    "package com.realestate.app",
-                    "package com.realestate.app\n\nimport com.chaquo.python.Python\nimport com.chaquo.python.android.AndroidPlatform\nimport android.util.Log",
-                    1,
-                )
-            # أضف Python.start داخل onCreate() (مع try/catch لكشف أسباب الانهيار)
-            chaquopy_init = (
-                "\n        try {\n"
-                "            if (!Python.isStarted()) {\n"
-                "                Python.start(AndroidPlatform(this))\n"
-                "            }\n"
-                "        } catch (e: Exception) {\n"
-                "            Log.e(\"KimoChaquopy\", \"Python.start failed\", e)\n"
-                "        }"
-            )
-            if "override fun onCreate()" in s:
-                s = s.replace(
-                    "override fun onCreate() {",
-                    "override fun onCreate() {\n" + chaquopy_init,
-                    1,
-                )
-                patched = True
-            else:
-                print("WARNING: لم أجد override fun onCreate() — تخطى تهيئة Python.start")
-        else:
-            # Java: أضف imports في أعلى الملف
-            if "import com.chaquo.python.Python;" not in s:
-                s = s.replace(
-                    "package com.realestate.app;",
-                    "package com.realestate.app;\n\nimport com.chaquo.python.Python;\nimport com.chaquo.python.android.AndroidPlatform;",
-                    1,
-                )
-            chaquopy_init = (
-                "\n        if (!Python.isStarted()) {\n"
-                "            Python.start(new AndroidPlatform(this));\n"
-                "        }"
-            )
-            if "public void onCreate()" in s:
-                s = s.replace(
-                    "public void onCreate()",
-                    "public void onCreate() {\n" + chaquopy_init,
-                    1,
-                )
-                patched = True
-            else:
-                print("WARNING: لم أجد public void onCreate() — تخطى تهيئة Python.start")
+    # 2) لا نبدأ Chaquopy عند الإقلاع أبداً.
+    # تفسير: إن فشل `Python.start` بأسلوب ميت لفشله الأصلي (SIGSEGV/Abort) فإن
+    # `try/catch` لا يلتقطه، فكان التطبيق يرتطم قبل إظهار أي شاشة. لذلك أصبح
+    # التشغيل بكسلاً داخل `KimoEngineModule` عند أول رسالة للوكيل (هناك يُلتقط
+    # أي خطأ بشكل آمن ويُعرض داخل الواجهة).
 
     open(path, "w").write(s)
     name = os.path.basename(path)
