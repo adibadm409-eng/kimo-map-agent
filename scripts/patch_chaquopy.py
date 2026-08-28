@@ -39,7 +39,7 @@ def patch_root_gradle():
         # أضف classpath إلى أول كتلة dependencies (buildscript)
         s = s.replace(
             "dependencies {",
-            'dependencies {\n        classpath "com.chaquo.python:gradle:16.1.0"',
+            'dependencies {\n        classpath "com.chaquo.python:gradle:17.0.0"',
             1,
         )
     if "maven.chaquo.com" not in s and "chaquo.com/maven" not in s:
