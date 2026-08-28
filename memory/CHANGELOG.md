@@ -556,3 +556,4 @@
 - 2026-08-29 | 3af73be | تعديل تلقائي: toolSchemas.ts
 - 2026-08-29 | c046936 | تعديل تلقائي: prompts.ts
 - 2026-08-29 | c62c5ce | تعديل تلقائي: TaskCard.tsx
+- 2026-08-29 | edbff15 | تعديل تلقائي: AssistantScreen.tsx
