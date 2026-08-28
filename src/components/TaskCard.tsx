@@ -70,7 +70,7 @@ export default function TaskCard() {
         <View style={[styles.body, { borderTopColor: colors.border }]}>
           {plan.steps.map((step, idx) => {
             const icon = stepIcon(step.status)
-            const isActive = step.status === 'active' || step.status === 'running'
+            const isActive = step.status === 'active'
             return (
               <View
                 key={step.id ?? `step-${idx}`}
