@@ -226,6 +226,32 @@ const WRAPPER_FUNCTIONS: FunctionDef[] = [
     },
   },
   {
+    name: 'orchestrate',
+    description:
+      'نفّذ عدة عمليات مستقلة بالتوازي عبر وكلاء فرعيين تحت توجيهك، ثم راجع نتائجهم وصحّح أو تراجع حسب الحاجة. استخدمها للطلبات المركّبة التي تمتد على أكثر من قسم/جدول/عملية في وقت واحد. tasks مصفوفة من {tool, args, label, skipVerify}. mode="execute" للتنفيذ المتوازي، "review" لمراجعة النتائج، "undo" للتراجع عن آخر عملية فرعية. كل نتيجة تعود بحالة [نجاح]/[فشل] ودليل تحقق (ثقة) — أنت القائد تقرر المتابعة أو التصحيح.',
+    parameters: {
+      type: 'object',
+      properties: {
+        mode: { type: 'string', enum: ['execute', 'review', 'undo'], description: 'execute لتنفيذ المهام بالتوازي، review لمراجعتها، undo للتراجع' },
+        tasks: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              tool: { type: 'string', description: 'اسم الأداة الداخلية' },
+              args: { type: 'object', description: 'وسائط الأداة' },
+              label: { type: 'string', description: 'وصف إنساني للمهمة يظهر في المراجعة' },
+              skipVerify: { type: 'boolean', description: 'تخطي التحقق لتسريع القراءات المجردة (افتراضي false)' },
+            },
+            required: ['tool', 'args'],
+          },
+          description: 'المهام المستقلة المراد تنفيذها بالتوازي',
+        },
+      },
+      required: ['mode'],
+    },
+  },
+  {
     name: 'ask_user',
     description:
       'اسأل المستخدم سؤالاً باختيارات (أو نص حر) عندما تنقص معلومة أساسية لاستكمال المهمة. لا تنفذ المهمة قبل الإجابة.',
