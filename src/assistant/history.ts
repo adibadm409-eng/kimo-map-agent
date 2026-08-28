@@ -147,5 +147,5 @@ export function messagesToLlm(msgs: Message[]): ChatMessage[] {
   if (firstUser && !out.some((c) => c.role === 'user' && c.content === firstUser.content)) {
     out.unshift({ role: 'user', content: `[المهمة الأصلية للمستخدم] ${firstUser.content.slice(0, 1500)}` })
   }
-  return out
+  return compressMiddleToolMessages(out)
 }
