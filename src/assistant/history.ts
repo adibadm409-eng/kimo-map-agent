@@ -13,11 +13,52 @@ export async function readModelHistory(sessionId: string): Promise<Message[]> {
   return msgs.filter((m) => m.role === 'user' || m.role === 'tool' || m.role === 'assistant')
 }
 
+function estimateTokensForChat(messages: ChatMessage[]): number {
+  let chars = 0
+  for (const m of messages) {
+    const c = typeof m.content === 'string' ? m.content : m.content ? JSON.stringify(m.content) : ''
+    chars += c.length
+    if (Array.isArray((m as any).tool_calls)) chars += JSON.stringify((m as any).tool_calls).length
+  }
+  return Math.ceil(chars / 4)
+}
+
 function compressToolResult(meta: Record<string, any>): string {
   const name = String(meta.name ?? 'execute')
   const result = meta.result
   if (typeof result === 'string') return result.length > 600 ? `${result.slice(0, 600)}…` : result
   return summarizeToolResult(name, result)
+}
+
+function compressMiddleToolMessages(out: ChatMessage[], budgetTokens = 9000): ChatMessage[] {
+  if (estimateTokensForChat(out) <= budgetTokens) return out
+  const firstUser = out.findIndex((m) => m.role === 'user')
+  const lastUser = out.length - 1 - [...out].reverse().findIndex((m) => m.role === 'user')
+  const keepTail = 14
+  const tailStart = Math.max(firstUser + 1, out.length - keepTail)
+  let removedChars = 0
+  let removedCount = 0
+  for (let i = firstUser + 1; i < tailStart; i++) {
+    const m = out[i]
+    if (m.role === 'tool' && typeof m.content === 'string' && m.content.length > 400) {
+      const before = m.content.length
+      m.content = `${m.content.slice(0, 380)}… [مختصر]`
+      removedChars += before - m.content.length
+      removedCount++
+    }
+  }
+  if (removedCount) {
+    const head = out.slice(0, firstUser + 1)
+    const mid = out.slice(firstUser + 1, tailStart)
+    const tail = out.slice(tailStart)
+    const midVerified = mid.filter((m) => m.role === 'tool' && (m as any).tool_error === false).length
+    const summary: ChatMessage = {
+      role: 'system',
+      content: `[ملخص السياق المضغوط] ذاكرة وسيطة مضغوطة: ${removedCount} ملاحظة قُصّرت لتوفير ${removedChars} حرف، منها ${midVerified} موثَّقة. ثقة السياق العام ${midVerified ? 75 : 45}%.`,
+    }
+    return [...head, summary, ...mid, ...tail]
+  }
+  return out
 }
 
 export function collapseParallelToolRounds(messages: ChatMessage[]): ChatMessage[] {
