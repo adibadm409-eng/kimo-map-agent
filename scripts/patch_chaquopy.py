@@ -134,6 +134,26 @@ def patch_main_application():
         print(f"patched {name} (already patched or skipped)")
 
 
+def patch_manifest():
+    """يضبط extractNativeLibs=true على «application» في AndroidManifest.xml.
+
+    بعض الأجهزة (Samsung/أندرويد 11+) ترتطم بشجرة native عند تحميل مكتبات
+    بايثون المضمّنة (kimo) متى كانت المكتبات غير مفهومة على القرص مباشرةً.
+    فرض استخراجها على القرص يمنع هذا الانهيار.
+    """
+    manifest = os.path.join(ANDROID, "app", "src", "main", "AndroidManifest.xml")
+    if not os.path.exists(manifest):
+        print("WARNING: AndroidManifest.xml not found (skipped extractNativeLibs)")
+        return
+    s = open(manifest).read()
+    if 'android:extractNativeLibs' in s:
+        print("manifest already has extractNativeLibs")
+        return
+    s = s.replace('<application', '<application android:extractNativeLibs="true"', 1)
+    open(manifest, "w").write(s)
+    print("patched AndroidManifest.xml (extractNativeLibs=true)")
+
+
 def copy_native_module():
     os.makedirs(NATIVE_DST_DIR, exist_ok=True)
     shutil.copyfile(NATIVE_SRC, os.path.join(NATIVE_DST_DIR, "KimoEngineModule.kt"))
@@ -161,6 +181,7 @@ if __name__ == "__main__":
     patch_root_gradle()
     patch_app_gradle()
     patch_main_application()
+    patch_manifest()
     copy_native_module()
     copy_python_sources()
     print("CHAQUOPY_PATCH_DONE")
