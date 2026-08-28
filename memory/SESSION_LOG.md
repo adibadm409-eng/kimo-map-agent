@@ -433,3 +433,18 @@
 - حذف كاشات npm (~/.npm _cacache+_npx 3.65G)، node-gyp/pnpm/pip/prisma (~1.08G)، ومؤقتات usr/tmp (~380M).
 - المحفوظ: ذاكرة opencode (opencode.db 572M)، usr/tmp/opencode، ~/.config/opencode، matcher بـ opencode 1.17.7.
 - النتيجة: 23G متاح → 36G (85%).
+
+## 2026-08-29 — تقوية المحرك TypeScript + إزالة تبعيات Chaquopy من التوصيل
+- **القرار**: المستخدم أكّد الإبقاء على TypeScript كمحرك وحيد (لا Chaquopy، لا بايثون في التطبيق). التطبيق `my-app` أصلاً موصول بـ TypeScript في `src/assistant/` — التجربة السابقة لـ Chaquopy كانت في مستودع منفصل. تمحور العمل حول تقوية المحرك الموجود + إضافة ميزات جديدة فوقه.
+- **أُنجِز**:
+  1. **`src/assistant/orchestrator.ts` (جديد)**: `runSubAgents(sessionId, tasks)` ينفذ قائمة مهام مستقلة بالتوازي عبر `Promise.all` + `runToolWithFeedback`، يعيد `{results[], summary{ok,failed,verified}}`، وكل نتيجة تحمل `confidence` (0-1) و`observation` و`verified`. `reviewSubAgentResults` و`undoLastSubAgent` للمراجعة/التراجع. صُمِّم للطلبات المركّبة عبر أقسام متعددة.
+  2. **`invokeTools.ts`**: فرع جديد لـ `name === 'orchestrate'` — modes: execute/review/undo؛ يصدر نتيجة مدمجة في `progress` ويعالج فشل أي وكيل فرعي دون إيقاف الباقين.
+  3. **`prompts.ts`**: تسجيل `orchestrate` كـ wrapper function بأوصاف واضحة + توجيه بالنظام للطلبات المركّبة.
+  4. **`executor.ts`**: تحويل `validateToolCallBatch` و`readIntentRequiresEvidence` من حراس قاسية (توقف + continue) إلى **مؤشرات ثقة** تُسجَّل في `brainOps` (kind=confidence) ولا تمنع التنفيذ — يُسمح للوكيل بالمتابعة مع نسبة ثقة مرئية.
+  5. **`history.ts`**: `compressMiddleToolMessages(out, budgetTokens=9000)` يقدّر تكلفة الرموز ويضغط الملاحظات الوسيطة الطويلة ويُدخل ملخصاً للنظام يذكر مستوى الثقة العام — لإدارة السياق الطويل دون فقدان الخطة.
+  6. **`toolSchemas.ts`**: `adaptToolArgs` يطبّق `normalizeRowKeys` لمرونة أسماء الأعمدة/الحقول (`name`/`الاسم`/`title`، `amount`/`price`/`value`، `phone`/`mobile`/`جوال`، `status`/`الحالة`، `area`/`مساحة`/`area_sqm`) — تطبيع Arabic/English.
+  7. **`src/components/TaskCard.tsx` (جديد)**: بطاقة مهام قابلة للطي ملتصقة بخانة الإدخال، تقرأ `_plan` و`executionSteps` من `agentChatStore`، تعرض done/total وشريط تقدم لكل خطوة.
+  8. **`AssistantScreen.tsx`**: استيراد وعرض `<TaskCard />` فوق `inputArea`.
+- **التحقق**: `tsc --noEmit --skipLibCheck` على الملفات المعدّلة (orchestrator/executor/history/toolSchemas/prompts/invokeTools/TaskCard/AssistantScreen) → **0 أخطاء** في توصيف المشروع. الأخطاء السابقة في `python-agent/**` و`tsconfig` flags مرجعيات قديمة غير متأثرة.
+- **بقي للتنفيذ لاحقاً**: (1) TaskCard يتلقى plan من `agent_task_runs` أكثر تفصيلاً بدل `_plan`، (2) الترجمة المتوازية الكاملة للحلقة التكرارية في executor، (3) تجربة Chaquopy Python 3.12 كاحتمال أخير.
+- **دروس ميدانية**: tsc الكامل OOM على أندرويد (1.9GB available)؛ الحل: فحص مشروع كامل لكن grep مفلتر على الملفات المعدّلة فقط، أو فحص per-file بحدود.

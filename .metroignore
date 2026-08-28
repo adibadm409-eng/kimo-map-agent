@@ -1,0 +1,10 @@
+python-agent/
+audit/
+docs/
+memory/
+node_modules/expo/android/
+node_modules/@react-native/gradle-plugin/
+node_modules/react-native/android/
+node_modules/expo-print/android/
+**/build/
+**/.gradle/
