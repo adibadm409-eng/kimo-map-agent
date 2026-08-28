@@ -22,25 +22,34 @@ export async function runViaKimoNative(
   opts?: { mock?: boolean },
 ): Promise<AgentOutcome> {
   if (NativeKimo && typeof NativeKimo.runChat === 'function') {
-    const cfg = await activeConfig()
-    const json = await NativeKimo.runChat(
-      appSessionId,
-      text,
-      KIMO_DB_NAME,
-      opts?.mock ? 1 : 0,
-      cfg.providerId,
-      cfg.model,
-      cfg.apiKey,
-      cfg.baseUrl ?? '',
-    )
-    const j = typeof json === 'string' ? JSON.parse(json) : json
-    for (const e of j.events ?? []) {
-      emitForSession(appSessionId, e as any)
+    try {
+      const cfg = await activeConfig()
+      const json = await NativeKimo.runChat(
+        appSessionId,
+        text,
+        KIMO_DB_NAME,
+        opts?.mock ? 1 : 0,
+        cfg.providerId,
+        cfg.model,
+        cfg.apiKey,
+        cfg.baseUrl ?? '',
+      )
+      const j = typeof json === 'string' ? JSON.parse(json) : json
+      for (const e of j.events ?? []) {
+        emitForSession(appSessionId, e as any)
+      }
+      if (j.answer) {
+        await persistAssistantText(appSessionId, j.answer, 'text').catch(() => {})
+      }
+      return j.answer ? 'completed' : 'failed'
+    } catch (err: any) {
+      // أظهر سبب الفشل (مثل تعذّر بدء محرك بايثون) للمستخدم بدل الصمت التام.
+      const msg = `محرك كيمو: ${err?.message ?? String(err)}`
+      emitForSession(appSessionId, { type: 'error', message: msg } as any)
+      await persistAssistantText(appSessionId, msg, 'error').catch(() => {})
+      emitForSession(appSessionId, { type: 'done', outcome: 'failed' } as any)
+      return 'failed'
     }
-    if (j.answer) {
-      await persistAssistantText(appSessionId, j.answer, 'text').catch(() => {})
-    }
-    return j.answer ? 'completed' : 'failed'
   }
   // احتياط التطوير (Expo Go / خادم HTTP منفصل)
   return runViaKimo(appSessionId, text)

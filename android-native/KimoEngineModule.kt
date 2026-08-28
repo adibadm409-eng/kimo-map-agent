@@ -1,6 +1,7 @@
 package com.realestate.app.agent
 
 import com.chaquo.python.Python
+import com.chaquo.python.android.AndroidPlatform
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.Promise
@@ -32,6 +33,18 @@ class KimoEngineModule(private val reactContext: ReactApplicationContext) :
         promise: Promise,
     ) {
         try {
+            if (!Python.isStarted()) {
+                try {
+                    Python.start(AndroidPlatform(reactContext))
+                } catch (pe: Exception) {
+                    promise.reject(
+                        "KIMO_PY_START",
+                        "تعذّر تشغيل محرك بايثون: ${pe.javaClass.simpleName}: ${pe.localizedMessage}",
+                        pe,
+                    )
+                    return
+                }
+            }
             val py = Python.getInstance()
             val dbPath = reactContext.getDatabasePath(dbName).absolutePath
             val module = py.getModule("kimo_embed")
