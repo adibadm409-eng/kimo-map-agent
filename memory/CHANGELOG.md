@@ -635,3 +635,4 @@
 - 2026-08-29 | 3d3d68c | تعديل تلقائي: unified_mutation_invariants.test.ts
 - 2026-08-29 | c8f8151 | إصلاح اختبار clients: size → area بعد normalizeRowKeys
 - 2026-08-29 | c283ed7 | تعديل تلقائي: prompts.ts
+- 2026-08-29 | 5ff2788 | تعديل تلقائي: prompts.ts
