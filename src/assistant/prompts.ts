@@ -123,18 +123,27 @@ ${directivesBlock}${brainBlock}${projectMemoryBlock}
 المزود: ${providerName} — الموديل: ${model}`
 }
 
-/** تعريفات الأدوات المرئية للنموذج. الأدوات مفصولة تماماً عن المهارات: تُعرض
- * كل أدوات التطبيق بغض النظر عن المهارة النشطة، والمهارة توجّه السلوك فقط
- * والوكيل هو من يقرر المهارة والأداة اللازمتين. */
+/** تعريفات الأدوات المرئية للنموذج. نُرسل فقط الأدوات الأكثر استخداماً
+ * لتقليل حجم الطلب، والوكيل يصل لأي أداة عبر execute wrapper. */
 export function getAgentFunctions(_skill?: AgentSkill | null): FunctionDef[] {
   const schemas = buildToolSchemas()
-  const toolFns: FunctionDef[] = TOOLS.map((t) => ({
-    name: t.name,
-    description: t.description,
-    parameters: schemas[t.name] ?? { type: 'object', properties: {}, required: [] },
-  }))
+  // الأدوات الأساسية فقط — الباقي متاح عبر execute wrapper
+  const CORE_TOOLS = new Set([
+    'query', 'get', 'mutate_record', 'search_everything',
+    'ask_user', 'request_confirmation', 'undo_last',
+    'list_entities', 'catalog', 'schema_inspect',
+    'current_local_time', 'generate_file',
+    'review_my_work', 'data_snapshot',
+  ])
+  const toolFns: FunctionDef[] = TOOLS
+    .filter((t) => CORE_TOOLS.has(t.name))
+    .map((t) => ({
+      name: t.name,
+      description: t.description,
+      parameters: schemas[t.name] ?? { type: 'object', properties: {}, required: [] },
+    }))
   const wrappers = WRAPPER_FUNCTIONS.map((wrapper) => wrapper.name === 'execute'
-    ? { ...wrapper, description: `${wrapper.description}\nكل أدوات التطبيق متاحة لك للتنفيذ مباشرةً دون تقييد بالمهارة أو الوضع — اختر الأداة المناسبة بنفسك.` }
+    ? { ...wrapper, description: `${wrapper.description}\nكل أدوات التطبيق متاحة لك عبر execute — اختر الأداة المناسبة واكتب اسمها ووسائطها.` }
     : wrapper)
   return [...toolFns, ...wrappers]
 }
