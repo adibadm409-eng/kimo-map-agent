@@ -320,7 +320,7 @@ export default function AssistantScreen({ navigation }: any) {
   }
 
   async function handleVoice() {    if (busy) return
-    if (!voiceReady) {
+    if (!voice.ready) {
       try {
         const permission = await AudioModule.requestRecordingPermissionsAsync()
         if (!permission.granted) {
@@ -328,9 +328,9 @@ export default function AssistantScreen({ navigation }: any) {
           return
         }
         await setAudioModeAsync({ playsInSilentMode: true, allowsRecording: true })
-        setVoiceReady(true)
+        setVoice((v) => ({ ...v, ready: true }))
       } catch (error: any) {
-        setVoiceError(error?.message ?? 'تعذر تهيئة الميكروفون.')
+        setVoice((v) => ({ ...v, error: error?.message ?? 'تعذر تهيئة الميكروفون.' }))
         Alert.alert('تعذر التسجيل', error?.message ?? 'تحقق من إذن الميكروفون ثم أعد المحاولة.')
         return
       }
