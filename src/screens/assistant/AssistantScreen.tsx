@@ -700,15 +700,15 @@ export default function AssistantScreen({ navigation }: any) {
       </Modal>
 
       <AuditDrawer
-        visible={showAudit}
-        onClose={() => setShowAudit(false)}
+        visible={modals.audit}
+        onClose={() => setModals((m) => ({ ...m, audit: false }))}
         trail={auditTrail}
         colors={colors}
       />
 
       <AssistantHistory
-        visible={showHistory}
-        onClose={() => setShowHistory(false)}
+        visible={modals.history}
+        onClose={() => setModals((m) => ({ ...m, history: false }))}
         sessions={sessions}
         activeId={sessionId}
         onSelect={selectSession}
