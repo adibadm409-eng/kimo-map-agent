@@ -637,3 +637,4 @@
 - 2026-08-29 | c283ed7 | تعديل تلقائي: prompts.ts
 - 2026-08-29 | 5ff2788 | تعديل تلقائي: prompts.ts
 - 2026-08-29 | 24b7de4 | إصلاح unified_reminder_target_invariants: عدة تنبيهات + target_type وtarget_id
+- 2026-08-29 | 11310d0 | تعديل تلقائي: prompts.ts
