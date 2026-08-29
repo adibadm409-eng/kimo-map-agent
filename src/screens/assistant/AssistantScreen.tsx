@@ -89,12 +89,6 @@ export default function AssistantScreen({ navigation }: any) {
   const recorderState = useAudioRecorderState(audioRecorder)
 
   useEffect(() => {
-    return () => {
-      setAudioModeAsync({ allowsRecording: false }).catch(() => {})
-    }
-  }, [])
-
-  useEffect(() => {
     const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
     const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide'
     const showSub = Keyboard.addListener(showEvt, (ev: any) => {
@@ -109,6 +103,7 @@ export default function AssistantScreen({ navigation }: any) {
     return () => {
       showSub.remove()
       hideSub.remove()
+      setAudioModeAsync({ allowsRecording: false }).catch(() => {})
     }
   }, [])
 
