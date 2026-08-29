@@ -123,9 +123,8 @@ export default function AssistantScreen({ navigation }: any) {
   useFocusEffect(
     useCallback(() => {
       loadSettings().catch(() => {})
-      wantedBottom.current = true
-      setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 260)
-    }, [loadSettings, sessionId])
+      scrollToBottom(false)
+    }, [loadSettings, sessionId, scrollToBottom])
   )
 
   const loadSessions = useCallback(async () => {
