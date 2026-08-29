@@ -8,6 +8,7 @@ import {
 } from '../database/workspace'
 import { getDB } from '../database/db'
 import type { FunctionDef } from '../assistant/llm'
+import { toolCache } from './toolCache'
 
 // ---------- بناء تعريفات أدوات بمخططات JSON صريحة ----------
 
