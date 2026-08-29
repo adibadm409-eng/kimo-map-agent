@@ -539,7 +539,10 @@ export default function AssistantScreen({ navigation }: any) {
             nearBottom = ns.contentOffset.y >= h - ns.layoutMeasurement.height - 60
             if (nearBottom) wantedBottom.current = false
           }
-          if (nearBottom !== atBottom) setAtBottom(nearBottom)
+          if (nearBottom !== atBottomRef.current) {
+            atBottomRef.current = nearBottom
+            setAtBottomState(nearBottom)
+          }
         }}
         onScrollEndDrag={(e) => {
           const ns = e.nativeEvent
