@@ -184,19 +184,6 @@ export default function AssistantScreen({ navigation }: any) {
     if (chatItems.length) scrollToBottom()
   }, [pending, chatItems.length, scrollToBottom])
 
-  function providerLabelOf(s: any): string {
-    const active = s.activeProvider
-    if (active.startsWith('custom:')) {
-      const c = (s.customProviders ?? []).find((x: any) => x.id === active.slice(7))
-      return c?.name ?? 'مزود مخصص'
-    }
-    return active
-  }
-
-  function modelOf(s: any): string {
-    return s.models?.[s.activeProvider] ?? ''
-  }
-
   async function ensureSession(): Promise<string> {
     if (sessionId) return sessionId
     const id = await createSession()
