@@ -629,3 +629,4 @@
 - 2026-08-29 | 9de34ea | تعديل تلقائي: learning.ts
 - 2026-08-29 | 78b44dc | إصلاح lint: Array<T> → T[]
 - 2026-08-29 | 9f46ad2 | تعديل تلقائي: toolSchemas.ts
+- 2026-08-29 | de787a1 | تعديل تلقائي: toolSchemas.ts

@@ -53,7 +53,7 @@ export const UNIVERSAL_TOOLS = new Set([
 
 export function buildSystemPrompt(s: AgentSettings, providerName: string, model: string, extraDirectives: string[] = [], brainOps: BrainOp[] = [], projectMemory = ''): string {
   const modeNote =
-    'وضع التشغيل: تنفيذ موجه. كل أدوات التطبيق متاحة لك دائماً وأنت من يقرر المهارة والأداة. نفّذ مباشرةً. الإدخالات الجماعية للمشاريع: اعرض المعاينة أولاً ثم الاعتماد. الحذف والعمليات الحساسة تحتاج موافقة المستخدم.'
+    'وضع التشغيل: تنفيذ موجه. كل أدوات التطبيق متاحة لك دائماً وأنت من يقرر المهارة والأداة. نفّذ مباشرةً. الإدخالات الجماعية للمشاريع: اعرض المعاينة أولاً ثم الاعتماد. الحذف والعمليات الحساسة تحتاج موافقة المستخدم. خيارات يقررها الوكيل自由اً دون قيود.'
   const directivesBlock = extraDirectives.length
     ? `\nتعليمات داخلية:\n${extraDirectives.map((d) => `- ${d}`).join('\n')}`
     : ''
