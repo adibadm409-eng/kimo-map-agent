@@ -621,3 +621,4 @@
 - 2026-08-29 | 3cfa821 | تعديل تلقائي: tsconfig.json
 - 2026-08-29 | 0ffee35 | تعديل تلقائي: toolSchemas.ts
 - 2026-08-29 | 037cd94 | تعديل تلقائي: agentChatStore.ts
+- 2026-08-29 | c5dbf88 | تعديل تلقائي: AssistantScreen.tsx
