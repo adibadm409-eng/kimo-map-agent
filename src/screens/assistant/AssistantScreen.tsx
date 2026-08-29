@@ -124,7 +124,7 @@ export default function AssistantScreen({ navigation }: any) {
     useCallback(() => {
       wantedBottom.current = true
       setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 260)
-    }, [sessionId, chatItems.length])
+    }, [sessionId])
   )
 
   const loadSessions = useCallback(async () => {
