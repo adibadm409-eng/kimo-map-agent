@@ -139,12 +139,15 @@ export default function AssistantScreen({ navigation }: any) {
     const s = await getSettings().catch(() => null)
     if (s) {
       setMode(s.mode)
-      setProviderLabel(providerLabelOf(s))
-      setModel(modelOf(s))
-      if (!s.models[s.activeProvider]) {
+      const label = s.activeProvider.startsWith('custom:')
+        ? (s.customProviders ?? []).find((x: any) => x.id === s.activeProvider.slice(7))?.name ?? 'مزود مخصص'
+        : s.activeProvider
+      let mdl = s.models?.[s.activeProvider] ?? ''
+      if (!mdl) {
         const config = await activeConfig(s).catch(() => null)
-        if (config?.model) setModel(config.model)
+        if (config?.model) mdl = config.model
       }
+      setProvider({ label, model: mdl })
     }
   }, [])
 
