@@ -416,7 +416,7 @@ export default function AssistantScreen({ navigation }: any) {
     navigation.navigate(stack, { screen: screenMap[kind], params })
   }
 
-  const configured = !!(providerLabel && model)
+  const configured = !!(provider.label && provider.model)
 
   // إخفاء confirmation المعروض عبر الـ modal (الحذف) لتفادي الازدواجية
   const pendingDelete = pending?.kind === 'confirmation' && Array.isArray(pending.items) && pending.items.length > 0
