@@ -264,7 +264,8 @@ export function adaptToolArgs(tool: string, raw: Record<string, any>): Record<st
   }
   if (args.row && typeof args.row === 'object' && !Array.isArray(args.row)) args.row = normalizeRowKeys(args.row as Record<string, any>)
   if (args.rows && Array.isArray(args.rows)) args.rows = args.rows.map((r: any) => r && typeof r === 'object' && !Array.isArray(r) ? normalizeRowKeys(r) : r)
-  if (args.data && typeof args.data === 'object' && !Array.isArray(args.data) && args.entity && !projectEntities.has(String(args.entity))) {
+  const skipNormalize = projectEntities.has(String(args.entity)) || String(args.entity) === 'properties'
+  if (args.data && typeof args.data === 'object' && !Array.isArray(args.data) && args.entity && !skipNormalize) {
     args.data = normalizeRowKeys(args.data as Record<string, any>)
   }
   // إعادة تعريف area_sqm من area للعقارات بعد تطبيع المفاتيح
