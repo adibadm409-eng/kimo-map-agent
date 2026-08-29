@@ -267,6 +267,12 @@ export function adaptToolArgs(tool: string, raw: Record<string, any>): Record<st
   if (args.data && typeof args.data === 'object' && !Array.isArray(args.data) && args.entity && !projectEntities.has(String(args.entity))) {
     args.data = normalizeRowKeys(args.data as Record<string, any>)
   }
+  // إعادة تعريف area_sqm من area للعقارات بعد تطبيع المفاتيح
+  if (args.entity === 'properties' && args.data && typeof args.data === 'object') {
+    const d = args.data as Record<string, any>
+    if (d.area_sqm == null && d.area != null) d.area_sqm = d.area
+    if (d.area == null && d.area_sqm != null) d.area = d.area_sqm
+  }
   for (const [k, v] of Object.entries(args)) {
     if (NUMERIC_FIELDS.has(k) && typeof v === 'string' && v.trim() !== '' && !Number.isNaN(Number(v))) {
       args[k] = Number(v)
