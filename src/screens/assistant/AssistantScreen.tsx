@@ -574,10 +574,7 @@ export default function AssistantScreen({ navigation }: any) {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="الانتقال إلى آخر رسالة"
-            onPress={() => {
-              wantedBottom.current = true
-              listRef.current?.scrollToEnd({ animated: true })
-            }}
+            onPress={() => scrollToBottom()}
             hitSlop={8}
             style={({ pressed }) => [styles.downBtn, { backgroundColor: colors.surface, borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
           >
