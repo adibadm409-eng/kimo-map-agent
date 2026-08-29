@@ -146,12 +146,6 @@ export default function AssistantScreen({ navigation }: any) {
     }
   }, [])
 
-  useFocusEffect(
-    useCallback(() => {
-      loadSettings().catch(() => {})
-    }, [loadSettings])
-  )
-
   useEffect(() => {
     let mounted = true
     ;(async () => {

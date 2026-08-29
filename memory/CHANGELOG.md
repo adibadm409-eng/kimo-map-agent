@@ -595,3 +595,4 @@
 - 2026-08-29 | 62c8d8a | تعديل تلقائي: agentChatStore.ts
 - 2026-08-29 | 5054e51 | تعديل تلقائي: AssistantScreen.tsx
 - 2026-08-29 | c8302dc | تعديل تلقائي: AssistantScreen.tsx
+- 2026-08-29 | 2285943 | تعديل تلقائي: AssistantScreen.tsx
