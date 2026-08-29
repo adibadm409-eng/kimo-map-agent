@@ -46,9 +46,9 @@ export async function recordPattern(pattern: Omit<UserPattern, 'id'>): Promise<v
 
 // تحليل أنماط المستخدم
 export async function analyzePatterns(sessionId?: string): Promise<{
-  topIntents: Array<{ intent: string; count: number }>
-  topEntities: Array<{ entity: string; count: number }>
-  topTools: Array<{ tool: string; count: number }>
+  topIntents: { intent: string; count: number }[]
+  topEntities: { entity: string; count: number }[]
+  topTools: { tool: string; count: number }[]
   successRate: number
 }> {
   const db = await getDB()
