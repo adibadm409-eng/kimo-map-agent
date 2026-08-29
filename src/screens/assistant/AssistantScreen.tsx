@@ -117,9 +117,8 @@ export default function AssistantScreen({ navigation }: any) {
     useChatStore.getState().setMessages(msgs)
     const p = await getPending(sid).catch(() => null)
     setPending(p)
-    wantedBottom.current = true
-    setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 120)
-  }, [])
+    scrollToBottom(false)
+  }, [scrollToBottom])
 
   useFocusEffect(
     useCallback(() => {
