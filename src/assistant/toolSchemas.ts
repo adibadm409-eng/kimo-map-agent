@@ -19,10 +19,20 @@ function argTypeToSchema(t: string): string {
   return 'string'
 }
 
-/** مخطّط JSON صريح لكل أداة مسجلة: يمنح الموديل البنية الدقيقة فيقلّ الخطأ في الاستدعاء. */
+/** مخطّط JSON صريح لكل أداة مسجلة: يمنح الموديل البنية الدقيقة فيقلّ الخطأ في الاستدعاء.
+ *  يُولّد فقط للأدوات الأساسية لتقليل حجم الطلب. */
 export function buildToolSchemas(): Record<string, { type: 'object'; properties: Record<string, any>; required: string[] }> {
   const out: Record<string, any> = {}
+  // الأدوات الأساسية فقط — الباقي متاح عبر execute wrapper
+  const CORE_TOOLS = new Set([
+    'query', 'get', 'mutate_record', 'search_everything',
+    'ask_user', 'request_confirmation', 'undo_last',
+    'list_entities', 'catalog', 'schema_inspect',
+    'current_local_time', 'generate_file',
+    'review_my_work', 'data_snapshot',
+  ])
   for (const t of TOOLS) {
+    if (!CORE_TOOLS.has(t.name)) continue
     const properties: Record<string, any> = {}
     const required: string[] = []
     for (const a of t.args) {
