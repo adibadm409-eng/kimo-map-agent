@@ -188,10 +188,21 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
         patch.statusBar = { ...s.statusBar, visible: true, thinking: true }
         break
       }
-      case 'text':
+      case 'text': {
+        const txt = (e as Extract<AgentEvent, { type: 'text' }>).content
+        if (txt) {
+          patch.items = [...s.items, {
+            id: `text-${seq}`,
+            uiComponent: 'assistant_message',
+            message: { id: `text-${seq}`, sessionId: e.sessionId, role: 'assistant', kind: 'text', content: txt, createdAt: Date.now() } as any,
+          }]
+        }
+        patch.streamText = ''
+        break
+      }
       case 'stream': {
-        const txt = (e as Extract<AgentEvent, { type: 'text' }> | Extract<AgentEvent, { type: 'stream' }>).content
-        if (e.type === 'stream' && !(e as any).done) {
+        const txt = (e as Extract<AgentEvent, { type: 'stream' }>).content
+        if (!(e as any).done) {
           patch.streamText = txt ?? ''
           patch.statusBar = { ...s.statusBar, visible: true, thinking: false }
         } else {
