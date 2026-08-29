@@ -181,11 +181,8 @@ export default function AssistantScreen({ navigation }: any) {
     } else if (pending?.kind === 'confirmation') {
       setSelDel([])
     }
-    if (chatItems.length) {
-      wantedBottom.current = true
-      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 60)
-    }
-  }, [pending, chatItems.length])
+    if (chatItems.length) scrollToBottom()
+  }, [pending, chatItems.length, scrollToBottom])
 
   function providerLabelOf(s: any): string {
     const active = s.activeProvider
