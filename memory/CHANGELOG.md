@@ -632,3 +632,4 @@
 - 2026-08-29 | de787a1 | تعديل تلقائي: toolSchemas.ts
 - 2026-08-29 | 1741a2b | تعديل تلقائي: prompts.ts
 - 2026-08-29 | 644248a | إصلاح اختبارات: area_sqm + price + خيارات يقررها الوكيل
+- 2026-08-29 | 3d3d68c | تعديل تلقائي: unified_mutation_invariants.test.ts
