@@ -570,3 +570,4 @@
 - 2026-08-29 | bea909f | تعديل تلقائي: agentChatStore.ts
 - 2026-08-29 | 89ffb2b | تعديل تلقائي: AssistantScreen.tsx
 - 2026-08-29 | 17cbf19 | تعديل تلقائي: AssistantScreen.tsx
+- 2026-08-29 | 16ea618 | تعديل تلقائي: sanitize.ts

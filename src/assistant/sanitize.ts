@@ -42,7 +42,8 @@ export function sanitizeAssistantText(text: string): string {
   const codeRe = new RegExp(`\\b(${Object.keys(CODE_LABELS).join('|')})\\b`, 'g')
   out = out.replace(codeRe, (m) => CODE_LABELS[m] ?? m)
   // 2) إزالة المعرّفات الداخلية (نمط مثل mszh218axqdkqv أو mt0hby0a2fx5m1)
-  out = out.replace(/[a-z0-9]{10,}/g, (m) => (isInternalId(m) ? '' : m))
+  //    فقط إذا كان看起来像 random hash (أطول من 12 حرف + 3 أرقام على الأقل)
+  out = out.replace(/\b[a-z0-9]{14,}\b/g, (m) => (isInternalId(m) ? '' : m))
   // 3) إزالة علامات backtick (ممنوعة في ردود المستخدم)
   out = out.replace(/`/g, '')
   // 4) تنظيف المسافات والأسطر الناتجة عن الحذف
