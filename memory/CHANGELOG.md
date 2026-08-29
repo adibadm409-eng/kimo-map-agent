@@ -605,3 +605,4 @@
 - 2026-08-29 | 36f8454 | تعديل تلقائي: AssistantScreen.tsx
 - 2026-08-29 | 55c4aa8 | تعديل تلقائي: AssistantScreen.tsx
 - 2026-08-29 | 5410724 | تعديل تلقائي: AssistantScreen.tsx
+- 2026-08-29 | 76ce794 | تعديل تلقائي: AssistantScreen.tsx

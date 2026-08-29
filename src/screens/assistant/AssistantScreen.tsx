@@ -458,7 +458,7 @@ export default function AssistantScreen({ navigation }: any) {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="فتح سجل محادثات كيمو"
-          onPress={() => setShowHistory(true)}
+          onPress={() => setModals((m) => ({ ...m, history: true }))}
           style={[styles.iconBtn, { backgroundColor: colors.surface }]}
         >
           <Ionicons name="time-outline" size={20} color={colors.textPrimary} />
