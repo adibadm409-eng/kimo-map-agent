@@ -21,7 +21,7 @@ import { validateToolCallAgainstDefinitions, validateToolCallBatch } from './too
 import { analyzeIntent, buildContextSummary } from './intent'
 import { persistUser, persistAssistantText, persistAssistantToolCalls, persistToolResult } from './persist'
 import { sanitizeAssistantText } from './sanitize'
-import { buildSystemPrompt, getAgentFunctions } from './prompts'
+import { buildSystemPrompt, buildMinimalPrompt, getAgentFunctions } from './prompts'
 import { assessSkill, getSkillById, planForSkill } from './skills'
 import { completePlanStep, type AgentPlan, type AgentSkill } from './agentContract'
 import { publishRuntimeEvent } from './runtimeEvents'
