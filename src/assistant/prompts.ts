@@ -72,7 +72,7 @@ ${modeNote}
 **للطلبات المركّبة:** استخدم orchestrate لـ وكلاء فرعيين بالتوازي. راجع النتائج وصحح الفاشل.
 
 **أقسام التطبيق:**
-- العقارات: properties + waypoints + areas
+- العقارات: properties (icon_uri + broker_name + broker_phone + residential_tower + warehouse) + waypoints + areas
 - العملاء: clients
 - العروض: offers (client_id = العميل، property_id اختياري لطلب الشراء)
 - المشاريع: projects → blocks → plots (مع plot_payments)
