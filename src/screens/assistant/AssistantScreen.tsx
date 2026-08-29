@@ -563,7 +563,7 @@ export default function AssistantScreen({ navigation }: any) {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="سجل تنفيذ كيمو"
-        onPress={() => setShowAudit(true)}
+        onPress={() => setModals((m) => ({ ...m, audit: true }))}
         style={({ pressed }) => [styles.auditFab, { backgroundColor: auditFlash ? colors.accent : colors.surface, borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
       >
         <Ionicons name="list-outline" size={18} color={auditFlash ? '#fff' : colors.accent} />
