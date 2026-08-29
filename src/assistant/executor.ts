@@ -211,18 +211,18 @@ async function runLoop(
         }
         const system: ChatMessage = {
           role: 'system',
-          content: needsTools
-            ? buildSystemPrompt(
-                s,
-                conn.providerName,
-                conn.model,
-                runtimeSkill ? [
-                  runtimeSkill.systemGuidance,
-                  `المهارة الحالية: ${runtimeSkill.label}. اتبع الخطة داخلياً، وشارك المستخدم منها فقط ما تراه مفيداً للسياق أو القرار، واطلب المعلومات الناقصة بدلاً من التخمين.`,
-                ] : [],
-                brainOps,
-              ) + runtimeCorrection
-            : buildMinimalPrompt(conn.providerName, conn.model),
+          content: buildDynamicPrompt(
+            classifiedIntent.kind,
+            classifiedIntent.entity,
+            s,
+            conn.providerName,
+            conn.model,
+            runtimeSkill ? [
+              runtimeSkill.systemGuidance,
+              `المهارة الحالية: ${runtimeSkill.label}. اتبع الخطة داخلياً، وشارك المستخدم منها فقط ما تراه مفيداً للسياق أو القرار، واطلب المعلومات الناقصة بدلاً من التخمين.`,
+            ] : [],
+            brainOps,
+          ) + runtimeCorrection,
         }
         if (emitEvents) emitForSession(sessionId, { type: 'thinking' })
 
