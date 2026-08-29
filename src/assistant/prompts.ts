@@ -74,7 +74,7 @@ ${modeNote}
 **أقسام التطبيق:**
 - العقارات: properties + waypoints + areas
 - العملاء: clients
-- العروض: offers (client_id = العميل، property_id اختياري للشراء)
+- العروض: offers (client_id = العميل، property_id اختياري لطلب الشراء)
 - المشاريع: projects → blocks → plots (مع plot_payments)
 - المالية: ledger_record_payment + project_cashflow + installment_schedule + payment_ledger + buyer_summary + dashboard_kpis
 - التذكيرات: create_reminder + list_reminders + cancel_reminder (target_type وtarget_id). استطاع الوكيل إنشاء عدة تنبيهات لكل عميل أو عرض. لا تحوّله إلى ملاحظة نصية فقط
