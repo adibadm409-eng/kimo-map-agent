@@ -387,7 +387,7 @@ export default function AssistantScreen({ navigation }: any) {
 
   function selectSession(sid: string) {
     setSessionId(sid)
-    setShowHistory(false)
+    setModals((m) => ({ ...m, history: false }))
     useChatStore.getState().reset()
     reload(sid).catch(() => {})
   }
