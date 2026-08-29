@@ -228,14 +228,8 @@ async function runLoop(
 
         const agentFunctions = getAgentFunctions(runtimeSkill)
 
-        // تحديد ما إذا كانت الرسالة تحتاج أدوات
-        // الرسائل البسيطة (تحية/سؤال عام) → بدون أدوات = استجابة سريعة
-        // الرسائل المعقدة (تعديل/بحث/إجراء) → مع أدوات
-        const userText = String(lastUserMsg?.content ?? '').trim()
-        const isSimpleMessage = /^(مرحبا|السلام عليكم|اهلا|صباح الخير|مساء الخير|شكرا|كيف حالك|من انت|ما اسمك|اهلا بك|hello|hi|hey|thanks|thank you|كيف يمكنني|ساعدني|ما هي|ماذا يعمل)/i.test(userText)
-        const hasActionIntent = /(?:أنشئ|انشئ|أضف|اضف|عدّل|عدل|احذف|حذف|سجّل|سجل|ابحث|اعرض|أظهر|اظهر|اقرأ|استكشف|كم|عدد|إجمالي|ملخص|جدول|شجرة|المؤشرات|التدفقات|الأقساط|المشروع|الوقت|تقرير|ملف)/i.test(userText)
-        const needsTools = !isSimpleMessage || hasActionIntent || runtimePlan || runtimeTaskId
-        const functionsToSend = needsTools ? agentFunctions : []
+        // استخدام النية المصنّفة لتحديد الأدوات المطلوبة
+        const functionsToSend = classifiedIntent.needsTools ? agentFunctions : []
 
         let result
         try {
