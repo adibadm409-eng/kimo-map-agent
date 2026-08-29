@@ -634,3 +634,4 @@
 - 2026-08-29 | 644248a | إصلاح اختبارات: area_sqm + price + خيارات يقررها الوكيل
 - 2026-08-29 | 3d3d68c | تعديل تلقائي: unified_mutation_invariants.test.ts
 - 2026-08-29 | c8f8151 | إصلاح اختبار clients: size → area بعد normalizeRowKeys
+- 2026-08-29 | c283ed7 | تعديل تلقائي: prompts.ts
