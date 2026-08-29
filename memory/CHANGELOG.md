@@ -571,3 +571,4 @@
 - 2026-08-29 | 89ffb2b | تعديل تلقائي: AssistantScreen.tsx
 - 2026-08-29 | 17cbf19 | تعديل تلقائي: AssistantScreen.tsx
 - 2026-08-29 | 16ea618 | تعديل تلقائي: sanitize.ts
+- 2026-08-29 | d108779 | تعديل تلقائي: sanitize.ts
