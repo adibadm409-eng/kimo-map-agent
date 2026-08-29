@@ -194,7 +194,7 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
           patch.items = [...s.items, {
             id: `text-${seq}`,
             uiComponent: 'assistant_message',
-            message: { id: `text-${seq}`, sessionId: e.sessionId, role: 'assistant', kind: 'text', content: txt, createdAt: Date.now() } as any,
+            message: { id: `text-${seq}`, sessionId: (e as any).sessionId ?? '', role: 'assistant', kind: 'text', content: txt, createdAt: Date.now() } as any,
           }]
         }
         patch.streamText = ''
