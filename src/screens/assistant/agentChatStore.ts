@@ -122,137 +122,123 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
   applyEvent: (e) => {
     const s = get()
     const seq = s._seq + 1
-    const pushAudit = (type: string, text: string) =>
-      set((st) => ({
-        auditTrail: [...st.auditTrail, { id: `a-${seq}-${type}`, at: Date.now(), type, text }].slice(-200),
-      }))
+    const auditEntry = (type: string, text: string) => ({ id: `a-${seq}-${type}`, at: Date.now(), type, text })
+
+    // تجميع كل التغييرات في set() واحدة فقط لتجنب الحلقة اللانهائية
+    const patch: Partial<ChatStoreState> = { _seq: seq }
 
     switch (e.type) {
       case 'phase': {
         const label = (e as Extract<VisibleAgentEvent, { type: 'phase' }>).label
-        pushAudit('phase', `${label}: ${e.detail ?? ''}`)
-        set((st) => ({
-          statusBar: { ...st.statusBar, visible: true, phase: e.phase },
-          executionSteps: [...st.executionSteps, { id: `s-${seq}`, kind: 'phase', label, status: e.phase } as ExecutionStep].slice(-40),
-        }))
+        patch.auditTrail = [...s.auditTrail, auditEntry('phase', `${label}: ${e.detail ?? ''}`)].slice(-200)
+        patch.statusBar = { ...s.statusBar, visible: true, phase: e.phase }
+        patch.executionSteps = [...s.executionSteps, { id: `s-${seq}`, kind: 'phase', label, status: e.phase } as ExecutionStep].slice(-40)
         break
       }
       case 'plan': {
         const plan = (e as Extract<VisibleAgentEvent, { type: 'plan' }>).plan
-        pushAudit('plan', plan.goal)
-        set((st) => ({
-          _plan: plan,
-          activeContext: { ...st.activeContext, goal: plan.goal, status: plan.status },
-          executionSteps: [...st.executionSteps, { id: `s-${seq}`, kind: 'plan', label: plan.goal } as ExecutionStep].slice(-40),
-        }))
+        patch.auditTrail = [...s.auditTrail, auditEntry('plan', plan.goal)].slice(-200)
+        patch._plan = plan
+        patch.activeContext = { ...s.activeContext, goal: plan.goal, status: plan.status }
+        patch.executionSteps = [...s.executionSteps, { id: `s-${seq}`, kind: 'plan', label: plan.goal } as ExecutionStep].slice(-40)
         break
       }
       case 'plan_step': {
         const step = (e as Extract<VisibleAgentEvent, { type: 'plan_step' }>).step
-        pushAudit('plan_step', `${step.title} — ${step.status}`)
-        set((st) => ({
-          _plan: st._plan ? { ...st._plan, steps: st._plan.steps.map((x) => (x.id === step.id ? step : x)) } : st._plan,
-          executionSteps: [...st.executionSteps, { id: `s-${seq}`, kind: 'plan_step', label: step.title, status: step.status } as ExecutionStep].slice(-40),
-        }))
+        patch.auditTrail = [...s.auditTrail, auditEntry('plan_step', `${step.title} — ${step.status}`)].slice(-200)
+        patch._plan = s._plan ? { ...s._plan, steps: s._plan.steps.map((x) => (x.id === step.id ? step : x)) } : s._plan
+        patch.executionSteps = [...s.executionSteps, { id: `s-${seq}`, kind: 'plan_step', label: step.title, status: step.status } as ExecutionStep].slice(-40)
         break
       }
       case 'skill': {
         const skill = (e as Extract<VisibleAgentEvent, { type: 'skill' }>).skill
-        pushAudit('skill', skill.label)
-        set((st) => ({ executionSteps: [...st.executionSteps, { id: `s-${seq}`, kind: 'skill', label: skill.label, detail: skill.description } as ExecutionStep].slice(-40) }))
+        patch.auditTrail = [...s.auditTrail, auditEntry('skill', skill.label)].slice(-200)
+        patch.executionSteps = [...s.executionSteps, { id: `s-${seq}`, kind: 'skill', label: skill.label, detail: skill.description } as ExecutionStep].slice(-40)
         break
       }
       case 'progress': {
-        pushAudit('progress', e.text)
-        set((st) => ({
-          statusBar: { ...st.statusBar, visible: true, steps: [...st.statusBar.steps, e.text].slice(-12) },
-          executionSteps: [...st.executionSteps, { id: `s-${seq}`, kind: 'progress', label: e.text } as ExecutionStep].slice(-40),
-        }))
+        patch.auditTrail = [...s.auditTrail, auditEntry('progress', e.text)].slice(-200)
+        patch.statusBar = { ...s.statusBar, visible: true, steps: [...s.statusBar.steps, e.text].slice(-12) }
+        patch.executionSteps = [...s.executionSteps, { id: `s-${seq}`, kind: 'progress', label: e.text } as ExecutionStep].slice(-40)
         break
       }
       case 'tool': {
         const t = e as Extract<AgentEvent, { type: 'tool' }>
-        pushAudit('tool', `${t.name}`)
-        set((st) => ({
-          executionSteps: [...st.executionSteps, { id: `s-${seq}`, kind: 'tool', label: String(t.name ?? 'execute') } as ExecutionStep].slice(-40),
-        }))
+        patch.auditTrail = [...s.auditTrail, auditEntry('tool', `${t.name}`)].slice(-200)
+        patch.executionSteps = [...s.executionSteps, { id: `s-${seq}`, kind: 'tool', label: String(t.name ?? 'execute') } as ExecutionStep].slice(-40)
         break
       }
       case 'observation':
       case 'recovery': {
         const o = e as Extract<VisibleAgentEvent, { type: 'observation' }> | Extract<VisibleAgentEvent, { type: 'recovery' }>
-        pushAudit(o.type, o.detail)
-        set((st) => ({ items: [...st.items, { id: `${o.type}-${seq}`, uiComponent: 'observation_card', payload: o }] }))
+        patch.auditTrail = [...s.auditTrail, auditEntry(o.type, o.detail)].slice(-200)
+        patch.items = [...s.items, { id: `${o.type}-${seq}`, uiComponent: 'observation_card', payload: o }]
         break
       }
       case 'decision': {
         const d = (e as Extract<VisibleAgentEvent, { type: 'decision' }>).decision
-        pushAudit('decision', d.title)
-        set((st) => {
-          const next: ActiveContext = { ...st.activeContext }
-          if (d.kind === 'approval' || d.kind === 'result') next.status = d.title
-          return {
-            activeContext: next,
-            items: [...st.items, { id: `decision-${seq}`, uiComponent: 'decision_card', payload: d }],
-          }
-        })
+        patch.auditTrail = [...s.auditTrail, auditEntry('decision', d.title)].slice(-200)
+        const next: ActiveContext = { ...s.activeContext }
+        if (d.kind === 'approval' || d.kind === 'result') next.status = d.title
+        patch.activeContext = next
+        patch.items = [...s.items, { id: `decision-${seq}`, uiComponent: 'decision_card', payload: d }]
         break
       }
       case 'thinking': {
-        set((st) => ({ statusBar: { ...st.statusBar, visible: true, thinking: true } }))
+        patch.statusBar = { ...s.statusBar, visible: true, thinking: true }
         break
       }
       case 'text':
       case 'stream': {
         const txt = (e as Extract<AgentEvent, { type: 'text' }> | Extract<AgentEvent, { type: 'stream' }>).content
         if (e.type === 'stream' && !(e as any).done) {
-          set((st) => ({ streamText: txt ?? '', statusBar: { ...st.statusBar, visible: true, thinking: false, steps: [] } }))
+          patch.streamText = txt ?? ''
+          patch.statusBar = { ...s.statusBar, visible: true, thinking: false }
         } else {
-          set({ streamText: '' })
+          patch.streamText = ''
         }
         break
       }
       case 'ask_user': {
         const a = e as Extract<AgentEvent, { type: 'ask_user' }>
-        pushAudit('ask_user', a.question)
+        patch.auditTrail = [...s.auditTrail, auditEntry('ask_user', a.question)].slice(-200)
         break
       }
       case 'confirmation': {
         const c = e as Extract<AgentEvent, { type: 'confirmation' }>
-        pushAudit('confirmation', c.title)
+        patch.auditTrail = [...s.auditTrail, auditEntry('confirmation', c.title)].slice(-200)
         break
       }
       case 'file': {
         const f = e as Extract<AgentEvent, { type: 'file' }>
-        pushAudit('file', f.name)
+        patch.auditTrail = [...s.auditTrail, auditEntry('file', f.name)].slice(-200)
         break
       }
       case 'link': {
         const l = e as Extract<AgentEvent, { type: 'link' }>
-        pushAudit('link', `${l.kind}:${l.id}`)
+        patch.auditTrail = [...s.auditTrail, auditEntry('link', `${l.kind}:${l.id}`)].slice(-200)
         break
       }
       case 'error': {
         const err = e as Extract<AgentEvent, { type: 'error' }>
-        pushAudit('error', err.message)
-        set((st) => ({ statusBar: { ...st.statusBar, visible: false, thinking: false }, streamText: '' }))
+        patch.auditTrail = [...s.auditTrail, auditEntry('error', err.message)].slice(-200)
+        patch.statusBar = { ...s.statusBar, visible: false, thinking: false }
+        patch.streamText = ''
         break
       }
       case 'done': {
         const o = (e as Extract<AgentEvent, { type: 'done' }>).outcome ?? 'completed'
-        pushAudit('done', o)
-        set((st) => ({
-          statusBar: { ...st.statusBar, visible: false, thinking: false, steps: [] },
-          streamText: '',
-          activeContext: { ...st.activeContext, status: o === 'completed' ? 'اكتملت المهمة' : o === 'paused' || o === 'cancelled' ? 'متوقف مؤقتاً' : 'تحتاج معالجة' },
-          items: [...st.items, { id: `done-${seq}`, uiComponent: 'completion_pulse', payload: { outcome: o } }],
-        }))
+        patch.auditTrail = [...s.auditTrail, auditEntry('done', o)].slice(-200)
+        patch.statusBar = { ...s.statusBar, visible: false, thinking: false, steps: [] }
+        patch.streamText = ''
+        patch.activeContext = { ...s.activeContext, status: o === 'completed' ? 'اكتملت المهمة' : o === 'paused' || o === 'cancelled' ? 'متوقف مؤقتاً' : 'تحتاج معالجة' }
+        patch.items = [...s.items, { id: `done-${seq}`, uiComponent: 'completion_pulse', payload: { outcome: o } }]
         break
       }
       default:
         break
     }
-    set({ _seq: seq })
+    set(patch)
   },
 
   setPending: (p) => set({ pending: p }),
