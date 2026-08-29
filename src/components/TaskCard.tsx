@@ -29,10 +29,6 @@ export default function TaskCard() {
   const statusBar = useChatStore((s) => s.statusBar)
   const [expanded, setExpanded] = useState(true)
 
-  useEffect(() => {
-    if (plan) setExpanded(true)
-  }, [plan?.id])
-
   if (!plan || !plan.steps?.length) return null
 
   const done = plan.steps.filter((s) => s.status === 'done').length
