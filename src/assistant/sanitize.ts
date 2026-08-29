@@ -28,9 +28,10 @@ const CODE_LABELS: Record<string, string> = {
 }
 
 function isInternalId(tok: string): boolean {
-  if (tok.length < 10) return false
+  if (tok.length < 12) return false
   if (!/[a-z]/.test(tok)) return false
-  if (!/\d/.test(tok)) return false
+  const digitCount = (tok.match(/\d/g) ?? []).length
+  if (digitCount < 3) return false
   return true
 }
 

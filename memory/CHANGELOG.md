@@ -569,3 +569,4 @@
 - 2026-08-29 | 477c1a9 | تعديل تلقائي: TaskCard.tsx
 - 2026-08-29 | bea909f | تعديل تلقائي: agentChatStore.ts
 - 2026-08-29 | 89ffb2b | تعديل تلقائي: AssistantScreen.tsx
+- 2026-08-29 | 17cbf19 | تعديل تلقائي: AssistantScreen.tsx
