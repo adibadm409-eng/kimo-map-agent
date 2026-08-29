@@ -593,6 +593,19 @@ async function runLoop(
         )
         if (emitEvents) emitForSession(sessionId, { type: 'text', content: 'أنجزت ما أمكن تنفيذه ضمن هذه الجولة. أرسل رسالة للمتابعة.' })
       }
+
+      // تسجيل النمط للمستقبل (تعلم)
+      try {
+        const toolsUsed = Array.from(callCounts.keys()).map((k) => k.split(':')[0])
+        await recordPattern({
+          sessionId,
+          intent: classifiedIntent.kind,
+          entity: classifiedIntent.entity,
+          tools: toolsUsed,
+          timestamp: Date.now(),
+          success: finished,
+        }).catch(() => {})
+      } catch {}
     } finally {
       await clearBrain(sessionId).catch(() => {})
     }
