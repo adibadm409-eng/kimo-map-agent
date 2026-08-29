@@ -95,6 +95,19 @@ async function runLoop(
     const lastObsHashForSig = new Map<string, string>()
     const lastUserMsg = (await getMessages(sessionId)).filter((m) => m.role === 'user').pop()
     const lastUserText = String(lastUserMsg?.content ?? '').trim()
+
+    // تصنيف النية + رد محلي فوري
+    const classifiedIntent = classifyIntent(lastUserText)
+    const localResponse = getLocalResponse(lastUserText)
+    if (localResponse && !classifiedIntent.needsLLM) {
+      await persistAssistantText(sessionId, localResponse, 'text')
+      if (emitEvents) {
+        emitForSession(sessionId, { type: 'stream', content: localResponse })
+        emitForSession(sessionId, { type: 'stream', content: '', done: true })
+        emitForSession(sessionId, { type: 'text', content: localResponse })
+      }
+      return
+    }
     // القراءة التي تطلب أرقاماً أو حالة محلية لا يجوز أن تنتهي بنص النموذج وحده.
     // هذا الحارس لا يقرر تشغيل الأدوات مسبقاً؛ لا يعمل إلا بعد أن يعيد المزود
     // رداً نهائياً بلا tool_calls، فيعيد الجولة إلى الوكيل أو يسجل فشلاً صريحاً.
