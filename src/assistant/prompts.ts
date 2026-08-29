@@ -123,6 +123,13 @@ ${directivesBlock}${brainBlock}${projectMemoryBlock}
 المزود: ${providerName} — الموديل: ${model}`
 }
 
+/** برومبت مختصر للرسائل البسيطة (تحية/سؤال عام) — بدون أدوات = أسرع */
+export function buildMinimalPrompt(providerName: string, model: string): string {
+  return `أنت "كيمو" — مساعد ذكي في تطبيق إدارة عقارات (اليمن، ريال يمني). ذكي، عملي، مباشر، عربي فصحى واضح ودافئ.
+تحدث بحرارة. رحّب بالمحادثة العامة. شارك خبرتك العقارية.
+المزود: ${providerName} — الموديل: ${model}`
+}
+
 /** تعريفات الأدوات المرئية للنموذج. نُرسل فقط الأدوات الأكثر استخداماً
  * لتقليل حجم الطلب، والوكيل يصل لأي أداة عبر execute wrapper. */
 export function getAgentFunctions(_skill?: AgentSkill | null): FunctionDef[] {
