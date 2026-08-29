@@ -224,11 +224,8 @@ export default function AssistantScreen({ navigation }: any) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
     setInput('')
     const imageUris = attachments.filter((a) => a.kind === 'image' || /\.(jpe?g|png|gif|webp|heic|heif)$/i.test(a.uri)).map((a) => a.uri)
-    useChatStore.getState().reset()
-    useChatStore.getState().setMessages([
-      ...(useChatStore.getState().items),
-      { id: `local-user-${Date.now()}`, sessionId: sid, role: 'user', kind: 'text', content: audio ? `رسالة صوتية: ${audio.name}` : trimmed || (attachments.length ? `أرسلت ${attachments.length} مرفقات` : ''), createdAt: Date.now(), meta: imageUris.length ? { images: imageUris } : undefined } as any,
-    ])
+    const userMsg = { id: `local-user-${Date.now()}`, sessionId: sid, role: 'user', kind: 'text', content: audio ? `رسالة صوتية: ${audio.name}` : trimmed || (attachments.length ? `أرسلت ${attachments.length} مرفقات` : ''), createdAt: Date.now(), meta: imageUris.length ? { images: imageUris } : undefined } as any
+    useChatStore.getState().setMessages([...useChatStore.getState().items, userMsg])
     const atts = attachments.length ? [...attachments] : undefined
     setAttachments([])
     setBusy(true)

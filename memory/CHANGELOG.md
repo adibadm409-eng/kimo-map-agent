@@ -592,3 +592,4 @@
 - 2026-08-29 | fb42eab | تعديل تلقائي: executor.ts
 - 2026-08-29 | 3f583ec | تعديل تلقائي: toolSchemas.ts
 - 2026-08-29 | af414e5 | تعديل تلقائي: executor.ts
+- 2026-08-29 | 62c8d8a | تعديل تلقائي: agentChatStore.ts
