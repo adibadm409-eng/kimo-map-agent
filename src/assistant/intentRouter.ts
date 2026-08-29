@@ -86,7 +86,7 @@ const ENTITY_PATTERNS: { pattern: RegExp; entity: string }[] = [
 ]
 
 // ردود محلية فورية (بدون LLM)
-const LOCAL_RESPONSES: Array<{ pattern: RegExp; response: string | (() => string) }> = [
+const LOCAL_RESPONSES: { pattern: RegExp; response: string | (() => string) }[] = [
   { pattern: /^(مرحبا|السلام عليكم|اهلا|صباح الخير|مساء الخير|اهلا وسهلا|أهلاً)/i, response: () => {
     const hour = new Date().getHours()
     const greeting = hour < 12 ? 'صباح الخير' : hour < 18 ? 'مساء الخير' : 'مساء الخير'
