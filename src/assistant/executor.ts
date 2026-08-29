@@ -209,6 +209,13 @@ async function runLoop(
         if (emitEvents) emitForSession(sessionId, { type: 'thinking' })
 
         const agentFunctions = getAgentFunctions(runtimeSkill)
+
+        // تحديد ما إذا كانت الرسالة تحتاج أدوات: رسالة عادية/تحية = بدون أدوات (سريع)
+        const userText = String(lastUserMsg?.content ?? '').trim().toLowerCase()
+        const SIMPLE_PATTERNS = /^(مرحبا|السلام|اهلا|صباح|مساء|شكرا|كيف حال|من انت|ما اسمك|اهلا بك|اهلا وسهلا|hello|hi|hey|thanks|thank you)/i
+        const needsTools = !SIMPLE_PATTERNS.test(userText) || runtimePlan || runtimeTaskId
+        const functionsToSend = needsTools ? agentFunctions : []
+
         let result
         try {
           let liveText = ''
@@ -219,7 +226,7 @@ async function runLoop(
               apiKey: conn.apiKey,
               model: conn.model,
               messages: [system, ...thread],
-              functions: agentFunctions,
+              functions: functionsToSend.length ? functionsToSend : undefined,
               maxTokens: 4000,
               onDelta: (d) => {
                 liveText = d.content || liveText
