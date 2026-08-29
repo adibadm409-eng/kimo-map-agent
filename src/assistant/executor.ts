@@ -210,10 +210,13 @@ async function runLoop(
 
         const agentFunctions = getAgentFunctions(runtimeSkill)
 
-        // تحديد ما إذا كانت الرسالة تحتاج أدوات: رسالة عادية/تحية = بدون أدوات (سريع)
-        const userText = String(lastUserMsg?.content ?? '').trim().toLowerCase()
-        const SIMPLE_PATTERNS = /^(مرحبا|السلام|اهلا|صباح|مساء|شكرا|كيف حال|من انت|ما اسمك|اهلا بك|اهلا وسهلا|hello|hi|hey|thanks|thank you)/i
-        const needsTools = !SIMPLE_PATTERNS.test(userText) || runtimePlan || runtimeTaskId
+        // تحديد ما إذا كانت الرسالة تحتاج أدوات
+        // الرسائل البسيطة (تحية/سؤال عام) → بدون أدوات = استجابة سريعة
+        // الرسائل المعقدة (تعديل/بحث/إجراء) → مع أدوات
+        const userText = String(lastUserMsg?.content ?? '').trim()
+        const isSimpleMessage = /^(مرحبا|السلام عليكم|اهلا|صباح الخير|مساء الخير|شكرا|كيف حالك|من انت|ما اسمك|اهلا بك|hello|hi|hey|thanks|thank you|كيف يمكنني|ساعدني|ما هي|ماذا يعمل)/i.test(userText)
+        const hasActionIntent = /(?:أنشئ|انشئ|أضف|اضف|عدّل|عدل|احذف|حذف|سجّل|سجل|ابحث|اعرض|أظهر|اظهر|اقرأ|استكشف|كم|عدد|إجمالي|ملخص|جدول|شجرة|المؤشرات|التدفقات|الأقساط|المشروع|الوقت|تقرير|ملف)/i.test(userText)
+        const needsTools = !isSimpleMessage || hasActionIntent || runtimePlan || runtimeTaskId
         const functionsToSend = needsTools ? agentFunctions : []
 
         let result
