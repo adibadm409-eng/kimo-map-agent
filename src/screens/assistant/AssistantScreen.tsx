@@ -488,7 +488,7 @@ export default function AssistantScreen({ navigation }: any) {
       </View>,
     )
     return () => setRight(null)
-  }, [setRight, isFocused, mode, configured, colors, navigation, setShowHistory, toggleMode])
+  }, [setRight, isFocused, mode, configured, colors, navigation, setModals, toggleMode])
 
   return (
     <View style={[styles.root, { backgroundColor: colors.bg }]}>
