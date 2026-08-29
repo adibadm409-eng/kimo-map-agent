@@ -715,7 +715,7 @@ export default function AssistantScreen({ navigation }: any) {
         onDelete={handleDeleteSession}
         onNew={handleNewSession}
         onOpenSettings={() => {
-          setShowHistory(false)
+          setModals((m) => ({ ...m, history: false }))
           navigation.navigate('AgentSettings')
         }}
         onRefresh={loadSessions}
