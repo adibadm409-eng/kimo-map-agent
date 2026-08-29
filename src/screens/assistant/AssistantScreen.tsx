@@ -178,14 +178,11 @@ export default function AssistantScreen({ navigation }: any) {
     } else if (pending?.kind === 'confirmation') {
       setSelDel([])
     }
-  }, [pending])
-
-  useEffect(() => {
     if (chatItems.length) {
       wantedBottom.current = true
       setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 60)
     }
-  }, [chatItems.length, pending?.kind])
+  }, [pending, chatItems.length])
 
   function providerLabelOf(s: any): string {
     const active = s.activeProvider
