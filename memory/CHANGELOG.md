@@ -623,3 +623,4 @@
 - 2026-08-29 | 037cd94 | تعديل تلقائي: agentChatStore.ts
 - 2026-08-29 | c5dbf88 | تعديل تلقائي: AssistantScreen.tsx
 - 2026-08-29 | d9ea88a | إصلاح أخطاء TypeScript: استيراد toolCache + ترتيب loadSettings + sessionId
+- 2026-08-29 | ed1a258 | تعديل تلقائي: intentRouter.ts

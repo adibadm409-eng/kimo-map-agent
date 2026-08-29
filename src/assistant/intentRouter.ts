@@ -71,7 +71,7 @@ const INTENT_PATTERNS: { pattern: RegExp; intent: IntentKind; needsTools: boolea
 ]
 
 // أنماط الكيانات
-const ENTITY_PATTERNS: Array<{ pattern: RegExp; entity: string }> = [
+const ENTITY_PATTERNS: { pattern: RegExp; entity: string }[] = [
   { pattern: /(?:مشروع|مشاريع|project)/i, entity: 'projects' },
   { pattern: /(?:بلوك|بلوكات|block)/i, entity: 'blocks' },
   { pattern: /(?:قطعة|قطع|بلوت|plot)/i, entity: 'plots' },
