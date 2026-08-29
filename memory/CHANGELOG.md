@@ -622,3 +622,4 @@
 - 2026-08-29 | 0ffee35 | تعديل تلقائي: toolSchemas.ts
 - 2026-08-29 | 037cd94 | تعديل تلقائي: agentChatStore.ts
 - 2026-08-29 | c5dbf88 | تعديل تلقائي: AssistantScreen.tsx
+- 2026-08-29 | d9ea88a | إصلاح أخطاء TypeScript: استيراد toolCache + ترتيب loadSettings + sessionId

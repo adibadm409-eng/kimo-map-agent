@@ -31,7 +31,7 @@ export interface ClassifiedIntent {
 }
 
 // أنماط التصنيف مرتبة بالأولوية (الأعلى أولاً)
-const INTENT_PATTERNS: Array<{ pattern: RegExp; intent: IntentKind; needsTools: boolean; needsLLM: boolean; promptTier: IntentKind extends infer T ? 'minimal' | 'focused' | 'full' : never }> = [
+const INTENT_PATTERNS: { pattern: RegExp; intent: IntentKind; needsTools: boolean; needsLLM: boolean; promptTier: IntentKind extends infer T ? 'minimal' | 'focused' | 'full' : never }[] = [
   // رد فوري بدون LLM
   { pattern: /^(مرحبا|السلام عليكم|اهلا|صباح الخير|مساء الخير|اهلا وسهلا|أهلاً|السلام)/i, intent: 'greeting', needsTools: false, needsLLM: false, promptTier: 'minimal' },
   { pattern: /^(شكرا|شكراً|مشكور|الشكر لله)/i, intent: 'greeting', needsTools: false, needsLLM: false, promptTier: 'minimal' },
