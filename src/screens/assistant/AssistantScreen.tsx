@@ -117,13 +117,6 @@ export default function AssistantScreen({ navigation }: any) {
     scrollToBottom(false)
   }, [scrollToBottom])
 
-  useFocusEffect(
-    useCallback(() => {
-      loadSettings().catch(() => {})
-      scrollToBottom(false)
-    }, [loadSettings, sessionId, scrollToBottom])
-  )
-
   const loadSessions = useCallback(async () => {
     const list = await listSessions().catch(() => [])
     setSessions(list)
@@ -148,6 +141,13 @@ export default function AssistantScreen({ navigation }: any) {
       setProvider({ label, model: mdl })
     }
   }, [])
+
+  useFocusEffect(
+    useCallback(() => {
+      loadSettings().catch(() => {})
+      scrollToBottom(false)
+    }, [loadSettings, sessionId, scrollToBottom])
+  )
 
   useEffect(() => {
     let mounted = true
