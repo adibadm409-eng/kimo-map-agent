@@ -494,11 +494,24 @@ function verificationPassed(verification?: string): boolean {
 /** منفّذ موحّد: تكييف + تنفيذ + حالة صريحة + تحقق من الوجود الفعلي، ويعيد الملاحظة الجاهزة للموديل. */
 export async function runToolWithFeedback(tool: string, rawArgs: Record<string, any>): Promise<{ ok: boolean; args: Record<string, any>; observation: string; result: any; verified: boolean; verification?: string }> {
   const args = adaptToolArgs(tool, rawArgs ?? {})
+
+  // فحص الذاكرة المؤقتة أولاً
+  const cached = toolCache.get(tool, args)
+  if (cached !== null) {
+    const observation = buildToolObservation(tool, cached, args, undefined)
+    return { ok: cached.ok ?? true, args, observation, result: cached.result ?? cached, verified: true, verification: 'من الذاكرة المؤقتة' }
+  }
+
   let res: { ok: boolean; result?: any; error?: string }
   try {
     res = await executeTool(tool, args)
   } catch (error: any) {
     res = { ok: false, result: { error: 'tool_exception' }, error: error?.message ?? String(error) }
+  }
+
+  // حفظ النتيجة في الذاكرة المؤقتة
+  if (res.ok) {
+    toolCache.set(tool, args, res)
   }
   // update idempotent: إعادة نفس patch بعد نجاح سابق ليست فشلاً جديداً إذا أثبتت
   // القراءة أن القيمة المطلوبة موجودة بالفعل. نتحقق أولاً ثم نعيد نتيجة آلية واضحة.
