@@ -78,7 +78,7 @@ describe('unified mutation contract', () => {
       id: 'client-1',
       data: { phone: '777000000', project_name: 'wrong-project', size: 12 },
     })
-    expect(client.data).toEqual({ phone: '777000000', project_name: 'wrong-project', size: 12 })
+    expect(client.data).toEqual({ phone: '777000000', project_name: 'wrong-project', area: 12 })
     expect(client.data).not.toHaveProperty('project_id')
     expect(client.data).not.toHaveProperty('area_sqm')
   })
