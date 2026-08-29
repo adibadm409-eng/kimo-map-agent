@@ -358,7 +358,7 @@ export default function AssistantScreen({ navigation }: any) {
   async function handleNewSession() {
     const id = await createSession()
     setSessionId(id)
-    setShowHistory(false)
+    setModals((m) => ({ ...m, history: false }))
     useChatStore.getState().reset()
     reload(id).catch(() => {})
     loadSessions().catch(() => {})
