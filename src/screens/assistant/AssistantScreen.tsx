@@ -56,8 +56,11 @@ interface AudioDraft {
 export default function AssistantScreen({ navigation }: any) {
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
-  const store = useChatStore()
-  const { items: chatItems, activeContext, statusBar, auditTrail, streamText } = store
+  const chatItems = useChatStore((s) => s.items)
+  const activeContext = useChatStore((s) => s.activeContext)
+  const statusBar = useChatStore((s) => s.statusBar)
+  const auditTrail = useChatStore((s) => s.auditTrail)
+  const streamText = useChatStore((s) => s.streamText)
 
   const [sessions, setSessions] = useState<SessionMeta[]>([])
   const [sessionId, setSessionId] = useState<string>('')

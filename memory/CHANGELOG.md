@@ -567,3 +567,4 @@
 - 2026-08-29 | e13d782 | تعديل تلقائي: metro.config.js
 - 2026-08-29 | b506d22 | تعديل تلقائي: TaskCard.tsx
 - 2026-08-29 | 477c1a9 | تعديل تلقائي: TaskCard.tsx
+- 2026-08-29 | bea909f | تعديل تلقائي: agentChatStore.ts
