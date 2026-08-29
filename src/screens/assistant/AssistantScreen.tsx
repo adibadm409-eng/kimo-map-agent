@@ -87,8 +87,6 @@ export default function AssistantScreen({ navigation }: any) {
     wantedBottom.current = true
     setTimeout(() => listRef.current?.scrollToEnd({ animated }), 60)
   }, [])
-  const [voiceReady, setVoiceReady] = useState(false)
-  const [voiceError, setVoiceError] = useState<string | null>(null)
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY)
   const recorderState = useAudioRecorderState(audioRecorder)
 
