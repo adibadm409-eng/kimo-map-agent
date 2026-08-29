@@ -83,6 +83,11 @@ export default function AssistantScreen({ navigation }: any) {
   const wantedBottom = useRef(false)
   const atBottomRef = useRef(true)
   const [atBottom, setAtBottomState] = useState(true)
+
+  const scrollToBottom = useCallback((animated = true) => {
+    wantedBottom.current = true
+    setTimeout(() => listRef.current?.scrollToEnd({ animated }), 60)
+  }, [])
   const [voiceReady, setVoiceReady] = useState(false)
   const [voiceError, setVoiceError] = useState<string | null>(null)
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY)
