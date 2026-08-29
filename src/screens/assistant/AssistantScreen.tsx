@@ -350,7 +350,7 @@ export default function AssistantScreen({ navigation }: any) {
         audioRecorder.record()
       }
     } catch (error: any) {
-      setVoiceError(error?.message ?? 'تعذر بدء التسجيل الصوتي.')
+      setVoice((v) => ({ ...v, error: error?.message ?? 'تعذر بدء التسجيل الصوتي.' }))
       Alert.alert('تعذر التسجيل', error?.message ?? 'تحقق من إذن الميكروفون ثم أعد المحاولة.')
     }
   }
