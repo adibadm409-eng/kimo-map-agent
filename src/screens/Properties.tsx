@@ -126,7 +126,23 @@ export default function Properties() {
           {p.address ? <View style={[styles.propAddr, { backgroundColor: colors.surface }]}><Ionicons name="location-outline" size={14} color={colors.accent} /><Text style={[styles.propAddrText, { color: colors.textSecondary }]} numberOfLines={1}>{p.address}</Text></View> : null}
           <View style={[styles.propertyFooter, { borderTopColor: colors.border }]}>
             <Text style={[styles.footerHint, { color: colors.textMuted }]}>{count ? `${count} وسائط في المعرض` : 'لا توجد وسائط'}</Text>
-            <Ionicons name="chevron-back" size={17} color={colors.textMuted} />
+            <View style={styles.footerActions}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`مشاركة ${p.name || ''} عبر واتساب`}
+                onPress={(event) => {
+                  event.stopPropagation()
+                  const media = parseMediaList(p)
+                  const pinItem: PinItem = { kind: 'property', id: p.id, name: p.name || 'عقار', data: p }
+                  setShareTarget({ item: pinItem, media })
+                }}
+                style={({ pressed }) => [styles.whatsappBtn, pressed && { opacity: 0.7 }]}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
+              </Pressable>
+              <Ionicons name="chevron-back" size={17} color={colors.textMuted} />
+            </View>
           </View>
         </Card>
       </Pressable>
