@@ -52,6 +52,11 @@ export default function AgentSettings({ navigation }: any) {
   const [testing, setTesting] = useState(false)
   const [savingKey, setSavingKey] = useState(false)
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
+  const [visionProvider, setVisionProvider] = useState('')
+  const [visionModel, setVisionModel] = useState('')
+  const [visionPickerOpen, setVisionPickerOpen] = useState(false)
+  const [testingVision, setTestingVision] = useState(false)
+  const [visionTestResult, setVisionTestResult] = useState<{ ok: boolean; message: string } | null>(null)
 
   useEffect(() => {
     ;(async () => {
