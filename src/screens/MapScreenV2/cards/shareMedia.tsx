@@ -228,16 +228,23 @@ export function ShareSheet({ item, media, onClose }: { item: PinItem; media: Med
     if (!idxs.length) { Alert.alert("اختر صورة أو فيديو واحداً على الأقل"); return }
     if (!(await Sharing.isAvailableAsync())) { Alert.alert("المشاركة غير متاحة على هذا الجهاز"); return }
     setBusy(true)
-    const end = target === "whatsapp" ? Math.min(1, idxs.length) : idxs.length
     for (let k = 0; k < idxs.length; k++) {
       const m = media[idxs[k]]
-      if (target === "whatsapp" && k >= 1) break
       if (k > 0) { await new Promise((r) => setTimeout(r, 900)) }
       try {
+        const ext = m.uri.split('.').pop()?.toLowerCase() || ''
+        const mime = m.video ? 'video/mp4'
+          : ext === 'png' ? 'image/png'
+          : ext === 'webp' ? 'image/webp'
+          : ext === 'heic' || ext === 'heif' ? 'image/heic'
+          : 'image/jpeg'
+        const uti = m.video ? 'public.movie'
+          : ext === 'png' ? 'public.png'
+          : 'public.jpeg'
         await Sharing.shareAsync(m.uri, {
-          mimeType: m.video ? "video/mp4" : "image/jpeg",
+          mimeType: mime,
           dialogTitle: `مشاركة ${k + 1} / ${idxs.length} — ${item.name}`,
-          UTI: m.video ? "public.movie" : "public.jpeg",
+          UTI: uti,
         })
       } catch {}
     }
