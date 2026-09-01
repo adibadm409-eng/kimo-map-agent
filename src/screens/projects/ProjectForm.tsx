@@ -57,7 +57,7 @@ export default function ProjectForm() {
           <View style={styles.backBtn} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.xxl }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <Text style={[styles.hint, { color: colors.textMuted }]}>إدارة مشاريع الأراضي السكنية — الاسم إلزامي والوصف اختياري</Text>
           <View style={styles.field}>
             <Input label="اسم المشروع" value={name} onChangeText={setName} placeholder="مثال: مشروع الواحة السكني" />

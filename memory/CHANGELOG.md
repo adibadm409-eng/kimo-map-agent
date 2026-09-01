@@ -668,3 +668,4 @@
 - 2026-09-01 | cbcf5e4 | تعديل تلقائي: ProjectsScreen.tsx
 - 2026-09-01 | 9fc61b4 | تعديل تلقائي: ProjectDetail.tsx
 - 2026-09-01 | 6685786 | تعديل تلقائي: BlockDetail.tsx
+- 2026-09-01 | b44c313 | تعديل تلقائي: BlockForm.tsx
