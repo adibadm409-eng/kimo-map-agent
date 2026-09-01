@@ -129,7 +129,7 @@ export default function Properties() {
             <View style={styles.footerActions}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`مشاركة ${p.name || ''} عبر واتساب`}
+                accessibilityLabel={`مشاركة ${p.name || ''}`}
                 onPress={(event) => {
                   event.stopPropagation()
                   const media = parseMediaList(p)
@@ -139,7 +139,7 @@ export default function Properties() {
                 style={({ pressed }) => [styles.whatsappBtn, pressed && { opacity: 0.7 }]}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
+                <Ionicons name="share-social-outline" size={18} color="#25D366" />
               </Pressable>
               <Ionicons name="chevron-back" size={17} color={colors.textMuted} />
             </View>
