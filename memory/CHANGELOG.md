@@ -693,3 +693,4 @@
 - 2026-09-01 | 43969b9 | تعديل تلقائي: executor.ts
 - 2026-09-01 | 6275185 | تعديل تلقائي: visionAnalysis.ts
 - 2026-09-01 | 736541d | تعديل تلقائي: AgentSettings.tsx
+- 2026-09-01 | bdcebc2 | fix: add vision model picker modal

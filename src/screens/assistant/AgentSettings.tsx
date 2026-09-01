@@ -621,11 +621,20 @@ export default function AgentSettings({ navigation }: any) {
             </View>
             <ScrollView style={{ maxHeight: 420 }} contentContainerStyle={styles.modelList} keyboardShouldPersistTaps="handled">
               {(() => {
-                const vDef = providerDefFor(visionProvider, settings.customProviders)
+                const vDef = providerDefFor(visionProvider, settings?.customProviders ?? [])
                 const builtIn = vDef.defaultModels ?? []
-                const listed = settings.modelLists[visionProvider] ?? []
+                const listed = settings?.modelLists?.[visionProvider] ?? []
                 const opts = [visionModel, ...listed, ...builtIn].filter(Boolean)
                 const unique = Array.from(new Set(opts))
+                if (unique.length === 0) {
+                  return (
+                    <View style={{ padding: spacing.lg, alignItems: 'center' }}>
+                      <Text style={[styles.muted, { color: colors.textMuted, textAlign: 'center' }]}>
+                        لا توجد موديلات متاحة. عدّ إلى الإعدادات الرئيسية واضغط «جلب قائمة الموديلات» أولاً.
+                      </Text>
+                    </View>
+                  )
+                }
                 return unique.map((m) => (
                   <Pressable
                     key={m}
@@ -645,17 +654,6 @@ export default function AgentSettings({ navigation }: any) {
                     {m === visionModel && <Ionicons name="checkmark" size={16} color={colors.accent} />}
                   </Pressable>
                 ))
-              })()}
-              {visionProvider && (() => {
-                const vDef = providerDefFor(visionProvider, settings.customProviders)
-                const opts = [visionModel, ...(settings.modelLists[visionProvider] ?? []), ...vDef.defaultModels].filter(Boolean)
-                return Array.from(new Set(opts)).length === 0 ? (
-                  <View style={{ padding: spacing.lg, alignItems: 'center' }}>
-                    <Text style={[styles.muted, { color: colors.textMuted, textAlign: 'center' }]}>
-                      لا توجد موديلات. اضغط «جلب قائمة الموديلات» من إعدادات المزود الرئيسي أولاً.
-                    </Text>
-                  </View>
-                ) : null
               })()}
             </ScrollView>
           </View>
