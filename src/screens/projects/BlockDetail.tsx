@@ -92,7 +92,7 @@ export default function BlockDetail() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.xxl }]} showsVerticalScrollIndicator={false}>
         <Text style={[styles.hint, { color: colors.textMuted }]}>
           اضغط على أي قطعة لإدخال بياناتها — تظهر {plots.length} خانات حسب عدد القطع
         </Text>
