@@ -478,6 +478,8 @@ export async function setSettings(patch: Partial<AgentSettings>): Promise<AgentS
       ['customProviders', JSON.stringify(secretState.customProviders)],
       ['modelLists', JSON.stringify(next.modelLists)],
       ['mode', next.mode],
+      ['visionProvider', next.visionProvider],
+      ['visionModel', next.visionModel],
     ]
     for (const [k, v] of entries) {
       await d.runAsync('INSERT OR REPLACE INTO agent_settings (key, value) VALUES (?, ?)', k, v)
