@@ -67,7 +67,7 @@ export default function BlockForm() {
           <View style={styles.headerSide} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.xxl }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.field}>
             <Input label="اسم البلوك" value={name} onChangeText={setName} placeholder="مثال: البلوك A" />
           </View>
