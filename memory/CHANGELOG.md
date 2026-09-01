@@ -653,3 +653,4 @@
 - 2026-09-01 | 4f0a38c | بناء APK بمعمارية arm64-v8a فقط (أجهزة حديثة) — حذف armeabi-v7a/x86/x86_64
 - 2026-09-01 | 7206464 | تعديل تلقائي: androidOptimize.js
 - 2026-09-01 | 5c26396 | تعديل تلقائي: build-apk.yml
+- 2026-09-01 | c7c1dcd | إصلاح فعلي لـ ABI: reactNativeArchitectures=arm64-v8a + تحقق من الـ workflow

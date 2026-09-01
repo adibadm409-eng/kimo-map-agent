@@ -201,15 +201,37 @@ export function ShareSheet({ item, media, onClose }: { item: PinItem; media: Med
     return `${head}\n${lines.join("\n")}`
   }
 
-  const shareText = async (app?: "whatsapp") => {
+  const shareAll = async () => {
     const msg = buildText()
-    if (!msg) { Alert.alert("اختر حقلاً واحداً على الأقل"); return }
+    const idxs = [...selMedia]
+    const hasText = !!msg
+    const hasMedia = idxs.length > 0
+    if (!hasText && !hasMedia) { Alert.alert("اختر حقلاً أو وسائط على الأقل"); return }
+    if (!(await Sharing.isAvailableAsync())) { Alert.alert("المشاركة غير متاحة على هذا الجهاز"); return }
     setBusy(true)
     try {
-      if (app === "whatsapp") {
-        // مشاركة نص المركّب مباشرة في واتساب عبر المشاركة العامة للجهاز
-        await Share.share({ message: msg, title: item.name })
-      } else {
+      if (hasMedia) {
+        for (let k = 0; k < idxs.length; k++) {
+          const m = media[idxs[k]]
+          if (k > 0) { await new Promise((r) => setTimeout(r, 600)) }
+          const ext = m.uri.split('.').pop()?.toLowerCase() || ''
+          const mime = m.video ? 'video/mp4'
+            : ext === 'png' ? 'image/png'
+            : ext === 'webp' ? 'image/webp'
+            : ext === 'heic' || ext === 'heif' ? 'image/heic'
+            : 'image/jpeg'
+          const uti = m.video ? 'public.movie'
+            : ext === 'png' ? 'public.png'
+            : 'public.jpeg'
+          await Sharing.shareAsync(m.uri, {
+            mimeType: mime,
+            dialogTitle: `مشاركة — ${item.name}`,
+            UTI: uti,
+          })
+        }
+      }
+      if (hasText) {
+        await new Promise((r) => setTimeout(r, 400))
         await Share.share({ message: msg, title: item.name })
       }
     } catch {}
@@ -221,34 +243,6 @@ export function ShareSheet({ item, media, onClose }: { item: PinItem; media: Med
     if (!msg) { Alert.alert("اختر حقلاً واحداً على الأقل"); return }
     await Clipboard.setStringAsync(msg)
     Alert.alert("تم النسخ", "يمكنك لصق المعلومات في واتساب مباشرةً")
-  }
-
-  const shareMedia = async (target?: "whatsapp" | "all") => {
-    const idxs = [...selMedia]
-    if (!idxs.length) { Alert.alert("اختر صورة أو فيديو واحداً على الأقل"); return }
-    if (!(await Sharing.isAvailableAsync())) { Alert.alert("المشاركة غير متاحة على هذا الجهاز"); return }
-    setBusy(true)
-    for (let k = 0; k < idxs.length; k++) {
-      const m = media[idxs[k]]
-      if (k > 0) { await new Promise((r) => setTimeout(r, 900)) }
-      try {
-        const ext = m.uri.split('.').pop()?.toLowerCase() || ''
-        const mime = m.video ? 'video/mp4'
-          : ext === 'png' ? 'image/png'
-          : ext === 'webp' ? 'image/webp'
-          : ext === 'heic' || ext === 'heif' ? 'image/heic'
-          : 'image/jpeg'
-        const uti = m.video ? 'public.movie'
-          : ext === 'png' ? 'public.png'
-          : 'public.jpeg'
-        await Sharing.shareAsync(m.uri, {
-          mimeType: mime,
-          dialogTitle: `مشاركة ${k + 1} / ${idxs.length} — ${item.name}`,
-          UTI: uti,
-        })
-      } catch {}
-    }
-    setBusy(false)
   }
 
   return (
