@@ -89,7 +89,7 @@ export default function Reminders() {
         data={reminders}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + spacing.xxl }]}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={colors.accent} />}
         ListEmptyComponent={
           <View style={styles.empty}>
