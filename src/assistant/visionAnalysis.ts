@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system'
+import * as FileSystem from 'expo-file-system/legacy'
 import { getSettings, activeConfig } from './store'
 import { chatWithRetry } from './llm'
 import { resolveModelProfile } from './modelProfiles'
