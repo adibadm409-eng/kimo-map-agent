@@ -110,7 +110,7 @@ export default function WorkspacesScreen() {
           data={items}
           keyExtractor={(x) => x.id}
           renderItem={renderItem}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + spacing.xxl }]}
           showsVerticalScrollIndicator={false}
         />
       )}
