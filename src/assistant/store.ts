@@ -432,6 +432,8 @@ export async function getSettings(): Promise<AgentSettings> {
   if (map.has('customProviders')) { try { s.customProviders = JSON.parse(map.get('customProviders')!) } catch {} }
   if (map.has('modelLists')) { try { s.modelLists = JSON.parse(map.get('modelLists')!) } catch {} }
   if (map.has('mode')) s.mode = map.get('mode') === 'edit' ? 'edit' : 'read'
+  if (map.has('visionProvider')) s.visionProvider = map.get('visionProvider')!
+  if (map.has('visionModel')) s.visionModel = map.get('visionModel')!
   // ترحيل مفاتيح الإصدارات التي كانت تكتب keys={} في SQLite: نقرأ كل مزود
   // مدمج من SecureStore حتى لا يضيع المفتاح الموجود فعلاً بسبب غياب المؤشر القديم.
   const knownProviders = new Set([
