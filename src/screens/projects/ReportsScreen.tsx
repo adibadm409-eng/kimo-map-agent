@@ -193,7 +193,7 @@ export default function ReportsScreen() {
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.xxl }]} showsVerticalScrollIndicator={false}>
         <View style={styles.modeRow}>
           <Pressable onPress={() => setMode('all')} style={[styles.modeBtn, { borderColor: mode === 'all' ? colors.accent : colors.border, backgroundColor: mode === 'all' ? colors.accentSurface : colors.bgSecondary }]}>
             <Text style={[styles.modeText, { color: mode === 'all' ? colors.accent : colors.textSecondary }]}>كل المشاريع</Text>
