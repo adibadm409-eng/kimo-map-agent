@@ -102,7 +102,7 @@ export default function ProjectDetail() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.xxl }]} showsVerticalScrollIndicator={false}>
         {project.description ? (
           <Card style={styles.card}>
             <Text style={[styles.desc, { color: colors.textSecondary }]}>{project.description}</Text>
