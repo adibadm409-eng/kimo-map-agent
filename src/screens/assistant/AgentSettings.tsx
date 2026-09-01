@@ -67,6 +67,8 @@ export default function AgentSettings({ navigation }: any) {
       setApiKey(s.keys[s.activeProvider] ?? '')
       setModel(s.models[s.activeProvider] ?? '')
       setMode(s.mode)
+      setVisionProvider(s.visionProvider ?? '')
+      setVisionModel(s.visionModel ?? '')
     })()
   }, [])
 
