@@ -18,6 +18,7 @@
     "android": {
       "package": "com.realestate.app",
       "softwareKeyboardLayoutMode": "resize",
+      "edgeToEdgeEnabled": false,
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon-adaptive-white-bg.png",
         "backgroundColor": "#FFFFFF"
