@@ -609,6 +609,58 @@ export default function AgentSettings({ navigation }: any) {
           </View>
         </View>
       </Modal>
+
+      <Modal visible={visionPickerOpen} transparent animationType="fade" onRequestClose={() => setVisionPickerOpen(false)}>
+        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.45)' }]}>
+          <View style={[styles.modalCard, { backgroundColor: colors.bgSecondary }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>اختر موديل الرؤية</Text>
+              <Pressable onPress={() => setVisionPickerOpen(false)} style={[styles.closeBtn, { backgroundColor: colors.surface }]}>
+                <Ionicons name="close" size={18} color={colors.textPrimary} />
+              </Pressable>
+            </View>
+            <ScrollView style={{ maxHeight: 420 }} contentContainerStyle={styles.modelList} keyboardShouldPersistTaps="handled">
+              {(() => {
+                const vDef = providerDefFor(visionProvider, settings.customProviders)
+                const builtIn = vDef.defaultModels ?? []
+                const listed = settings.modelLists[visionProvider] ?? []
+                const opts = [visionModel, ...listed, ...builtIn].filter(Boolean)
+                const unique = Array.from(new Set(opts))
+                return unique.map((m) => (
+                  <Pressable
+                    key={m}
+                    onPress={() => {
+                      setVisionModel(m)
+                      setVisionTestResult(null)
+                      void save({ visionModel: m })
+                      setVisionPickerOpen(false)
+                      Haptics.selectionAsync().catch(() => {})
+                    }}
+                    style={[
+                      styles.modelOption,
+                      { backgroundColor: m === visionModel ? colors.accentSurface : colors.bgCard, borderColor: m === visionModel ? colors.accent : colors.border },
+                    ]}
+                  >
+                    <Text numberOfLines={1} style={[styles.modelOptionText, { color: m === visionModel ? colors.accent : colors.textPrimary }]}>{m}</Text>
+                    {m === visionModel && <Ionicons name="checkmark" size={16} color={colors.accent} />}
+                  </Pressable>
+                ))
+              })()}
+              {visionProvider && (() => {
+                const vDef = providerDefFor(visionProvider, settings.customProviders)
+                const opts = [visionModel, ...(settings.modelLists[visionProvider] ?? []), ...vDef.defaultModels].filter(Boolean)
+                return Array.from(new Set(opts)).length === 0 ? (
+                  <View style={{ padding: spacing.lg, alignItems: 'center' }}>
+                    <Text style={[styles.muted, { color: colors.textMuted, textAlign: 'center' }]}>
+                      لا توجد موديلات. اضغط «جلب قائمة الموديلات» من إعدادات المزود الرئيسي أولاً.
+                    </Text>
+                  </View>
+                ) : null
+              })()}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   )
 }
