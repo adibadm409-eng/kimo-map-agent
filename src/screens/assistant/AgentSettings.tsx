@@ -429,6 +429,127 @@ export default function AgentSettings({ navigation }: any) {
             </View>
           </Pressable>
 
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>موديل الرؤية (تحليل الصور)</Text>
+          <Text style={[styles.hint, { color: colors.textMuted }]}>
+            اختر المزود والموديل المخصص لتحليل الصور عند طلب استخراج البيانات. يُستخدم هذا الموديل لإرسال الصورة فعلياً وتحليلها بدقة.
+          </Text>
+          <View style={styles.providerGrid}>
+            {PROVIDERS.filter((p) => p.id !== 'custom').map((p) => {
+              const active = visionProvider === p.id
+              return (
+                <Pressable
+                  key={p.id}
+                  onPress={() => {
+                    setVisionProvider(p.id)
+                    setVisionModel(p.defaultModels[0] ?? '')
+                    setVisionTestResult(null)
+                    void save({ visionProvider: p.id, visionModel: p.defaultModels[0] ?? '' })
+                    Haptics.selectionAsync().catch(() => {})
+                  }}
+                  style={({ pressed }) => [
+                    styles.providerCard,
+                    {
+                      backgroundColor: active ? colors.accentSurface : colors.bgCard,
+                      borderColor: active ? colors.accent : colors.border,
+                      opacity: pressed ? 0.8 : 1,
+                    },
+                  ]}
+                >
+                  <View style={[styles.providerDot, { backgroundColor: p.color }]} />
+                  <Text numberOfLines={2} style={[styles.providerName, { color: colors.textPrimary }]}>{p.name}</Text>
+                  {active && <Ionicons name="checkmark-circle" size={16} color={colors.accent} />}
+                </Pressable>
+              )
+            })}
+            {settings.customProviders.map((c) => {
+              const active = visionProvider === `custom:${c.id}`
+              return (
+                <Pressable key={c.id} onPress={() => {
+                  setVisionProvider(`custom:${c.id}`)
+                  setVisionModel(c.models[0] ?? '')
+                  setVisionTestResult(null)
+                  void save({ visionProvider: `custom:${c.id}`, visionModel: c.models[0] ?? '' })
+                  Haptics.selectionAsync().catch(() => {})
+                }} style={({ pressed }) => [
+                  styles.providerCard,
+                  {
+                    backgroundColor: active ? colors.accentSurface : colors.bgCard,
+                    borderColor: active ? colors.accent : colors.border,
+                    opacity: pressed ? 0.8 : 1,
+                  },
+                ]}>
+                  <View style={[styles.providerDot, { backgroundColor: '#F59E0B' }]} />
+                  <Text numberOfLines={1} style={[styles.providerName, { color: colors.textPrimary }]}>{c.name}</Text>
+                  {active && <Ionicons name="checkmark-circle" size={16} color={colors.accent} />}
+                </Pressable>
+              )
+            })}
+          </View>
+          {visionProvider ? (
+            <>
+              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>موديل الرؤية</Text>
+              <Pressable
+                onPress={() => setVisionPickerOpen(true)}
+                style={({ pressed }) => [styles.modelField, { backgroundColor: colors.bgCard, borderColor: colors.border, opacity: pressed ? 0.8 : 1 }]}
+              >
+                <View style={styles.modelLeft}>
+                  <Ionicons name="eye-outline" size={17} color={colors.accent} />
+                  <Text numberOfLines={1} style={[styles.modelName, { color: colors.textPrimary }]}>{visionModel || 'اختر موديل رؤية...'}</Text>
+                </View>
+                <Ionicons name="chevron-down" size={18} color={colors.textMuted} />
+              </Pressable>
+              <Pressable
+                onPress={async () => {
+                  if (!visionModel.trim()) { Alert.alert('موديل مطلوب', 'اختر موديل رؤية أولاً.'); return }
+                  setTestingVision(true)
+                  setVisionTestResult(null)
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {})
+                  try {
+                    const def = providerDefFor(visionProvider, settings.customProviders)
+                    const key = visionProvider.startsWith('custom:')
+                      ? settings.customProviders.find((c) => c.id === visionProvider.slice(7))?.apiKey ?? ''
+                      : settings.keys[visionProvider] ?? ''
+                    if (!key) { Alert.alert('مفتاح مطلوب', 'أدخل مفتاح API للمزود المختار أولاً.'); setTestingVision(false); return }
+                    const res = await testConnection({
+                      provider: def,
+                      apiKey: key,
+                      model: visionModel.trim(),
+                      timeoutMs: 45000,
+                    })
+                    setVisionTestResult({ ok: res.ok, message: res.message })
+                    Haptics.notificationAsync(res.ok ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error).catch(() => {})
+                  } finally {
+                    setTestingVision(false)
+                  }
+                }}
+                disabled={testingVision}
+                style={({ pressed }) => [
+                  styles.testBtn,
+                  { backgroundColor: colors.accent, opacity: pressed || testingVision ? 0.7 : 1 },
+                ]}
+              >
+                {testingVision ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Ionicons name="eye-outline" size={18} color="#fff" />
+                )}
+                <Text style={styles.testBtnText}>{testingVision ? 'جاري فحص موديل الرؤية...' : 'فحص الاتصال بموديل الرؤية'}</Text>
+              </Pressable>
+              {visionTestResult && (
+                <View style={[styles.testResult, { backgroundColor: visionTestResult.ok ? colors.successSurface : colors.errorSurface, borderColor: colors.border }]}>
+                  <Ionicons name={visionTestResult.ok ? 'checkmark-circle' : 'alert-circle'} size={18} color={visionTestResult.ok ? colors.success : colors.error} />
+                  <Text style={[styles.testResultText, { color: visionTestResult.ok ? colors.success : colors.error }]}>{visionTestResult.message}</Text>
+                </View>
+              )}
+            </>
+          ) : (
+            <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                اختر مزوداً أعلاه لتفعيل إعدادات موديل الرؤية. عند إرسال صورة مع طلب استخراج بيانات، سيتم إرسال الصورة فعلياً إلى هذا الموديل لتحليلها بدقة.
+              </Text>
+            </View>
+          )}
+
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>فحص الاتصال</Text>
           <Pressable
             onPress={onTest}
