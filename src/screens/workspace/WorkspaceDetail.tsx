@@ -73,7 +73,7 @@ export default function WorkspaceDetail() {
       <Pressable onPress={() => navigation.goBack()} style={[styles.backBtn, { backgroundColor: colors.surface }]} hitSlop={8}>
         <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
       </Pressable>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xxl }]} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.textPrimary }]}>{ws.name}</Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>
