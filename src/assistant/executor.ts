@@ -800,6 +800,30 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
 
   if (!hasPayload(turn) && !assetErrors.length) return
   const userImages = assets.filter((a) => a.kind === 'image' && a.localUri).map((a) => a.localUri)
+
+  // تحليل الصور عبر موديل الرؤية إذا كان المستخدم يطلب استخراج بيانات
+  if (userImages.length > 0) {
+    const isDataExtraction = /استخراج|استخرج|بيانات|عقار|سعر|مساحة|عنوان|معلومات|أضف.*للتطبيق|أدخل.*البيانات|حل.?ل|تمع.?ن|ما.?في.?هذه.?الصورة|ما.?هي.?البيانات/i.test(content)
+    if (isDataExtraction) {
+      try {
+        const { analyzeImageWithVision } = await import('./visionAnalysis')
+        for (const imgUri of userImages) {
+          const visionResult = await analyzeImageWithVision(imgUri, content)
+          if (visionResult.success && visionResult.content) {
+            content = `${content}\n\n---\n📊 نتائج تحليل الصورة عبر موديل الرؤية:\n${visionResult.content}\n---\n\nراجع النتائج أعلاه واعرضها على المستخدم. إذا طلب إضافة البيانات للتطبيق، تحقق من صحتها أولاً مع المستخدم قبل الإدراج.`
+            break
+          } else if (visionResult.error === 'no_vision_model' || visionResult.error === 'no_api_key' || visionResult.error === 'model_no_vision') {
+            content = `${content}\n\n⚠️ ملاحظة: لم يتم تحليل الصورة تلقائياً because لم يتم تعيين موديل رؤية في الإعدادات. يمكنك ضبط موديل الرؤية من إعدادات المساعد > موديل الرؤية. حاول تحليل الصورة بنفسك واستخرج البيانات منها إن أمكن.`
+          } else if (visionResult.error === 'all_retries_failed') {
+            content = `${content}\n\n⚠️ ملاحظة: فشل الاتصال بموديل الرؤية بعد 3 محاولات. حاول تحليل الصورة بنفسك واستخرج البيانات منها إن أمكن.`
+          }
+        }
+      } catch {
+        // فشل استيراد visionAnalysis — نكمل بالمسار العادي
+      }
+    }
+  }
+
   // الحمولة النهائية المحوّلة إلى نص (صور تُعرض في الشاشة عبر meta.images، وصوت
   // يُنسخ نصاً) تمر عبر عقد initialContent لتُستبدل بها آخر رسالة مستخدم نظيفة.
   if (initialContent === undefined) initialContent = content
