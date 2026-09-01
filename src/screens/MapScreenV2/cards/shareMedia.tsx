@@ -306,16 +306,12 @@ export function ShareSheet({ item, media, onClose }: { item: PinItem; media: Med
               <Ionicons name="copy-outline" size={15} color="#FFF" />
               <Text style={s.actionText}>نسخ</Text>
             </Pressable>
-            <Pressable onPress={() => shareText("whatsapp")} disabled={busy} style={[s.actionBtn, { backgroundColor: "#25D366", flex: 1 }]}>
+            <Pressable onPress={shareAll} disabled={busy} style={[s.actionBtn, { backgroundColor: "#25D366", flex: 1 }]}>
               <Ionicons name="logo-whatsapp" size={15} color="#FFF" />
-              <Text style={s.actionText}>واتساب (نص)</Text>
-            </Pressable>
-            <Pressable onPress={() => shareMedia("whatsapp")} disabled={busy || selMedia.size === 0} style={[s.actionBtn, { backgroundColor: "#128C7E", flex: 1, opacity: busy || selMedia.size === 0 ? 0.5 : 1 }]}>
-              <Ionicons name="images-outline" size={15} color="#FFF" />
-              <Text style={s.actionText}>واتساب (وسائط)</Text>
+              <Text style={s.actionText}>{busy ? "جاري المشاركة..." : "مشاركة عبر واتساب"}</Text>
             </Pressable>
           </View>
-          <Pressable onPress={() => shareText()} disabled={busy} style={[s.actionBtn, { backgroundColor: "#10B981", marginTop: 8 }]}>
+          <Pressable onPress={shareAll} disabled={busy} style={[s.actionBtn, { backgroundColor: "#10B981", marginTop: 8 }]}>
             <Ionicons name="share-social-outline" size={15} color="#FFF" />
             <Text style={s.actionText}>مشاركة عبر التطبيقات…</Text>
           </Pressable>
