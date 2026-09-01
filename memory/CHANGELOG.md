@@ -685,3 +685,4 @@
 - 2026-09-01 | d206d5a | تعديل تلقائي: store.ts
 - 2026-09-01 | 2f96363 | تعديل تلقائي: AgentSettings.tsx
 - 2026-09-01 | 0522d20 | تعديل تلقائي: AgentSettings.tsx
+- 2026-09-01 | e1ce39c | تعديل تلقائي: AgentSettings.tsx
