@@ -445,6 +445,8 @@ const styles = StyleSheet.create({
   mediaCountBadge: { position: 'absolute', bottom: 6, left: 6, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 6, paddingVertical: 3, borderRadius: radius.full, backgroundColor: 'rgba(15,23,42,0.78)' },
   mediaCountText: { color: '#FFF', fontSize: fontSize.xs, fontFamily: 'Tajawal_700Bold' },
   footerHint: { fontSize: fontSize.xs, fontFamily: 'Tajawal_500Medium' },
+  footerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  whatsappBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: '#25D36618' },
   propFooter: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg, borderTopWidth: StyleSheet.hairlineWidth,
   },
