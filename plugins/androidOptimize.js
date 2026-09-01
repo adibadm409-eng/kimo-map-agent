@@ -1,17 +1,27 @@
-const { withAppBuildGradle } = require('@expo/config-plugins');
+const { withAppBuildGradle, withGradleProperties } = require('@expo/config-plugins');
 
 /**
  * تحسينات بناء أندرويد لنسخة الإصدار:
  * 1) فرض minify + shrinkResources (R8) لإخفاء/تشويش الكود الأصلي وتقليل الحجم.
- * 2) تقييد بنى ABI بـ arm64-v8a فقط (الأجهزة الحديثة) — لا armeabi-v7a ولا x86/x86_64.
- * محرك JS يبقى Hermes (الافتراضي في RN 0.81) الذي يُحوّل الكود إلى bytecode بدل
- * النص الصريح، ما يحميه من الهندسة العكسية.
+ * 2) تقييد بنى ABI بـ arm64-v8a فقط (أجهزة حديثة).
+ *    نستخدم reactNativeArchitectures لمنع بناء CMake للمعماريات غير المطلوبة.
  */
 module.exports = function androidReleaseOptimize(config) {
-  return withAppBuildGradle(config, (cfg) => {
+  // 1) reactNativeArchitectures=arm64-v8a في gradle.properties
+  config = withGradleProperties(config, (cfg) => {
+    const existing = cfg.modResults.find((p) => p.key === 'reactNativeArchitectures')
+    if (existing) {
+      existing.value = 'arm64-v8a'
+    } else {
+      cfg.modResults.push({ key: 'reactNativeArchitectures', value: 'arm64-v8a' })
+    }
+    return cfg
+  })
+
+  // 2) abiFilters في build.gradle لضمان الحزم النهائي
+  config = withAppBuildGradle(config, (cfg) => {
     let s = cfg.modResults.contents;
 
-    // 1) فرض minify + shrinkResources في نسخة release
     if (s.includes('minifyEnabled')) {
       s = s.replace(/minifyEnabled\s+[^\n]+/, 'minifyEnabled true');
     }
@@ -19,7 +29,6 @@ module.exports = function androidReleaseOptimize(config) {
       s = s.replace(/shrinkResources\s+[^\n]+/, 'shrinkResources true');
     }
 
-    // 2) تقييد بنى ABI بـ arm64-v8a فقط (أجهزة حديثة)
     if (!s.includes('abiFilters')) {
       s = s.replace(
         /defaultConfig\s*\{/,
@@ -30,4 +39,6 @@ module.exports = function androidReleaseOptimize(config) {
     cfg.modResults.contents = s;
     return cfg;
   });
+
+  return config;
 };
