@@ -31,6 +31,11 @@ export function buildToolSchemas(): Record<string, { type: 'object'; properties:
     'list_entities', 'catalog', 'schema_inspect',
     'current_local_time', 'generate_file',
     'review_my_work', 'data_snapshot',
+    'attach_media_to_entity', 'list_attachments', 'remove_attachment',
+    'create_offer_with_reminder', 'offer_reminder_set',
+    'create_reminder', 'list_reminders', 'cancel_reminder',
+    'property_change_preview', 'property_intake_apply',
+    'preview_update', 'custom_field_set',
   ])
   for (const t of TOOLS) {
     if (!CORE_TOOLS.has(t.name)) continue

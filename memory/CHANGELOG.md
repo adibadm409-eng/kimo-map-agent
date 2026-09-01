@@ -696,3 +696,4 @@
 - 2026-09-01 | bdcebc2 | fix: add vision model picker modal
 - 2026-09-01 | d3946e5 | تعديل تلقائي: AgentSettings.tsx
 - 2026-09-01 | 3adae8e | fix: vision model picker crash — null-safe settings access
+- 2026-09-02 | 7c139e5 | تعديل تلقائي: prompts.ts
