@@ -207,13 +207,23 @@ export function ShareSheet({ item, media, onClose }: { item: PinItem; media: Med
     const hasText = !!msg
     const hasMedia = idxs.length > 0
     if (!hasText && !hasMedia) { Alert.alert("اختر حقلاً أو وسائط على الأقل"); return }
+    if (!(await Sharing.isAvailableAsync())) { Alert.alert("المشاركة غير متاحة على هذا الجهاز"); return }
     setBusy(true)
     try {
       if (hasMedia) {
         for (let k = 0; k < idxs.length; k++) {
           const m = media[idxs[k]]
           if (k > 0) { await new Promise((r) => setTimeout(r, 600)) }
-          await Share.share({ message: m.uri, title: `مشاركة — ${item.name}` })
+          const ext = m.uri.split('.').pop()?.toLowerCase() || ''
+          const mime = m.video ? 'video/mp4'
+            : ext === 'png' ? 'image/png'
+            : ext === 'webp' ? 'image/webp'
+            : ext === 'heic' || ext === 'heif' ? 'image/heic'
+            : 'image/jpeg'
+          await Sharing.shareAsync(m.uri, {
+            mimeType: mime,
+            dialogTitle: `مشاركة — ${item.name}`,
+          })
         }
       }
       if (hasText) {
