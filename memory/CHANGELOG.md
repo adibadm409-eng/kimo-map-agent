@@ -671,3 +671,4 @@
 - 2026-09-01 | b44c313 | تعديل تلقائي: BlockForm.tsx
 - 2026-09-01 | d11ab19 | تعديل تلقائي: ProjectForm.tsx
 - 2026-09-01 | ff54424 | تعديل تلقائي: WorkspacesScreen.tsx
+- 2026-09-01 | 655374e | تعديل تلقائي: WorkspaceDetail.tsx

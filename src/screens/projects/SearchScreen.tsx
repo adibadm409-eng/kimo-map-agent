@@ -149,7 +149,7 @@ export default function SearchScreen() {
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.xxl }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View style={[styles.searchInputWrap, { borderColor: colors.border, backgroundColor: colors.surface }]}>
           <Ionicons name="search" size={18} color={colors.textMuted} />
           <TextInput
