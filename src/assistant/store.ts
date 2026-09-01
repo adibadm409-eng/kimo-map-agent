@@ -19,6 +19,10 @@ export interface AgentSettings {
   modelLists: Record<string, string[]>
   customProviders: CustomProviderDef[]
   mode: AgentMode
+  /** مزود موديل الرؤية (تحليل الصور) — يُستخدم لإرسال الصور فعلياً عند طلب استخراج البيانات. */
+  visionProvider: string
+  /** اسم موديل الرؤية المخصص لتحليل الصور. */
+  visionModel: string
 }
 
 export interface SessionMeta {
