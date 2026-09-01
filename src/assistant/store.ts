@@ -417,6 +417,8 @@ const DEFAULT_SETTINGS: AgentSettings = {
   modelLists: {},
   customProviders: [],
   mode: 'read',
+  visionProvider: '',
+  visionModel: '',
 }
 
 export async function getSettings(): Promise<AgentSettings> {
