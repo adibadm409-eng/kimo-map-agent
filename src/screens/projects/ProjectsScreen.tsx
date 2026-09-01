@@ -160,7 +160,7 @@ export default function ProjectsScreen() {
           renderItem={renderItem}
           numColumns={2}
           columnWrapperStyle={styles.columnWrap}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + spacing.xxl }]}
           showsVerticalScrollIndicator={false}
         />
       )}
