@@ -673,3 +673,4 @@
 - 2026-09-01 | ff54424 | تعديل تلقائي: WorkspacesScreen.tsx
 - 2026-09-01 | 655374e | تعديل تلقائي: WorkspaceDetail.tsx
 - 2026-09-01 | b3955d8 | تعديل تلقائي: SearchScreen.tsx
+- 2026-09-01 | f2f2bcd | تعديل تلقائي: ReportsScreen.tsx
