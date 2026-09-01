@@ -663,3 +663,4 @@
 - 2026-09-01 | c6f4a14 | تعديل تلقائي: Campaigns.tsx
 - 2026-09-01 | f92e32d | تعديل تلقائي: Campaigns.tsx
 - 2026-09-01 | 45ea0fb | تعديل تلقائي: Campaigns.tsx
+- 2026-09-01 | 48037ba | تعديل تلقائي: Reminders.tsx
