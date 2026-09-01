@@ -47,6 +47,16 @@ jobs:
       - name: Generate Android project
         run: npx expo prebuild --platform android
 
+      - name: Enforce arm64-v8a only (backup in case plugin fails)
+        run: |
+          # Add to gradle.properties if plugin missed it
+          grep -q 'reactNativeArchitectures' android/gradle.properties || echo 'reactNativeArchitectures=arm64-v8a' >> android/gradle.properties
+          # Verify and show what we have
+          echo "=== gradle.properties ABI settings ==="
+          grep -i "architect\|abi\|abiFilter" android/gradle.properties || echo "(none found)"
+          echo "=== build.gradle defaultConfig ==="
+          grep -A3 "defaultConfig" android/app/build.gradle | head -10
+
       - name: Install matching NDK
         run: |
           NDK_VER=$(grep -oP 'ndkVersion "\K[^"]+' android/build.gradle || true)
