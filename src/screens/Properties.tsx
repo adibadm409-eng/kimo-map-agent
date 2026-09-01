@@ -250,6 +250,7 @@ export default function Properties() {
         }
       />
       <SectionFab onPress={() => navigation.navigate('PropertyForm', {})} label="إضافة عقار" />
+      {shareTarget ? <ShareSheet item={shareTarget.item} media={shareTarget.media} onClose={() => setShareTarget(null)} /> : null}
     </View>
   )
 }
