@@ -46,6 +46,7 @@ export default function Properties() {
   const [priceMin, setPriceMin] = useState('')
   const [priceMax, setPriceMax] = useState('')
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [shareTarget, setShareTarget] = useState<{ item: PinItem; media: any[] } | null>(null)
 
   useFocusEffect(useCallback(() => {
     load()

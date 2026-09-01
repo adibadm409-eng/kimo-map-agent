@@ -643,3 +643,4 @@
 - 2026-08-29 | 51dc7cb | تعديل تلقائي: prompts.ts
 - 2026-08-29 | 454c660 | إصلاح invariant tests: property_id اختياري لطلب الشراء + property metadata markers
 - 2026-09-01 | 26b0939 | تعديل تلقائي: shareMedia.tsx
+- 2026-09-01 | b788716 | تعديل تلقائي: Properties.tsx
