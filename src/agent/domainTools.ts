@@ -480,13 +480,14 @@ export const DOMAIN_TOOLS: DomainToolDef[] = [
       if (!['create', 'update'].includes(op)) throw new Error('operation يجب أن يكون create أو update.')
       if (!items.length || items.length > 20) throw new Error('items يجب أن تكون 1..20 عنصراً.')
       const { queryEntityById } = await import('./query')
-      const { pushUndo } = await import('../assistant/store')
+      const befores = new Map<string, any>()
       if (op === 'update') {
         for (const it of items) {
           const gid = String(it?.id ?? '')
           if (!gid) throw new Error('كل عنصر update يحتاج id صالحاً؛ أُجهضت الدفعة كاملة قبل أي كتابة.')
           const row = await queryEntityById(entity as any, gid).catch(() => null)
           if (!row) throw new Error(`السجل ${gid} غير موجود في ${entity}؛ أُجهضت الدفعة كاملة قبل أي كتابة.`)
+          befores.set(gid, row)
         }
       }
       const results: any[] = []
@@ -494,15 +495,11 @@ export const DOMAIN_TOOLS: DomainToolDef[] = [
         try {
           if (op === 'create') {
             const out = await agentCreate({ entity: entity as any, data: (it?.data ?? {}) as any })
-            await pushUndo({ sessionId: String(args.__session_id ?? 'bulk'), kind: 'create', entity, entityId: String(out.id), summary: `إنشاء جماعي ${entity}` }).catch(() => {})
             results.push({ ok: true, ...out })
           } else {
             const gid = String(it?.id ?? '')
-            const before = await queryEntityById(entity as any, gid).catch(() => null)
             const out = await agentUpdate({ entity: entity as any, id: gid, data: (it?.data ?? {}) as any })
-            const after = await queryEntityById(entity as any, gid).catch(() => null)
-            if (before) await pushUndo({ sessionId: String(args.__session_id ?? 'bulk'), kind: 'update', entity, entityId: gid, before, after, summary: `تعديل جماعي ${entity}/${gid}` }).catch(() => {})
-            results.push({ ok: true, ...out })
+            results.push({ ok: true, ...out, __before: befores.get(gid) ?? null })
           }
         } catch (e: any) { results.push({ ok: false, error: e?.message ?? String(e) }) }
       }
