@@ -134,6 +134,8 @@ export default function OfferForm() {
               date: existing.date || new Date().toISOString().split('T')[0],
               notes: existing.notes || '',
             })
+            const ec = cls.find((c: any) => c.id === existing.client_id)
+            if (ec) setClientSearch(ec.name || '')
           }
         }
       } catch (e) {
