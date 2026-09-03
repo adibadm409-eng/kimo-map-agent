@@ -8,6 +8,7 @@ import { useTheme } from '../theme/ThemeContext'
 import { spacing, radius, fontSize } from '../theme/tokens'
 import { Card } from '../components/ui'
 import { ContactPickerButton } from '../components/ContactPickerButton'
+import SuggestField from '../components/SuggestField'
 import { getClient, createClient, updateClient } from '../database/db'
 
 const TYPES = [
