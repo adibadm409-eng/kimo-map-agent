@@ -32,9 +32,9 @@ export interface ClassifiedIntent {
 
 // أنماط التصنيف مرتبة بالأولوية (الأعلى أولاً)
 const INTENT_PATTERNS: { pattern: RegExp; intent: IntentKind; needsTools: boolean; needsLLM: boolean; promptTier: IntentKind extends infer T ? 'minimal' | 'focused' | 'full' : never }[] = [
-  // رد فوري بدون LLM
-  { pattern: /^(مرحبا|السلام عليكم|اهلا|صباح الخير|مساء الخير|اهلا وسهلا|أهلاً|السلام)/i, intent: 'greeting', needsTools: false, needsLLM: false, promptTier: 'minimal' },
-  { pattern: /^(شكرا|شكراً|مشكور|الشكر لله)/i, intent: 'greeting', needsTools: false, needsLLM: false, promptTier: 'minimal' },
+  // رد فوري بدون LLM — تحية خالصة فقط (نص قصير بلا طلب) حتى لا تبتلع طلباً تنفيذياً
+  { pattern: /^(مرحبا|السلام عليكم|اهلا|صباح الخير|مساء الخير|اهلا وسهلا|أهلاً|السلام)\s*[!؟?.,]*$/i, intent: 'greeting', needsTools: false, needsLLM: false, promptTier: 'minimal' },
+  { pattern: /^(شكرا|شكراً|مشكور|تسلم|الله يعطيك العافية)\s*[!؟?.,]*$/i, intent: 'greeting', needsTools: false, needsLLM: false, promptTier: 'minimal' },
 
   // سؤال بسيط بدون أدوات
   { pattern: /^(من انت|ما اسمك|ما هويتك|ماذا تفعل|كيف حالك|كيفك|عامل ايه)/i, intent: 'question_simple', needsTools: false, needsLLM: true, promptTier: 'minimal' },
