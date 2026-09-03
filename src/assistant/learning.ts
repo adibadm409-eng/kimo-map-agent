@@ -45,6 +45,15 @@ export async function recordPattern(pattern: Omit<UserPattern, 'id'>): Promise<v
   )
 }
 
+// تقليم الأنماط القديمة (احتفاظ 90 يوماً بحد أقصى 2000 صف)
+export async function prunePatterns(): Promise<void> {
+  await initPatternStore()
+  const db = await getDB()
+  const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000
+  await db.runAsync('DELETE FROM user_patterns WHERE timestamp < ?', [cutoff]).catch(() => {})
+  await db.runAsync('DELETE FROM user_patterns WHERE id NOT IN (SELECT id FROM user_patterns ORDER BY timestamp DESC LIMIT 2000)').catch(() => {})
+}
+
 // تحليل أنماط المستخدم
 export async function analyzePatterns(sessionId?: string): Promise<{
   topIntents: { intent: string; count: number }[]
