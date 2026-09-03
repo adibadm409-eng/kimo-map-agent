@@ -873,7 +873,7 @@ export async function answerAsk(sessionId: string, answer: string): Promise<bool
   } catch (e: any) {
     await persistAssistantText(sessionId, e?.message ?? 'إعداد ناقص', 'error')
     emitForSession(sessionId, { type: 'error', message: e?.message ?? 'إعداد ناقص' })
-    return
+    return false
   }
   await clearPending(sessionId)
   await persistUser(sessionId, `${ASK_PREFIX} ${answer}`)
