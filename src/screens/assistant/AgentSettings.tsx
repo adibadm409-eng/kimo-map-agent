@@ -51,6 +51,7 @@ export default function AgentSettings({ navigation }: any) {
   const [fetchingModels, setFetchingModels] = useState(false)
   const [testing, setTesting] = useState(false)
   const [savingKey, setSavingKey] = useState(false)
+  const [keySaved, setKeySaved] = useState(false)
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
   const [visionProvider, setVisionProvider] = useState('')
   const [visionModel, setVisionModel] = useState('')
