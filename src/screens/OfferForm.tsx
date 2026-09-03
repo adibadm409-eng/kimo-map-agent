@@ -247,6 +247,7 @@ export default function OfferForm() {
         <Card style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>العقار والعميل</Text>
           <ContactPickerButton label="اختيار طالب الشراء من جهات الاتصال" onSelect={handleClientContact} />
+          <SuggestField label="بحث عن العميل بالاسم أو الرقم" value={clientSearch} onChange={setClientSearch} field="name" placeholder="اكتب اسماً أو رقماً للبحث في العملاء والملاك والدلالين" onPick={handleClientPick} />
           <Picker
             label={form.type === 'buy_offer' ? 'العقار (اختياري لطلب الشراء)' : 'العقار'}
             value={form.property_id}
