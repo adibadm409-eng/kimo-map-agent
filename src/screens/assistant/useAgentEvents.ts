@@ -7,7 +7,11 @@ export function useAgentEvents(sessionId: string, reload: (sid: string) => void 
     const unsub = subscribeAgent((e) => {
       if (e.sessionId !== sessionId) return
       useChatStore.getState().applyEvent(e)
-      if (e.type === 'done' || e.type === 'error') {
+      if (e.type === 'done') {
+        Promise.resolve(reload(sessionId)).catch(() => {})
+      } else if (e.type === 'error') {
+        const msg = (e as any).message ?? ''
+        if (typeof msg === 'string' && msg.startsWith('تعذر الوصول للمزود (محاولة')) return
         Promise.resolve(reload(sessionId)).catch(() => {})
       }
     })
