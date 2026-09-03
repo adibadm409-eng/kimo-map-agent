@@ -255,11 +255,10 @@ async function runLoop(
               maxTokens: 4000,
               onDelta: (d) => {
                 liveText = d.content || liveText
-                // في طلبات القراءة التي تتطلب دليلاً، لا نبث نص النموذج قبل
-                // اعتماد نتيجة أداة ناجحة؛ وإلا قد يرى المستخدم أرقاماً هلوسية
-                // أثناء البث ثم تُرفض لاحقاً. الرد النهائي سيُبث دفعة واحدة
-                // بعد اجتياز بوابة الإثبات.
-                 if (emitEvents && !readIntentRequiresEvidence && liveText && (!d.toolCalls || !d.toolCalls.length)) {
+                // قرار الرد المباشر بيد الوكيل: نبث ما يقوله فوراً كما يبثه أي
+                // محادثة. لا نحجبه ولا نفرض عليه أداة؛ منع الهلوسة يُدار لاحقاً
+                // عبر وسم "بلا تحقق" حين يجيب عن بيانات دون قراءة فعلية.
+                 if (emitEvents && liveText && (!d.toolCalls || !d.toolCalls.length)) {
                   emitForSession(sessionId, { type: 'stream', content: sanitizeAssistantText(liveText) })
                 }
               },
