@@ -47,7 +47,7 @@ export default function SuggestField({ label, value, onChange, field, onPick, pl
 
   function pick(c: DirectoryContact) {
     if (blurTimer.current) clearTimeout(blurTimer.current)
-    onPick({ name: c.name, phone: c.phone })
+    onPick({ name: c.name, phone: c.phone, source: c.source, refId: c.refId, refLabel: c.refLabel })
     setFocused(false)
   }
 
