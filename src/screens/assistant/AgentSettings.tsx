@@ -352,7 +352,7 @@ export default function AgentSettings({ navigation }: any) {
               {savingKey ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="save-outline" size={17} color="#fff" />}
               <Text style={styles.saveKeyBtnText}>{savingKey ? 'جاري الحفظ والتحقق...' : 'حفظ المفتاح في قاعدة البيانات'}</Text>
             </Pressable>
-            <Text style={[styles.muted, { color: colors.textMuted }]}>لن يعتمد الحفظ على مغادرة الشاشة؛ اضغط الزر بعد كتابة المفتاح.</Text>
+            <Text style={[styles.muted, { color: colors.textMuted }]}>{keySaved ? 'تم حفظ المفتاح تلقائياً ✓' : 'يُحفظ المفتاح تلقائياً عند مغادرة الحقل، أو اضغط الزر للتحقق الصريح.'}</Text>
           </View>
 
           <View style={styles.fieldWrap}>
