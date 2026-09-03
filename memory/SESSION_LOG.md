@@ -5,6 +5,11 @@
 
 ---
 
+## 2026-09-03 — تنفيذ خطة الإصلاح الشاملة للوكيل (P0+P1+P2+P3)
+- **المُلخّص**: نُفذت كل بنود الخطة الاستراتيجية من جلسة النبش: سد تجاوز orchestrate للكتابة الحساسة (قراءات فقط بالتوازي)، إصلاح الكاش (مفتاح مستقر + TTL افتراضي 0 + إبطال بعد الكتابة + verified:false من الكاش)، منع upsertPlot من الكتابة فوق قطعة + منع وراثة حقول البلوك + تشديد كشف تكرار العملاء (هاتف أو اسم+بريد)، بوابة preview_token لاعتماد المشاريع + تحقق فعلي للدفتر/الاستيراد/العروض/التذكيرات/الربط، إصلاح running→completed وupdateWorkspace المصفّر، بوابة أدلة (توجيه إجباري مرتين ثم وسم بلا تحقق)، تضييق LIKE (مطابق تام أولاً ورفض الغامض >10)، رفض op/حقل غير صالح صراحةً بدل السقوط الصامت، حد رموز احتياطي max_tokens، صوت (قوائم مغلقة لكل مزود + ملاحظة فشل لا تلوث المحادثة)، توسيع كشف الصور، تعقيم IDs بشرطات وUUID، أدوات جديدة (عكس دفعة/تعديل تذكير/وسائط كيان/مسح ذاكرة/جماعي/bulk/تصدير CSV) مع موافقة على العكس والفك وتحقق لها، enum للأدوات في execute، ترجمة نتائج المهام ومؤشر نشاط حي وإصلاح خطف التمرير وregex الجداول وزرا إعادة/إعدادات وإظهار خطأ التحميل.
+- **الملفات**: orchestrator.ts, toolCache.ts, toolSchemas.ts, crud.ts, domainTools.ts, registry.ts, query.ts, executor.ts, llm.ts, history.ts, sanitize.ts, prompts.ts, invokeTools.ts, store.ts, db.ts (updateReminder), workspace.ts (updateWorkspace + وسائط كيان), registry.tsx, AssistantScreen.tsx.
+- **التحقق**: eslint للملفات المعدلة (0)، invariants العقدية (input_surface/audio/safe_edit/domain_workflow/history_roundtrip/reminder/offer_relationship/metadata) كلها PASS؛ tsc الكامل تعذر محلياً (OOM معروف على Termux) وvitest/tsx للـCI.
+
 ## 2026-08-24 — تجهيز التطبيق للبناء الكامل بمحرك كيمو المضمَّن (بلا خادم)
 - **المُلخّص**: المستخدم أكّد: انسَ Expo Go/Termux، حضّر التطبيق للبناء الكامل حيث
   يعمل محرك كيمو البايثوني **مضمَّناً داخل التطبيق** ويشارك قاعدة التطبيق ذاتها
