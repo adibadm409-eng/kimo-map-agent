@@ -21,8 +21,8 @@ function typeMatches(value: unknown, expected: string): boolean {
   if (expected === 'null') return value === null
   if (expected === 'object') return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
   if (expected === 'array') return Array.isArray(value)
-  if (expected === 'integer') return typeof value === 'number' && Number.isInteger(value)
-  if (expected === 'number') return typeof value === 'number' && Number.isFinite(value)
+  if (expected === 'integer') return (typeof value === 'number' && Number.isInteger(value)) || (typeof value === 'string' && value.trim() !== '' && Number.isInteger(Number(value)))
+  if (expected === 'number') return (typeof value === 'number' && Number.isFinite(value)) || (typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value)))
   if (expected === 'boolean') return typeof value === 'boolean'
   if (expected === 'string') return typeof value === 'string'
   return true
