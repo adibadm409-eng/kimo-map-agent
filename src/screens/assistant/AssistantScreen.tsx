@@ -592,7 +592,19 @@ export default function AssistantScreen({ navigation }: any) {
         {recorderState.isRecording && (
           <View style={[styles.recordingBanner, { backgroundColor: colors.errorSurface, borderColor: colors.error }]}>
             <View style={[styles.recordingDot, { backgroundColor: colors.error }]} />
-            <Text style={[styles.recordingText, { color: colors.error }]}>جاري التسجيل… اضغط الميكروفون للإيقاف والإرسال</Text>
+            <Text style={[styles.recordingText, { color: colors.error }]}>جاري التسجيل… اضغط الميكروفون للإيقاف والمعاينة قبل الإرسال</Text>
+          </View>
+        )}
+        {audioDraft && !recorderState.isRecording && (
+          <View style={[styles.recordingBanner, { backgroundColor: colors.accentSurface, borderColor: colors.border }]}>
+            <Ionicons name="mic-outline" size={15} color={colors.accent} />
+            <Text numberOfLines={1} style={[styles.recordingText, { color: colors.textPrimary, flex: 1 }]}>{audioDraft.name} — راجع ثم أرسل</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel="إرسال التسجيل الصوتي" onPress={() => { const d = audioDraft; setAudioDraft(null); handleSend('', { uri: d.uri, name: d.name, format: d.format as any }) }} style={[styles.sendBtn, { backgroundColor: colors.accent }]}>
+              <Ionicons name="arrow-up" size={16} color="#fff" />
+            </Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="حذف التسجيل الصوتي" onPress={() => setAudioDraft(null)}>
+              <Ionicons name="trash-outline" size={16} color={colors.error} />
+            </Pressable>
           </View>
         )}
         <View style={styles.inputRow}>
