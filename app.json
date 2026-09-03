@@ -2,7 +2,7 @@
   "expo": {
     "name": "مدير العقارات",
     "slug": "realestate-app",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "runtimeVersion": {
       "policy": "appVersion"
     },
