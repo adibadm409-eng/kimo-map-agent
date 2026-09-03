@@ -82,8 +82,8 @@ class ToolResultCache {
   }
 
   set(tool: string, args: Record<string, any>, result: any): void {
-    const ttl = ToolResultCache.TTL[tool]
-    if (ttl === 0) return // لا cache للكتابة
+    const ttl = ToolResultCache.ttlFor(tool)
+    if (ttl === 0) return
 
     const key = this.makeKey(tool, args)
 
