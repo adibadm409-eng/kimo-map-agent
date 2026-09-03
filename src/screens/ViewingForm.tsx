@@ -7,7 +7,8 @@ import * as Haptics from 'expo-haptics'
 import { useTheme } from '../theme/ThemeContext'
 import { spacing, radius, fontSize } from '../theme/tokens'
 import { Card } from '../components/ui'
-import { getAllProperties, getAllClients, createViewing } from '../database/db'
+import SuggestField from '../components/SuggestField'
+import { getAllProperties, getAllClients, createClient, createViewing } from '../database/db'
 
 const STATUSES = [
   { key: 'scheduled', label: 'مجدول' },
