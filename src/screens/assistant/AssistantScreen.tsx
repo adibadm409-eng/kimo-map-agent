@@ -136,12 +136,10 @@ export default function AssistantScreen({ navigation }: any) {
     try {
       const msgs = await getMessages(sid)
       st.setMessages(msgs)
-      const persistedUserCount = msgs.filter((m: any) => m.role === 'user').length
-      const optimisticCount = st.items.filter((i: any) => typeof i?.id === 'string' && i.id.startsWith('local-user-')).length
-      if (optimistic.length && persistedUserCount === 0 && optimisticCount === 0) {
-        st.setMessages([...st.items, ...optimistic])
-      }
-      if (liveCards.length) st.applyEvents(liveCards.map((c: any) => ({ __restore: true, card: c })))
+      const persistedContents = new Set(msgs.filter((m: any) => m.role === 'user').map((m: any) => String(m.content ?? '')))
+      const keptOptimistic = optimistic.filter((o: any) => !persistedContents.has(String(o.message?.content ?? o.content ?? '')))
+      if (keptOptimistic.length) st.appendItems(keptOptimistic as any)
+      if (liveCards.length) st.appendItems(liveCards as any)
     } catch {
       setActionError('تعذر تحميل رسائل هذه الجلسة — تحقق من قاعدة البيانات المحلية ثم أعد المحاولة.')
       return
