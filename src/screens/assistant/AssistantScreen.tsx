@@ -230,14 +230,22 @@ export default function AssistantScreen({ navigation }: any) {
     useChatStore.getState().setMessages([...useChatStore.getState().items, userMsg])
     const atts = attachments.length ? [...attachments] : undefined
     setAttachments([])
+    setAudioDraft(null)
     setBusy(true)
     setPending(null)
+    const watchdog = setTimeout(() => {
+      setBusy((b) => {
+        if (b) setActionError('استغرق التنفيذ أكثر من 7 دقائق — أُعيد تفعيل خانة الإدخال. إن استمر التعليق أعد فتح المحادثة.')
+        return false
+      })
+    }, 7 * 60 * 1000)
     try {
       setActionError(null)
       await sendUserMessage(sid, trimmed, atts || audio ? { attachments: atts, audio } : undefined)
     } catch (error: any) {
       setActionError(error?.message ?? 'تعذر تنفيذ الطلب. راجع اتصال مزود الذكاء الاصطناعي أو إعداداته.')
     } finally {
+      clearTimeout(watchdog)
       setBusy(false)
       reload(sid).catch(() => {})
       loadSessions().catch(() => {})
