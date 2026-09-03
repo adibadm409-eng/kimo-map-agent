@@ -797,3 +797,4 @@
 - 2026-09-03 | aa4ed07 | تعديل تلقائي: AgentSettings.tsx
 - 2026-09-03 | 0f1eca0 | تعديل تلقائي: AgentSettings.tsx
 - 2026-09-03 | 4c34599 | تعديل تلقائي: undo.ts
+- 2026-09-03 | b1e273b | تعديل تلقائي: agent_input_surface_invariants.mjs
