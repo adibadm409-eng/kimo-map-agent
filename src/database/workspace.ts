@@ -878,35 +878,36 @@ function base64ToBytes(b64: string): Uint8Array {
 
 // ---------- قراءة الملفات المرفوعة ----------
 
-export async function filePreview(name: string, maxTextChars = 4000, maxRows = 50): Promise<{ contentType: string; text: string }> {
+const PREVIEW_MAX_BYTES = 8 * 1024 * 1024
+const PREVIEWABLE_EXTS = new Set(['xlsx', 'xls', 'csv', 'txt', 'md', 'json'])
+
+export async function filePreview(name: string, maxTextChars = 4000, maxRows = 50): Promise<{ contentType: string; text: string; truncated?: boolean }> {
   const att = await getAttachmentByName(name)
   if (!att) return { contentType: 'missing', text: `لا يوجد مرفق باسم "${name}". استخدم list_attachments لرؤية المرفقات المتاحة.` }
   const ext = extensionOf(att.name)
+  if ((att.size ?? 0) > PREVIEW_MAX_BYTES) return { contentType: 'too_large', text: `الملف "${att.name}" كبير (${((att.size ?? 0) / 1048576).toFixed(1)}MB) على المعاينة الهاتفية (الحد 8MB)؛ لم أحمّله. قسّمه أو استورد نطاقاً أصغر.` }
+  if (!PREVIEWABLE_EXTS.has(ext)) {
+    if (['pdf'].includes(ext)) return { contentType: 'unsupported', text: `ملف "${att.name}" بصيغة PDF غير قابلة للمعاينة النصية هنا؛ حوّله إلى Excel/CSV أو انسخ الجدول المطلوب نصاً في رسالتك.` }
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'mp4', 'm4a', 'mp3', 'webm'].includes(ext)) return { contentType: 'unsupported', text: `الملف "${att.name}" وسائط (${ext}) لا تُعاين نصياً؛ الصور تُحلل عبر مسار الرؤية عند طلب استخراج بياناتها، والصوت عبر التفريغ.` }
+    return { contentType: 'unsupported', text: `الصيغة "${ext}" غير مدعومة للمعاينة؛ المدعوم: xlsx/xls/csv/txt/md/json.` }
+  }
   const base64 = await FileSystem.readAsStringAsync(att.uri, { encoding: FileSystem.EncodingType.Base64 })
   if (ext === 'xlsx' || ext === 'xls') {
     return excelPreview(att.name, base64, maxRows)
   }
   if (ext === 'csv') {
-    const { Workbook } = await import('exceljs/dist/exceljs.bare.js')
-    void Workbook
-    const b64 = await FileSystem.readAsStringAsync(att.uri, { encoding: FileSystem.EncodingType.Base64 })
-    const utf8 = atob(b64)
+    const bytes = base64ToBytes(base64)
+    const utf8 = new TextDecoder('utf-8', { fatal: false }).decode(bytes)
     const lines = utf8.split(/\r?\n/).filter((l) => l.trim())
     const previewLines = lines.slice(0, maxRows)
-    const text = ['ملف CSV مرفوع:', `عدد الأسطر: ${lines.length}`, '---', previewLines.join('\n')].join('\n')
-    return { contentType: 'csv', text: text.slice(0, maxTextChars * 2) }
+    const text = ['ملف CSV مرفوع:', `عدد الأسطر: ${lines.length}${lines.length > maxRows ? ` (معروض أول ${maxRows} فقط)` : ''}`, '---', previewLines.join('\n')].join('\n')
+    return { contentType: 'csv', text: text.slice(0, maxTextChars * 2), truncated: lines.length > maxRows || text.length > maxTextChars * 2 }
   }
   try {
     const utf8 = await FileSystem.readAsStringAsync(att.uri)
-    return {
-      contentType: 'text',
-      text: `محتوى الملف "${att.name}":\n${utf8.slice(0, maxTextChars)}`,
-    }
+    return { contentType: 'text', text: `محتوى الملف "${att.name}":\n${utf8.slice(0, maxTextChars)}`, truncated: utf8.length > maxTextChars }
   } catch {
-    return {
-      contentType: 'binary',
-      text: `ملف ثنائي "${att.name}" (${(att.size / 1024).toFixed(0)} كيلوبايت). يمكن استيراده إن كان Excel/CSV عبر import_project_file.`,
-    }
+    return { contentType: 'binary', text: `ملف ثنائي "${att.name}" (${((att.size ?? 0) / 1024).toFixed(0)} كيلوبايت). يمكن استيراده إن كان Excel/CSV عبر import_project_file.` }
   }
 }
 
