@@ -233,8 +233,10 @@ async function runLoop(
 
         const agentFunctions = getAgentFunctions(runtimeSkill)
 
-        // استخدام النية المصنّفة لتحديد الأدوات المطلوبة
-        const functionsToSend = classifiedIntent.needsTools ? agentFunctions : []
+        // شبكة أمان ضد سوء التصنيف: طلب قراءة/كتابة واضح يفرض الأدوات حتى لو سقطت النية
+        const WRITE_VERBS = /(?:أنشئ|انشئ|أضف|اضف|ضيف|سجّل|سجل|عدّل|عدل|حدّث|حدث|احذف|حذف|سوي|اعمل|احجز|قيد|صلح|delete|create|update)/i
+        const needsToolsEffective = classifiedIntent.needsTools || readIntentRequiresEvidence || WRITE_VERBS.test(lastUserText)
+        const functionsToSend = needsToolsEffective ? agentFunctions : []
 
         let result
         try {
