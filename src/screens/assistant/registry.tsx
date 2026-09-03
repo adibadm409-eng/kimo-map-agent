@@ -316,7 +316,7 @@ export function ExecutionStatusBar({ statusBar, colors }: { statusBar: { visible
   return (
     <View style={[styles.statusBar, { backgroundColor: colors.accentSurface, borderColor: colors.border }]}>
       <View style={styles.spinner}>
-        <Ionicons name={statusBar.thinking ? 'ellipsis-horizontal' : 'cog'} size={15} color={colors.accent} />
+        <ActivityIndicator size="small" color={colors.accent} />
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={[styles.statusTitle, { color: colors.textPrimary }]} numberOfLines={1}>
