@@ -220,6 +220,21 @@ export function matchSkill(text: string): SkillMatch {
       score = Math.max(score, 0.96)
       reasons.push('مسار مشروع/استيراد هرمي')
     }
+    if (hasProjectShapeFlow && !hasProjectUpdateFlow && !hasOfferFlow && !hasPaymentFlow) {
+      if (skill.id === 'project_operations') {
+        score = Math.max(score, 0.98)
+        reasons.push('مسار إنشاء/تعديل مشروع هرمي مع بلوك/قطع')
+      } else if (skill.id === 'property_management' && !hasPropertyMutation) {
+        score = Math.min(score, 0.4)
+      }
+    }
+    if (hasProjectDomainKeyword && !hasProjectUpdateFlow && !hasOfferFlow && !hasPaymentFlow && !hasPropertyFlow) {
+      if (skill.id === 'project_operations') {
+        score = Math.max(score, 0.95)
+      } else if (skill.id === 'data_search' && hasProjectDomainKeyword) {
+        score = Math.min(score, 0.3)
+      }
+    }
     // فعل كتابة مع نطاق عقاري يجب أن يبقى في مهارة العقارات؛ لا يجوز لمهارة البحث
     // أن تحجبه لمجرد أن كلمة «عقار» موجودة في triggers المهارتين.
     if (hasPropertyMutation && !hasOfferFlow && !hasProjectUpdateFlow && !hasPaymentFlow) {
