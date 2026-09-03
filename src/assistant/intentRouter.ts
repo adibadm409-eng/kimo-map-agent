@@ -48,20 +48,20 @@ const INTENT_PATTERNS: { pattern: RegExp; intent: IntentKind; needsTools: boolea
   // تذكير
   { pattern: /(?:ذكّرني|تذكير|تذكير|reminder|موعد)/i, intent: 'reminder', needsTools: true, needsLLM: true, promptTier: 'focused' },
 
+  // حذف (قبل التقرير حتى لا يبتلع «احذف التقرير»)
+  { pattern: /(?:احذف|احدف|حذف|إزالة|ازل|أزل|امسح|مسح|شيل|طيّر|طير|كنسل|delete|remove)/i, intent: 'delete', needsTools: true, needsLLM: true, promptTier: 'focused' },
+
   // تقرير/ملف
   { pattern: /(?:تقرير|ملف|جدول|excel|word|pdf|download|تحميل)/i, intent: 'report', needsTools: true, needsLLM: true, promptTier: 'focused' },
 
-  // حذف
-  { pattern: /(?:احذف|حذف|إزالة|أزل|امسح|delete)/i, intent: 'delete', needsTools: true, needsLLM: true, promptTier: 'focused' },
-
-  // إنشاء
-  { pattern: /(?:أنشئ|انشئ|أضف|اضف|سجّل|سجل|إضافة|أدخل|أدخل|create|add)/i, intent: 'create', needsTools: true, needsLLM: true, promptTier: 'focused' },
+  // إنشاء (تشمل لهجات يمنية وصيغ بلا همزة)
+  { pattern: /(?:أنشئ|انشئ|أضف|اضف|أضيف|اضيف|ادخل|سجّل|سجل|إضافة|اضافة|أدخل|ضيف|زَيِّد|زود|دخِّل|دخل|قيِّد|قيد|احجز|سوي|سوى|اعمل|create|add)/i, intent: 'create', needsTools: true, needsLLM: true, promptTier: 'focused' },
 
   // تعديل
-  { pattern: /(?:عدّل|عدل|حدّث|حدث|غيّر|غير|تعديل|update|edit|modify)/i, intent: 'update', needsTools: true, needsLLM: true, promptTier: 'focused' },
+  { pattern: /(?:عدّل|عدل|حدّث|حدث|غيّر|غير|تعديل|صلّح|صلح|بدّل|بدل|جدّد|جدد|اضبط|اظبط|update|edit|modify)/i, intent: 'update', needsTools: true, needsLLM: true, promptTier: 'focused' },
 
-  // قراءة/بحث
-  { pattern: /(?:اقرأ|اطلع|اعرض|أظهر|اظهر|ابحث|استكشف|بحث|عرض|read|search|explore|show|list)/i, intent: 'read', needsTools: true, needsLLM: true, promptTier: 'focused' },
+  // قراءة/بحث (تشمل عامية)
+  { pattern: /(?:اقرأ|اطلع|اعرض|أظهر|اظهر|ابحث|استكشف|بحث|عرض|وريني|ورني|هات|طلع|جيب|اعرض لي|read|search|explore|show|list)/i, intent: 'read', needsTools: true, needsLLM: true, promptTier: 'focused' },
 
   // سؤال عن بيانات
   { pattern: /(?:كم|عدد|إجمالي|مجموع|الإجمالي|المجموع|how many|total|count)/i, intent: 'question_data', needsTools: true, needsLLM: true, promptTier: 'focused' },
