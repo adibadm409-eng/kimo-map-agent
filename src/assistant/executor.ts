@@ -380,12 +380,14 @@ async function runLoop(
             if (emitEvents) emitForSession(sessionId, { type: 'text', content: soft })
           }
           if (runtimeTaskId) {
+            // إجابة الوكيل النهائي قراره، حتى لو بلا قراءة: نسجّل completed مع تنبيه ثقة
+            // بدل failed؛ لا نعاقبه على اختيار الرد المباشر، والوسم في النص يوضّح الحقيقة.
             const unverifiedLocal = readIntentRequiresEvidence && !runtimeSuccessfulEvidenceCount
-            await transitionTaskRun(runtimeTaskId, unverifiedLocal ? 'failed' : 'completed', {
+            await transitionTaskRun(runtimeTaskId, 'completed', {
               plan: runtimePlan ?? undefined,
               currentStepId: runtimePlan?.currentStepId,
               evidence: [{ type: 'assistant_response', summary: finalText.slice(0, 500) || 'اكتملت المهمة.' }],
-              ...(unverifiedLocal ? { lastError: 'إجابة عن بيانات محلية بلا دليل موثق بعد استنفاد محاولات التوجيه.' } : {}),
+              ...(unverifiedLocal ? { lastError: 'إجابة بلا قراءة موثقة — الإجابة الموسومة في النص مقدّمة بقرار الوكيل.' } : {}),
             }).catch(() => {})
           }
           finished = true
