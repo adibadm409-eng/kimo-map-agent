@@ -832,6 +832,20 @@ export async function linkAttachmentToEntity(input: { attachmentId?: string; att
   }
 }
 
+export async function listEntityMedia(targetType: string, targetId: string): Promise<EntityMediaLink[]> {
+  const d = await db()
+  const rows = await d.getAllAsync<any>('SELECT * FROM entity_media WHERE entity_type = ? AND entity_id = ? ORDER BY created_at DESC', targetType, targetId)
+  return rows.map((r: any) => ({ id: r.id, sourceAttachmentId: r.source_attachment_id, targetType: r.entity_type, targetId: r.entity_id, name: r.name, uri: r.uri, size: r.size ?? 0, mime: r.mime ?? null, createdAt: r.created_at ?? 0 }))
+}
+
+export async function unlinkEntityMedia(linkId: string): Promise<void> {
+  const d = await db()
+  const row = await d.getFirstAsync<any>('SELECT * FROM entity_media WHERE id = ?', linkId)
+  if (!row) throw new Error('رابط الوسائط غير موجود.')
+  await d.runAsync('DELETE FROM entity_media WHERE id = ?', linkId)
+  await logChange({ action: 'update', scope: row.entity_type, scopeId: row.entity_id, before: { mediaLinkId: linkId }, summary: `فك ربط الوسيط "${row.name}"` })
+}
+
 function findAttachment(attachments: AttachmentRecord[], name: string): AttachmentRecord | undefined {
   const n = name.trim()
   return (
