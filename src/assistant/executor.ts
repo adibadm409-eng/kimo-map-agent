@@ -369,10 +369,12 @@ async function runLoop(
             if (emitEvents) emitForSession(sessionId, { type: 'text', content: soft })
           }
           if (runtimeTaskId) {
-            await transitionTaskRun(runtimeTaskId, 'completed', {
+            const unverifiedLocal = readIntentRequiresEvidence && !runtimeSuccessfulEvidenceCount
+            await transitionTaskRun(runtimeTaskId, unverifiedLocal ? 'failed' : 'completed', {
               plan: runtimePlan ?? undefined,
               currentStepId: runtimePlan?.currentStepId,
               evidence: [{ type: 'assistant_response', summary: finalText.slice(0, 500) || 'اكتملت المهمة.' }],
+              ...(unverifiedLocal ? { lastError: 'إجابة عن بيانات محلية بلا دليل موثق بعد استنفاد محاولات التوجيه.' } : {}),
             }).catch(() => {})
           }
           finished = true
