@@ -166,6 +166,21 @@ export function getAgentFunctions(_skill?: AgentSkill | null): FunctionDef[] {
   return [...toolFns, ...wrappers]
 }
 
+/** كل تعريفات الأدوات (للبوابة الداخلية لـ execute — لا تُرسل للموديل). */
+export function getAllAgentFunctions(): FunctionDef[] {
+  const schemas = buildToolSchemas()
+  const defs: FunctionDef[] = TOOLS.map((t) => ({
+    name: t.name,
+    description: t.description,
+    parameters: schemas[t.name] ?? {
+      type: 'object',
+      properties: Object.fromEntries(t.args.map((a) => [a.name, { type: a.type === 'array' ? 'array' : a.type === 'object' ? 'object' : a.type === 'number' ? 'number' : a.type === 'boolean' ? 'boolean' : 'string', description: a.description ?? '' }])),
+      required: t.args.filter((a) => a.required).map((a) => a.name),
+    },
+  }))
+  return [...defs, ...WRAPPER_FUNCTIONS]
+}
+
 const WRAPPER_FUNCTIONS: FunctionDef[] = [
   {
     name: 'execute',
