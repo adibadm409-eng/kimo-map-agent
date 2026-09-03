@@ -171,8 +171,8 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
       }
       case 'tool': {
         const t = e as Extract<AgentEvent, { type: 'tool' }>
-        patch.auditTrail = [...s.auditTrail, auditEntry('tool', `${t.name}`)].slice(-200)
-        patch.executionSteps = [...s.executionSteps, { id: `s-${seq}`, kind: 'tool', label: String(t.name ?? 'execute') } as ExecutionStep].slice(-40)
+        patch.auditTrail = [...s.auditTrail, auditEntry('tool', toolLabel(t.name))].slice(-200)
+        patch.executionSteps = [...s.executionSteps, { id: `s-${seq}`, kind: 'tool', label: toolLabel(String(t.name ?? 'execute')) } as ExecutionStep].slice(-40)
         break
       }
       case 'observation':
