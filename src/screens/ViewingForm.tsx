@@ -141,7 +141,11 @@ export default function ViewingForm() {
           <Picker
             label="العميل"
             value={form.client_id}
-            onChange={(v) => setForm({ ...form, client_id: v })}
+            onChange={(v) => {
+              setForm({ ...form, client_id: v })
+              const chosen = clients.find((c) => c.id === v)
+              setClientSearch(chosen ? chosen.name || '' : '')
+            }}
             options={clients.map((c) => ({ id: c.id, label: c.name, subtitle: c.phone }))}
             placeholder="لا يوجد عملاء"
           />
