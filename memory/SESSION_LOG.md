@@ -5,6 +5,11 @@
 
 ---
 
+## 2026-09-03 — تنفيذ كل المتبقي حسب الأولوية (P0+P1+P2 كاملة)
+- **المُلخّص**: تحققات SELECT حقيقية للدفعات (ledgerId) والدفعات (batch) والجماعي (إعادة قراءة كل ناجح) والتذكيرات (حالة الصف)؛ bulk بخاصية إجهاض مسبق + تراجع لكل عنصر عبر recordUndo؛ العكس والفك داخل withAuditCtx مع undo؛ updateReminder يعيد جدولة الإشعار (محلي/عرض)؛ ملخص السياق برسالة user بدل system؛ إتمام بلا أدلة يُقبل بدليل افتراضي بدل التعليق؛ تصعيد الأدلة (failed عند الإجابة الموسومة)؛ رسائل query إرشادية (id→get)؛ إصلاح خطأ `حدّth` وإزالة الصينية؛ برومبت غني لكل نية (معاينة/مالية/تحقق)؛ حدود 30/100/6د؛ إزالة enum المكرر؛ معاينة صوتية (إرسال/حذف)؛ TaskCard هيكلية قبل الخطة ونبض نجاح أخضر؛ إلغاء بمهلة 10ث وحدث done؛ حفظ baseUrl للمخصص وحفظ تلقائي للمفتاح؛ بصمة تكرار بمحتوى الحمولة. زُامنت علامتا invariant الصوتيتان مع التسمية الجديدة.
+- **الملفات**: toolSchemas.ts, domainTools.ts, undo.ts, invokeTools.ts, db.ts, history.ts, store.ts, executor.ts, query.ts, intentRouter.ts, dynamicPrompt.ts, constants.ts, prompts.ts, AssistantScreen.tsx, registry.tsx, TaskCard.tsx, AgentSettings.tsx, audit/*.mjs.
+- **التحقق**: eslint (0) + 9 فحوصات عقدية PASS؛ tsc الكامل/vitest للـCI (قيود Termux).
+
 ## 2026-09-03 — تصحيح ما بعد التدقيق (إصلاح الثغرات في الإصلاحات نفسها)
 - **المُلخّص**: تدقيق مستقل كشف 7 ثغرات حرجة في إصلاحات الجولة الأولى فعولجت: preview_token أصبح مرتبطاً بمحتوى الصفوف مع TTL 30د ولا يُقبل بلا preview مخزنة، حظر التوازي شمل كل الكتابات (create/update/bulk/عكس/ربط/workspace)، تحقق الدفتر يقرأ ledgerId الحقيقي مع SELECT فعلي، عدّ الأدلة يقتصر على أدوات التحقق/الموثقة مع تصفير التصحيح، updateReminder يعيد جدولة الإشعار، ومسار الموافقة الجماعية يدعم العكس والفك. الفحوصات العقدية السبع PASS وeslint نظيف.
 - **الملفات**: domainTools.ts, orchestrator.ts, toolSchemas.ts, toolCache.ts, executor.ts, invokeTools.ts, db.ts.
