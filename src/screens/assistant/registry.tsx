@@ -278,6 +278,20 @@ export function renderRegistryItem(item: ChatItem, ctx: RegistryCtx) {
         <View style={[styles.card, { backgroundColor: colors.errorSurface, borderColor: colors.border }]}>
           <Ionicons name="alert-circle" size={16} color={colors.error} />
           <Text style={[styles.sub, { color: colors.error }]}>{m?.content}</Text>
+          {(ctx.onRetry || ctx.onOpenSettings) && (
+            <View style={{ flexDirection: 'row-reverse', gap: 8, marginTop: 8 }}>
+              {!!ctx.onRetry && (
+                <Pressable accessibilityRole="button" accessibilityLabel="إعادة المحاولة" onPress={() => ctx.onRetry?.()} style={[styles.btnPrimary, { backgroundColor: colors.accent }]}>
+                  <Text style={[styles.sub, { color: '#fff' }]}>إعادة المحاولة</Text>
+                </Pressable>
+              )}
+              {!!ctx.onOpenSettings && (
+                <Pressable accessibilityRole="button" accessibilityLabel="فتح إعدادات المساعد" onPress={() => ctx.onOpenSettings?.()} style={[styles.btnGhost, { borderWidth: 1, borderColor: colors.border }]}>
+                  <Text style={[styles.sub, { color: colors.textSecondary }]}>الإعدادات</Text>
+                </Pressable>
+              )}
+            </View>
+          )}
         </View>
       )
     }
