@@ -43,6 +43,7 @@ export async function recordPattern(pattern: Omit<UserPattern, 'id'>): Promise<v
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [id, pattern.sessionId, pattern.intent, pattern.entity ?? null, JSON.stringify(pattern.tools), pattern.timestamp, pattern.success ? 1 : 0]
   )
+  if (Math.random() < 0.05) await prunePatterns().catch(() => {})
 }
 
 // تقليم الأنماط القديمة (احتفاظ 90 يوماً بحد أقصى 2000 صف)
