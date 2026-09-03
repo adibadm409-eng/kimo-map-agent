@@ -415,7 +415,7 @@ async function runLoop(
             const outer = parseToolArgumentsStrict(call.arguments)
             const innerArgs = outer.ok && outer.value.args && typeof outer.value.args === 'object' && !Array.isArray(outer.value.args) ? outer.value.args : null
             const innerCall: ToolCall = { id: call.id, name: innerTool, arguments: innerArgs ? JSON.stringify(innerArgs) : '' }
-            const innerIssues = validateToolCallAgainstDefinitions(innerCall, agentFunctions)
+            const innerIssues = validateToolCallAgainstDefinitions(innerCall, getAllAgentFunctions())
             if (!outer.ok || !innerArgs || innerIssues.length) {
               const detail = !outer.ok ? outer.message : !innerArgs ? 'execute يحتاج args ككائن JSON.' : innerIssues.map((issue) => issue.message).join(' ')
               const observation = `[فشل التحقق قبل التنفيذ] ${detail}`
