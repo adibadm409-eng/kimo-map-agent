@@ -130,8 +130,13 @@ describe('unified mutation contract', () => {
     for (const skillId of ['project_operations', 'property_management', 'client_relationship', 'offer_management']) {
       const skill = getSkillById(skillId)
       expect(skill).toBeTruthy()
-      const names = getAgentFunctions(skill).map((f) => f.name)
-      expect(names).toContain('mutate_record')
+      const fns = getAgentFunctions(skill)
+      const names = fns.map((f) => f.name)
+      // كل مهارة عملياتية تحصل جسر execute دائماً — وتصل لأي أداة مجالٍ بما فيها mutate_record من الفهرس.
+      expect(names).toContain('execute')
+      // ينسخ الفهرس في وصف execute اسم mutate_record حتى لا يضيع الموديل في البحث عنه.
+      const execDef = fns.find((f) => f.name === 'execute')!
+      expect(String(execDef.description)).toContain('mutate_record')
     }
   })
 })
