@@ -5,16 +5,33 @@ import { performUndo } from './undo'
 import type { UndoEntry } from './store'
 
 /**
- * تنسيق الوكلاء الفرعيين (بتوازٍ):
+ * تنسيق الوكلاء الفرعيين (بتوازٍ) — قراءات فقط:
  * الوكيل القائد يستدعي أداة `orchestrate` بحزمة مهام مستقلة، فيُنفَّذ كل وكيل
- * فرعي (أداة + وسائط) بالتوازي عبر Promise.all، ثم تعود النتائج كلها بترتيبها
- * إلى القائد مع حالة صريحة [نجاح]/[فشل] ودليل تحقق (verified) — فيستطيع القائد
- * مراجعة كل نتيجة وتصحيح الفاشل أو التراجع عنه دون أن يوقف مهمة فرعية أُخرى.
- *
- * صُمِّمت خصيصاً للطلبات المركّبة التي تمتد على أكثر من قسم/جدول في وقت واحد،
- * مع استبعاد أي قيد يبطئ التنفيذ بلا داعٍ: لا حراس، لا خطوات إجبارية، والتحقق
- * مجرد مؤشر ثقة لا يمنع التنفيذ.
+ * فرعي بالتوازي عبر Promise.all ثم تعود النتائج بترتيبها مع [نجاح]/[فشل] وverified.
+ * الكتابة الحساسة (حذف/دفع/استيراد/تعديل هيكلي) محظورة هنا وتُرفض صراحةً لتُنفَّذ
+ * تسلسلياً عبر الحلقة الرئيسية حيث تعمل بوابات الموافقة والتدقيق والتراجع.
  */
+
+const BLOCKED_PARALLEL_TOOLS = new Set([
+  'delete',
+  'mutate_record',
+  'ledger_record_payment',
+  'project_import_commit',
+  'property_intake_apply',
+  'workspace_delete',
+  'workspace_delete_table',
+  'workspace_delete_row',
+  'workspace_remove_column',
+  'workspace_alter_column',
+  'workspace_rename_column',
+  'workspace_create_full_table',
+  'workspace_duplicate_table',
+  'workspace_duplicate_workspace',
+  'create_offer_with_reminder',
+  'offer_reminder_set',
+  'cancel_reminder',
+  'create_reminder',
+])
 
 export interface SubAgentTask {
   /** اسم الأداة الداخلية (مثل query/get/mutate_record/workspace_add_row…). */

@@ -698,3 +698,4 @@
 - 2026-09-01 | 3adae8e | fix: vision model picker crash — null-safe settings access
 - 2026-09-02 | 7c139e5 | تعديل تلقائي: prompts.ts
 - 2026-09-02 | bfb7956 | تعديل تلقائي: toolSchemas.ts
+- 2026-09-02 | 16bab9c | fix: add missing tools to CORE_TOOLS for execute validation
