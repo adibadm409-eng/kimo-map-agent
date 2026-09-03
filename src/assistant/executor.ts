@@ -457,7 +457,7 @@ async function runLoop(
           if (emitEvents) {
             const verifyTools = runtimeSkill?.verificationTools ?? ['review_my_work', 'project_integrity_check']
             const phase = verifyTools.includes(innerTool) ? 'verify' : innerTool === 'ask_user' || innerTool === 'request_confirmation' ? 'ask' : 'execute'
-            publishRuntimeEvent(sessionId, { type: 'phase', phase, label: phase === 'verify' ? 'أراجع النتيجة' : phase === 'ask' ? 'أحتاج قرارك' : 'أنفذ الآن', detail: `أتعامل مع ${innerTool === 'project_import_preview' ? 'معاينة البيانات' : innerTool === 'project_import_commit' ? 'اعتماد الإدخال' : innerTool}` })
+            publishRuntimeEvent(sessionId, { type: 'phase', phase, label: phase === 'verify' ? 'أراجع النتيجة' : phase === 'ask' ? 'أحتاج قرارك' : 'أنفذ الآن', detail: `أتعامل مع ${innerTool === 'project_import_preview' ? 'معاينة البيانات' : innerTool === 'project_import_commit' ? 'اعتماد الإدخال' : toolLabel(innerTool)}` })
             if (phase === 'ask') {
               publishRuntimeEvent(sessionId, {
                 type: 'decision',
