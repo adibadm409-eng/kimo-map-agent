@@ -820,3 +820,4 @@
 - 2026-09-03 | 2108b80 | تعديل تلقائي: invokeTools.ts
 - 2026-09-03 | ae0c7b7 | تعديل تلقائي: invokeTools.ts
 - 2026-09-03 | b3e0d49 | تعديل تلقائي: invokeTools.ts
+- 2026-09-03 | 566c5e0 | تعديل تلقائي: AssistantScreen.tsx
