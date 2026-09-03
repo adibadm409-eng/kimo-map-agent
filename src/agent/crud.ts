@@ -249,10 +249,10 @@ export async function agentCreate(spec: CreateSpec): Promise<{ id: string; plot_
           notes: str(d.notes),
           skipSlots: bulkPlots.length > 0,
         })
-        // إنشاء القطع فوراً داخل البلوك في نفس الاستدعاء: data.plots = [{plot_no, area_sqm, value...}, ...]
+        // إنشاء القطع فوراً داخل البلوك: تُمرَّر حقول القطعة فقط (بلا وراثة value/buyer من البلوك)
         const plotIds: string[] = []
         for (const p of bulkPlots) {
-          const specP = p && typeof p === 'object' ? { ...d, ...p } : { ...d, plot_no: p }
+          const specP = p && typeof p === 'object' ? { block_id: blockId, ...p } : { block_id: blockId, plot_no: p }
           plotIds.push(await upsertPlot(blockId, specP))
         }
         return plotIds.length ? { id: blockId, plot_ids: plotIds } : { id: blockId }
