@@ -319,14 +319,23 @@ export default function PlotDetail() {
           {(status === 'sold' || status === 'installment') && (
             <Card style={styles.card}>
               <Text style={[styles.sectionHeader, { color: colors.textPrimary }]}>بيانات البيع</Text>
-              <Input label="اسم المشتري" value={buyerName} onChangeText={setBuyerName} editable={editing} />
-              <Input
-                label="بيانات التواصل"
-                value={buyerContact}
-                onChangeText={setBuyerContact}
-                placeholder="هاتف / وسائل تواصل"
-                editable={editing}
-              />
+              {editing ? (
+                <>
+                  <SuggestField label="اسم المشتري" value={buyerName} onChange={setBuyerName} field="name" placeholder="اسم المشتري" onPick={(c) => { if (c.name) setBuyerName(c.name); if (c.phone) setBuyerContact(c.phone) }} />
+                  <SuggestField label="بيانات التواصل" value={buyerContact} onChange={setBuyerContact} field="phone" placeholder="هاتف / وسائل تواصل" keyboardType="phone-pad" onPick={(c) => { if (c.name) setBuyerName(c.name); if (c.phone) setBuyerContact(c.phone) }} />
+                </>
+              ) : (
+                <>
+                  <Input label="اسم المشتري" value={buyerName} onChangeText={setBuyerName} editable={editing} />
+                  <Input
+                    label="بيانات التواصل"
+                    value={buyerContact}
+                    onChangeText={setBuyerContact}
+                    placeholder="هاتف / وسائل تواصل"
+                    editable={editing}
+                  />
+                </>
+              )}
 
               {status === 'sold' && (
                 <Input label="تاريخ إتمام البيع" value={saleDate} onChangeText={setSaleDate} placeholder="YYYY-MM-DD" editable={editing} />

@@ -884,3 +884,4 @@
 - 2026-09-03 | 84e1375 | تعديل تلقائي: PropertyForm.tsx
 - 2026-09-03 | 2311e07 | تعديل تلقائي: PropertyForm.tsx
 - 2026-09-03 | 5ed47a0 | تعديل تلقائي: PropertyForm.tsx
+- 2026-09-03 | e9bdafe | تعديل تلقائي: PlotDetail.tsx
