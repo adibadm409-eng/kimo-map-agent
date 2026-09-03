@@ -260,21 +260,29 @@ export default function AssistantScreen({ navigation }: any) {
   async function handleChoice(answer: string) {
     setBusy(true)
     try {
-      await answerAsk(sessionId, answer)
+      const ok = await answerAsk(sessionId, answer)
+      if (!ok) {
+        setActionError('تعذر إرسال الإجابة — الوكيل مشغول أو انتهى السؤال. أعد المحاولة.')
+        return
+      }
     } finally {
       setBusy(false)
       reload(sessionId).catch(() => {})
     }
   }
 
-  async function handleConfirm(approve: boolean, selected?: number[]) {
+  async function handleConfirm(approve: boolean, selected?: string[]) {
     setBusy(true)
     try {
-      await answerConfirmation(sessionId, approve, selected)
-    } finally {
-      setBusy(false)
+      const ok = await answerConfirmation(sessionId, approve, selected)
+      if (!ok) {
+        setActionError('تعذر تنفيذ الموافقة — الوكيل مشغول أو انتهى الطلب. بقيت الموافقة معلقة.')
+        return
+      }
       setSelDel([])
       setPending(null)
+    } finally {
+      setBusy(false)
       reload(sessionId).catch(() => {})
     }
   }
