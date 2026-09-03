@@ -22,6 +22,6 @@ for (const marker of [
 for (const marker of ['persistAssistantToolCalls', 'tool_call_id', 'toWireToolCall']) assert.match(persist, new RegExp(marker), `missing persistence contract: ${marker}`)
 for (const marker of ['messagesToLlm', 'tool_call_id', 'tool_calls']) assert.match(history, new RegExp(marker), `missing history contract: ${marker}`)
 for (const marker of ['handleToolCall', 'request_confirmation', 'ask_user']) assert.match(invokeTools, new RegExp(marker), `missing tool control: ${marker}`)
-for (const marker of ['useAudioRecorder', 'const [attachments', 'DocumentPicker', 'handleSend', 'cancelAgent', 'إيقاف التسجيل وإرساله']) assert.ok(screen.includes(marker), `missing UI route: ${marker}`)
+for (const marker of ['useAudioRecorder', 'const [attachments', 'DocumentPicker', 'handleSend', 'cancelAgent', 'إيقاف التسجيل ومعاينته', 'audioDraft', 'حذف التسجيل الصوتي']) assert.ok(screen.includes(marker), `missing UI route: ${marker}`)
 
 console.log('Agent input surface invariants: PASS')
