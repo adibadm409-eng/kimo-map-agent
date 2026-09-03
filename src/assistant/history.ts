@@ -115,6 +115,8 @@ export function messagesToLlm(msgs: Message[]): ChatMessage[] {
           cleanFunction.name = normalizeProviderToolName(cleanFunction.name || 'execute') || 'execute'
           t.function = cleanFunction
           t.id = normalizeToolCallId(t.id ?? tc.id ?? raw.id)
+          delete (t as any).extra_content
+          delete (t as any).extra
           return t
         })
         // لا نرسل نداء أداة إلا إذا وجدت نتيجة لكل معرف في الجولة؛ إعادة نداء واحد
