@@ -609,6 +609,16 @@ export async function deleteApproved(sessionId: string, pending: PendingState): 
       entity = 'workspace_row'
       await deleteWsRow(id)
       outcome = `تم حذف الصف (${id})`
+    } else if (tool === 'ledger_reverse_payment') {
+      const { reverseLedgerPayment } = await import('../domain/projectDomain')
+      const r = await reverseLedgerPayment(String(action.args?.payment_id ?? id), action.args?.plot_id ? String(action.args.plot_id) : undefined, action.args?.reason ? String(action.args.reason) : 'موافقة المستخدم')
+      outcome = `تم عكس الدفعة بمبلغ ${r.amount} (قيد العكس ${r.reversalId})`
+      entity = 'plot_payments'
+    } else if (tool === 'unlink_entity_media') {
+      const { unlinkEntityMedia } = await import('../database/workspace')
+      await unlinkEntityMedia(String(action.args?.link_id ?? id))
+      outcome = 'تم فك ربط الوسيط دون حذف المرفق الأصلي'
+      entity = 'entity_media'
     } else {
       entity = String(action.args?.entity ?? '')
       if (entity) before = await captureBefore(entity, id)
