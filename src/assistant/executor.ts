@@ -234,7 +234,7 @@ async function runLoop(
         const agentFunctions = getAgentFunctions(runtimeSkill)
 
         // شبكة أمان ضد سوء التصنيف: طلب قراءة/كتابة واضح يفرض الأدوات حتى لو سقطت النية
-        const WRITE_VERBS = /(?:أنشئ|انشئ|أضف|اضف|ضيف|سجّل|سجل|عدّل|عدل|حدّث|حدث|احذف|حذف|سوي|اعمل|احجز|قيد|صلح|delete|create|update)/i
+        const WRITE_VERBS = /(?:أنشئ|انشئ|أضف|اضف|ضيف|سجّل|سجل\s+(?:دفعة|دفع|مبلغ|قسط|إيصال|تحويل)|عدّل|عدل|حدّث|حدث|احذف|حذف|مسح|شيل|سوي|اعمل|احجز|قيد|صلح|delete|create|update)/i
         const needsToolsEffective = classifiedIntent.needsTools || readIntentRequiresEvidence || WRITE_VERBS.test(lastUserText)
         const functionsToSend = needsToolsEffective ? agentFunctions : []
 
