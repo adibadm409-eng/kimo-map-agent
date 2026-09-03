@@ -858,11 +858,18 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
   emitForSession(sessionId, { type: 'done', outcome })
 }
 
-/** الرد على سؤال سابق (ask_user) ومواصلة عمل الوكيل. */
-export async function answerAsk(sessionId: string, answer: string): Promise<void> {
-  if (isAgentBusy(sessionId)) return
+export const ASK_PREFIX = '[إجابة المستخدم على سؤالك]'
+export const APPROVE_PREFIX = '[موافقة المستخدم على'
+export const REFUSE_PREFIX = '[رفض المستخدم للإجراء]'
+export function pendingItemId(it: { tool: string; id: string }): string {
+  return `${it.tool}:${it.id}`
+}
+
+/** الرد على سؤال سابق (ask_user) ومواصلة عمل الوكيل. يعيد false إذا تعذر (مشغول/لا معلق). */
+export async function answerAsk(sessionId: string, answer: string): Promise<boolean> {
+  if (isAgentBusy(sessionId)) return false
   const pending = await getPending(sessionId)
-  if (!pending || pending.kind !== 'ask_user') return
+  if (!pending || pending.kind !== 'ask_user') return false
   let conn: ConnConfig
   try {
     conn = await withConfig(async (c) => c)
