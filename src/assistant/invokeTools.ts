@@ -197,7 +197,7 @@ export async function runRegistryTool(
           : tool === 'workspace_delete_table'
             ? 'جدول'
             : 'صف'
-    const item = { tool, id: delId, entity: String(args.entity ?? ''), preview: `${entityLabel}: ${preview}`.replace(/:+\s*$/, '') }
+    const item = { tool, id: delId, entity: String(args.entity ?? ''), preview: `${entityLabel}: ${preview}`.replace(/:+\s*$/, ''), args: { ...args } }
     // تراكم في قائمة واحدة (تحديد متعدد) بدل الموافقة المكررة
     const current = await getPending(sessionId).catch(() => null)
     const items = current?.kind === 'confirmation' && Array.isArray(current.items) ? [...current.items] : []
