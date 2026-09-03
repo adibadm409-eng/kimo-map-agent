@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import {
-  View, Text, TextInput, FlatList, StyleSheet, Pressable, Keyboard, Platform, Alert, Dimensions, Modal, ScrollView, ActivityIndicator, Image,
+  View, Text, TextInput, FlatList, StyleSheet, Pressable, Alert, Modal, ScrollView, ActivityIndicator, Image,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect, useIsFocused } from '@react-navigation/native'
