@@ -217,7 +217,11 @@ export default function AssistantScreen({ navigation }: any) {
 
   async function handleSend(text: string, audio?: AudioDraft) {
     const trimmed = text.trim()
-    if ((!trimmed && !audio) || busy) return
+    if (!trimmed && !audio) {
+      setActionError('اكتب رسالة أو أرفق ملفاً أو سجل صوتاً قبل الإرسال.')
+      return
+    }
+    if (busy) return
     const sid = await ensureSession()
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
     setInput('')
