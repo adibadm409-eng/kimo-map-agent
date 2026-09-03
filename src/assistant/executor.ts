@@ -1,4 +1,4 @@
-import { getMessages, getSettings, createSession, listUndo, activeConfig, updateSessionMeta, getPending, clearPending, addBrainOp, listBrain, clearBrain, type Message, type BrainOp, type AgentSettings } from './store'
+import { getMessages, getLastToolMessage, getSettings, createSession, listUndo, activeConfig, updateSessionMeta, getPending, clearPending, addBrainOp, listBrain, clearBrain, type Message, type BrainOp, type AgentSettings } from './store'
 import { saveAsset } from './assetStore'
 import { createUserTurn, hasPayload, summarizeAssetForModel, type InputAssetKind } from './inputEnvelope'
 import {
