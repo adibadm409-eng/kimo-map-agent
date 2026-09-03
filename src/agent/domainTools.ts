@@ -24,12 +24,14 @@ export interface DomainToolDef {
 
 const projectKinds: ProjectKind[] = ['land', 'residential_building', 'tower', 'compound', 'custom']
 
-const previewedCommits = new Set<string>()
+const previewedCommits = new Map<string, number>()
+const PREVIEW_TTL_MS = 30 * 60 * 1000
 function planHash(plan: ProjectImportPlan): string {
-  const s = `${plan.projectName}|${plan.kind}|${plan.rows.length}|${JSON.stringify(plan.rows).length}`
-  let h = 0
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0
-  return `${plan.projectName}|${plan.kind}|${plan.rows.length}|${h}`
+  const s = JSON.stringify({ n: plan.projectName, k: plan.kind, pid: plan.projectId ?? '', c: plan.currency ?? '', src: plan.sourceName ?? '', ue: plan.options?.updateExisting === true, rows: plan.rows })
+  let h1 = 0
+  let h2 = 0
+  for (let i = 0; i < s.length; i++) { h1 = (h1 * 31 + s.charCodeAt(i)) >>> 0; h2 = (h2 * 37 + s.charCodeAt(i)) >>> 0 }
+  return `${h1.toString(36)}${h2.toString(36)}`
 }
 function planFromArgs(args: Record<string, any>): ProjectImportPlan {
   const kind = String(args.kind ?? 'land') as ProjectKind
