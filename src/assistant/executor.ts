@@ -523,9 +523,8 @@ async function runLoop(
             const innerTool = call.name === 'execute' ? String(callArgs.tool ?? 'execute') : call.name
             const innerArgs = call.name === 'execute' ? (callArgs.args ?? {}) : callArgs
             await addBrainOp(sessionId, 'op', `${innerTool}: ${JSON.stringify(innerArgs).slice(0, 160)}`).catch(() => {})
-            // إعادة الملاحظة (Observation) إلى مسار تفكير ReAct بعد التنفيذ
-            const toolMsgs = (await getMessages(sessionId)).filter((m) => m.role === 'tool')
-            const lastObs = toolMsgs[toolMsgs.length - 1]
+            // إعادة الملاحظة (Observation) إلى مسار تفكير ReAct — قراءة صف واحد بدل السجل كاملاً
+            const lastObs = await getLastToolMessage(sessionId).catch(() => null)
             const obsText = lastObs && lastObs.meta
               ? String(lastObs.meta.observation ?? lastObs.meta.result ?? '')
               : ''
