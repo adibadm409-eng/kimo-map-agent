@@ -213,6 +213,7 @@ export async function runRegistryTool(
       items,
       action: { type: 'delete', tool, id: delId, args: args as any },
     })
+    await persistAssistantText(sessionId, `${message} ${items.map((it) => it.preview).join('؛ ')}`, 'confirmation', { title, message })
     const pendingObservation = `[معلّق] لم يُنفّذ حذف ${entityLabel} بعد. أعددت معاينة للمستخدم وأنتظر موافقته الصريحة؛ لا تعلن نجاح الحذف ولا تتابع بأداة أخرى قبل القرار.`
     await persistPair(sessionId, call, pendingObservation, undefined, {
       name: tool,
