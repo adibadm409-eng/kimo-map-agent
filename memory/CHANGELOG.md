@@ -893,3 +893,4 @@
 - 2026-09-03 | 6d33274 | تعديل تلقائي: OfferForm.tsx
 - 2026-09-03 | d8abb56 | تعديل تلقائي: OfferForm.tsx
 - 2026-09-03 | e77e02c | تعديل تلقائي: ViewingForm.tsx
+- 2026-09-03 | 2c019ca | تعديل تلقائي: ViewingForm.tsx

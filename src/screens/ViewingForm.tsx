@@ -137,6 +137,7 @@ export default function ViewingForm() {
             options={properties.map((p) => ({ id: p.id, label: p.name, subtitle: p.address }))}
             placeholder="لا توجد عقارات"
           />
+          <SuggestField label="بحث عن العميل بالاسم أو الرقم" value={clientSearch} onChange={setClientSearch} field="name" placeholder="اكتب اسماً أو رقماً للبحث في العملاء والملاك والدلالين" onPick={handleClientPick} />
           <Picker
             label="العميل"
             value={form.client_id}
