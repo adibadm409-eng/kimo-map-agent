@@ -8,6 +8,9 @@ import { buildContactDirectory, matchContacts, SOURCE_LABELS, type DirectoryCont
 export interface PickedContact {
   name: string
   phone: string
+  source: DirectoryContact['source']
+  refId: string
+  refLabel: string
 }
 
 interface Props {
