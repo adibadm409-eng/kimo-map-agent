@@ -78,12 +78,18 @@ async function resolveOfferRelationFilters(filters: QueryFilterInput[] | undefin
       resolved.push(filter)
       continue
     }
+    const exact = await db.getFirstAsync<{ id: string }>(`SELECT id FROM ${table} WHERE id = ? OR name = ?`, [needle, needle])
+    if (exact?.id) {
+      resolved.push({ ...filter, op: 'eq', value: String(exact.id) })
+      continue
+    }
     const like = op === 'starts_with' ? `${needle}%` : `%${needle}%`
     const rows = await db.getAllAsync<{ id: string }>(
-      `SELECT id FROM ${table} WHERE id = ? OR name = ? OR name LIKE ? LIMIT 200`,
-      [needle, needle, like],
+      `SELECT id, name FROM ${table} WHERE name LIKE ? LIMIT 11`,
+      [like],
     )
     const ids = rows.map((row) => String(row.id)).filter(Boolean)
+    if (ids.length > 10) throw new Error(`الاسم «${needle}» غامض يطابق أكثر من 10 سجلات في ${table}؛ اسأل المستخدم للتحديد الدقيق بدل التوسيع التلقائي.`)
     resolved.push(ids.length ? { ...filter, op: 'in', value: ids } : filter)
   }
   return resolved
