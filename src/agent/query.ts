@@ -61,7 +61,8 @@ export function decodeOperator(op?: string): FilterOp {
     'is_empty', 'not_empty',
   ]
   if (!op) return 'eq'
-  return valid.includes(op as FilterOp) ? (op as FilterOp) : 'eq'
+  if (!valid.includes(op as FilterOp)) throw new Error(`عامل تصفية غير معروف: ${op}. استخدم واحداً من: ${valid.join('، ')}.`)
+  return op as FilterOp
 }
 
 function buildWhere(entity: EntityDef, spec: QuerySpec): { where: string; params: SQLite.SQLiteBindValue[] } {
