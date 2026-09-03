@@ -833,3 +833,4 @@
 - 2026-09-03 | f457e10 | تعديل تلقائي: intentRouter.ts
 - 2026-09-03 | ddc3bae | تعديل تلقائي: intentRouter.ts
 - 2026-09-03 | 4256991 | تعديل تلقائي: executor.ts
+- 2026-09-03 | 0dba2be | تعديل تلقائي: modelProfiles.ts
