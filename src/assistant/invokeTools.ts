@@ -295,7 +295,9 @@ async function handleRequestConfirmation(sessionId: string, args: Record<string,
       }
     }
   }
-  await setPending({ sessionId, kind: 'confirmation', question: message, title, details, action })
+  const current = await getPending(sessionId).catch(() => null)
+  const keptItems = current?.kind === 'confirmation' && Array.isArray(current.items) ? current.items : undefined
+  await setPending({ sessionId, kind: 'confirmation', question: message, title, details, action, items: keptItems })
   const observation = `[طلب موافقة] ${title}\\n${message}`
   await persistAssistantText(sessionId, observation, 'confirmation', { title, message, details })
   if (call) {
