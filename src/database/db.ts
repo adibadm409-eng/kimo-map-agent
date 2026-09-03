@@ -693,6 +693,17 @@ export async function cancelReminder(id: string): Promise<void> {
   await logChange({ action: 'update', scope: 'reminders', scopeId: id, before, after: { status: 'cancelled' }, summary: `إلغاء تذكير (${id})` })
 }
 
+export async function updateReminder(id: string, patch: { title?: string; body?: string; remind_at?: string }): Promise<void> {
+  const db = await getDB()
+  const before = await db.getFirstAsync('SELECT * FROM reminders WHERE id = ?', [id]) as any
+  if (!before) throw new Error(`التذكير (${id}) غير موجود.`)
+  if (before.status === 'cancelled') throw new Error('لا يمكن تعديل تذكير ملغى؛ أنشئ تذكيراً جديداً.')
+  if (patch.remind_at != null && new Date(patch.remind_at).getTime() <= Date.now()) throw new Error('موعد التذكير يجب أن يكون في المستقبل بصيغة ISO.')
+  await db.runAsync('UPDATE reminders SET title = ?, body = ?, remind_at = ? WHERE id = ?',
+    patch.title ?? before.title, patch.body ?? before.body, patch.remind_at ?? before.remind_at, id)
+  await logChange({ action: 'update', scope: 'reminders', scopeId: id, before, after: patch, summary: `تعديل تذكير (${id})` })
+}
+
 // CRUD helpers - CAMPAIGN
 export async function getAllCampaigns(): Promise<any[]> {
   const db = await getDB()
