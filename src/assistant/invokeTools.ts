@@ -582,6 +582,20 @@ export async function deletePreview(tool: string, args: Record<string, any>): Pr
 }
 
 export async function deleteApproved(sessionId: string, pending: PendingState): Promise<void> {
+  const items = Array.isArray(pending.items) && pending.items.length ? pending.items : null
+  if (items && items.length > 1) {
+    for (const it of items) {
+      const iargs = it.args && typeof it.args === 'object' ? it.args : (it.entity ? { entity: it.entity, id: it.id } : { id: it.id })
+      await deleteOne(sessionId, it.tool, it.id, iargs)
+    }
+    return
+  }
+  if (items && items.length === 1) {
+    const it = items[0]
+    const iargs = it.args && typeof it.args === 'object' ? it.args : (it.entity ? { entity: it.entity, id: it.id } : { id: it.id })
+    await deleteOne(sessionId, it.tool, it.id, iargs)
+    return
+  }
   const action = pending.action
   if (!action || action.type !== 'delete') {
     // وافق المستخدم لكن الموافقة لم تُربط بأي إجراء حذف (مسار request_confirmation بلا action)
