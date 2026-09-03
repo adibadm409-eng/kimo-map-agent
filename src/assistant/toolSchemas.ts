@@ -24,7 +24,6 @@ function argTypeToSchema(t: string): string {
  *  يُولّد فقط للأدوات الأساسية لتقليل حجم الطلب. */
 export function buildToolSchemas(): Record<string, { type: 'object'; properties: Record<string, any>; required: string[] }> {
   const out: Record<string, any> = {}
-  // الأدوات الأساسية فقط — الباقي متاح عبر execute wrapper
   const CORE_TOOLS = new Set([
     'query', 'get', 'mutate_record', 'search_everything',
     'ask_user', 'request_confirmation', 'undo_last',
@@ -33,9 +32,10 @@ export function buildToolSchemas(): Record<string, { type: 'object'; properties:
     'review_my_work', 'data_snapshot',
     'attach_media_to_entity', 'list_attachments', 'remove_attachment',
     'create_offer_with_reminder', 'offer_reminder_set',
-    'create_reminder', 'list_reminders', 'cancel_reminder',
+    'create_reminder', 'list_reminders', 'cancel_reminder', 'reminder_update',
     'property_change_preview', 'property_intake_apply',
-    'preview_update', 'custom_field_set',
+    'preview_update', 'custom_field_set', 'list_entity_media',
+    'ledger_reverse_payment', 'bulk_mutate', 'export_entity_csv',
   ])
   for (const t of TOOLS) {
     if (!CORE_TOOLS.has(t.name)) continue
