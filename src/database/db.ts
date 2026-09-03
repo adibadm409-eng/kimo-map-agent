@@ -698,10 +698,27 @@ export async function updateReminder(id: string, patch: { title?: string; body?:
   const before = await db.getFirstAsync('SELECT * FROM reminders WHERE id = ?', [id]) as any
   if (!before) throw new Error(`التذكير (${id}) غير موجود.`)
   if (before.status === 'cancelled') throw new Error('لا يمكن تعديل تذكير ملغى؛ أنشئ تذكيراً جديداً.')
+  const nextTitle = patch.title ?? before.title
+  const nextBody = patch.body ?? before.body
+  const nextAt = patch.remind_at ?? before.remind_at
   if (patch.remind_at != null && new Date(patch.remind_at).getTime() <= Date.now()) throw new Error('موعد التذكير يجب أن يكون في المستقبل بصيغة ISO.')
-  await db.runAsync('UPDATE reminders SET title = ?, body = ?, remind_at = ? WHERE id = ?',
-    patch.title ?? before.title, patch.body ?? before.body, patch.remind_at ?? before.remind_at, id)
-  await logChange({ action: 'update', scope: 'reminders', scopeId: id, before, after: patch, summary: `تعديل تذكير (${id})` })
+  let notificationId: string = before.notification_id ?? ''
+  if (patch.remind_at != null && patch.remind_at !== before.remind_at) {
+    await cancelLocalReminder(before.notification_id).catch(() => {})
+    notificationId = ''
+    if (String(before.target_type) !== 'offer') {
+      try {
+        if (Platform.OS !== 'web') notificationId = await scheduleLocalReminder(new Date(nextAt), nextTitle, nextBody || nextTitle, { type: 'entity-reminder', reminderId: id, targetType: String(before.target_type), targetId: String(before.target_id ?? '') })
+      } catch { notificationId = '' }
+    } else {
+      const active = await getOfferReminders(String(before.target_id))
+      const next = active.find((r: any) => String(r.id) !== String(id)) ?? active[0]
+      await db.runAsync('UPDATE offers SET reminder_at = ?, reminder_notification_id = ? WHERE id = ?', [next?.remind_at || '', next?.notification_id || '', before.target_id])
+    }
+  }
+  await db.runAsync('UPDATE reminders SET title = ?, body = ?, remind_at = ?, notification_id = ? WHERE id = ?',
+    nextTitle, nextBody, new Date(nextAt).toISOString(), notificationId, id)
+  await logChange({ action: 'update', scope: 'reminders', scopeId: id, before, after: { ...patch, notification_id: notificationId }, summary: `تعديل تذكير (${id})` })
 }
 
 // CRUD helpers - CAMPAIGN
