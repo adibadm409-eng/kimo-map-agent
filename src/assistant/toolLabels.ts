@@ -516,8 +516,26 @@ export function toolDonePhrase(name: string, result: any, args?: Record<string, 
       return 'تم بناء دفتر الأقساط.'
     case 'dashboard_kpis':
       return 'تم حساب المؤشرات العامة.'
-    case 'search_everything':
-      return total != null ? `اكتمل البحث الشامل (${total} نتيجة) — أغربل النتائج الآن...` : 'اكتمل البحث الشامل — أغربل النتائج الآن...'
+    case 'search_everything': {
+      let grandTotal: number | null = null
+      let truncated = false
+      if (result && typeof result === 'object') {
+        let sum = 0
+        let has = false
+        for (const v of Object.values(result)) {
+          if (v && typeof v === 'object' && Array.isArray((v as any).rows)) {
+            has = true
+            sum += Number((v as any).total ?? (v as any).rows.length) || 0
+            if ((v as any).truncated) truncated = true
+          }
+        }
+        if (has) grandTotal = sum
+      }
+      const shown = grandTotal ?? total
+      return shown != null
+        ? `اكتمل البحث الشامل (${shown} نتيجة${truncated ? ' — بعض الأقسام مقتطعة' : ''}) — أغربل النتائج الآن...`
+        : 'اكتمل البحث الشامل — أغربل النتائج الآن...'
+    }
     case 'query':
       return label
         ? `تم فتح ${label} والبحث داخله (${total ?? 0} نتيجة) — أتابع الآن التحليل والجمع...`
