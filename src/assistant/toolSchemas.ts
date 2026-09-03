@@ -567,7 +567,7 @@ export async function runToolWithFeedback(tool: string, rawArgs: Record<string, 
   } else {
     toolCache.invalidateAfterWrite()
   }
-  const WRITE_TOOLS_NO_CACHE = new Set(['mutate_record', 'create', 'update', 'delete', 'ledger_record_payment', 'project_import_commit', 'property_intake_apply', 'create_offer_with_reminder', 'offer_reminder_set', 'create_reminder', 'cancel_reminder', 'cancel_offer_reminder', 'workspace_add_row', 'workspace_update_row', 'workspace_delete_row', 'workspace_import_rows', 'workspace_create', 'workspace_update', 'workspace_delete', 'custom_field_set', 'attach_media_to_entity', 'remove_attachment'])
+  const WRITE_TOOLS_NO_CACHE = new Set(['mutate_record', 'create', 'update', 'delete', 'ledger_record_payment', 'ledger_reverse_payment', 'project_import_commit', 'property_intake_apply', 'create_offer_with_reminder', 'offer_reminder_set', 'create_reminder', 'reminder_update', 'cancel_reminder', 'cancel_offer_reminder', 'workspace_add_row', 'workspace_update_row', 'workspace_delete_row', 'workspace_import_rows', 'workspace_create', 'workspace_update', 'workspace_delete', 'custom_field_set', 'attach_media_to_entity', 'unlink_entity_media', 'remove_attachment', 'bulk_mutate', 'project_memory_clear', 'export_entity_csv'])
   if (WRITE_TOOLS_NO_CACHE.has(tool)) toolCache.invalidateAfterWrite()
   // update idempotent: إعادة نفس patch بعد نجاح سابق ليست فشلاً جديداً إذا أثبتت
   // القراءة أن القيمة المطلوبة موجودة بالفعل. نتحقق أولاً ثم نعيد نتيجة آلية واضحة.
