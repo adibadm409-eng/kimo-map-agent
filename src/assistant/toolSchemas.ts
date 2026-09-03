@@ -586,9 +586,10 @@ export async function runToolWithFeedback(tool: string, rawArgs: Record<string, 
     'workspace_import_rows', 'workspace_create_full_table',
     'workspace_duplicate_table', 'workspace_duplicate_workspace',
     'import_project_file', 'remove_attachment',
-    'ledger_record_payment', 'project_import_commit', 'property_intake_apply',
-    'create_offer_with_reminder', 'offer_reminder_set', 'create_reminder',
-    'cancel_reminder', 'attach_media_to_entity',
+    'ledger_record_payment', 'ledger_reverse_payment', 'project_import_commit', 'property_intake_apply',
+    'create_offer_with_reminder', 'offer_reminder_set', 'create_reminder', 'reminder_update',
+    'cancel_reminder', 'attach_media_to_entity', 'list_entity_media', 'unlink_entity_media',
+    'bulk_mutate', 'export_entity_csv', 'project_memory_clear',
   ])
   const verificationTool = tool === 'mutate_record' ? String(args.operation ?? '') : tool
   const verificationArgs = tool === 'mutate_record'
