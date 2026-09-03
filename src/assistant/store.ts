@@ -638,6 +638,25 @@ export async function getMessages(sessionId: string): Promise<Message[]> {
   }))
 }
 
+/** آخر ملاحظة أداة في الجلسة — قراءة صف واحد بدل سجل الرسائل كاملاً داخل حلقة التنفيذ. */
+export async function getLastToolMessage(sessionId: string): Promise<Message | null> {
+  const d = await db()
+  const r = await d.getFirstAsync<any>(
+    "SELECT * FROM agent_messages WHERE session_id = ? AND role = 'tool' ORDER BY created_at DESC, rowid DESC LIMIT 1",
+    sessionId
+  ).catch(() => null)
+  if (!r) return null
+  return {
+    id: r.id,
+    sessionId: r.session_id,
+    role: r.role,
+    kind: (r.kind ?? 'text') as MessageKind,
+    content: r.content ?? '',
+    meta: r.meta ? safeJson(r.meta) : undefined,
+    createdAt: r.created_at ?? 0,
+  }
+}
+
 export async function addMessage(m: Omit<Message, 'id' | 'createdAt'>): Promise<Message> {
   const msg: Message = { ...m, id: genId(), createdAt: Date.now() }
   const d = await db()
