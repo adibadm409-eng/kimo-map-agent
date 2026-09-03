@@ -317,11 +317,10 @@ async function runLoop(
         }
 
                   if (result.content && result.toolCalls.length) {
-            // في طلبات القراءة لا نعرض محتوى مصاحباً إذا كان قد يحتوي أرقاماً
-            // قبل الملاحظة؛ نحتفظ به داخلياً فقط، وتبقى بطاقة المرحلة هي الإشارة
-            // المرئية حتى تصل نتيجة الأداة المنظمة.
+            // قرار الإظهار بيد الوكيل: نُظهر ما يقوله كنص تقدّم حتى قبل نتيجة الأداة،
+// ولا نكتم ردّه انتظاراً لدليل. الوسم "بلا تحقق" وحده كافٍ للصدق.
             const tail = String(result.content).trim()
-            if (tail && !readIntentRequiresEvidence) {
+            if (tail) {
               await persistAssistantText(sessionId, tail, 'progress')
               if (emitEvents) emitForSession(sessionId, { type: 'progress', text: tail })
             }
