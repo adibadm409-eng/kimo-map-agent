@@ -83,8 +83,7 @@ export function buildDynamicPrompt(
   const directives = extraDirectives.length ? `\nتعليمات:\n${extraDirectives.map((d) => `- ${d}`).join('\n')}` : ''
   const brain = brainOps.length ? `\nذاكرة العمل:\n${brainOps.map((b) => `[${b.kind}] ${b.body}`).join('\n')}` : ''
 
-  // إضافة الكتالوج فقط إذا كانت النية تحتاج فهم البنية
-  const needsCatalog = ['create', 'update', 'read', 'complex'].includes(intentKind)
+  const needsCatalog = ['create', 'update', 'read', 'complex', 'question_data', 'report', 'review'].includes(intentKind)
   const catalog = needsCatalog ? `\n\n${compactAppCatalog()}` : ''
 
   return `${base}${entityInfo}${directives}${brain}${catalog}
