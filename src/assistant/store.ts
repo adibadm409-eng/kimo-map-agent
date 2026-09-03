@@ -426,6 +426,8 @@ const DEFAULT_SETTINGS: AgentSettings = {
   mode: 'read',
   visionProvider: '',
   visionModel: '',
+  voiceProvider: '',
+  voiceModel: '',
 }
 
 export async function getSettings(): Promise<AgentSettings> {
