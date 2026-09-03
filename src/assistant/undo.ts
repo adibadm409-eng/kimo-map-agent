@@ -19,16 +19,23 @@ import {
 import { pushUndo, type UndoEntry } from './store'
 import { parseToolArgs } from './llm'
 
-/** توقيع مدمّج لاستدعاء الأداة للكشف عن التكرار المتنامي دون تقدم. */
+/** توقيع مدمّج لاستدعاء الأداة يشمل محتوى الوسائط لكشف التكرار المتنامي دون تقدم. */
 export function toolSig(call: { name: string; arguments: any }): string {
   const args = parseToolArgs(call.arguments)
   const tool = call.name === 'execute' ? String(args.tool ?? 'execute') : call.name
   const inner = call.name === 'execute' ? (args.args ?? {}) : args
   let core = ''
   if (inner && typeof inner === 'object') {
-    for (const k of ['id', 'entity', 'table_id', 'row_id', 'workspace_id', 'project_id', 'plot_id', 'block_id', 'name', 'query', 'search', 'buyer_query', 'sheet_id', 'agent_id']) {
-      const v = inner[k]
+    for (const k of ['id', 'entity', 'operation', 'table_id', 'row_id', 'workspace_id', 'project_id', 'plot_id', 'block_id', 'name', 'query', 'search', 'buyer_query', 'sheet_id', 'agent_id', 'limit', 'offset']) {
+      const v = (inner as any)[k]
       if (v != null) core += `${k}=${String(v).slice(0, 40)}|`
+    }
+    const payload = (inner as any).data ?? (inner as any).args ?? (inner as any).row ?? null
+    if (payload != null) {
+      const s = JSON.stringify(payload)
+      let h = 0
+      for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0
+      core += `payload=${h.toString(36)}:${s.length}|`
     }
   }
   return `${tool}#${core}`
