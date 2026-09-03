@@ -60,8 +60,8 @@ const INTENT_PATTERNS: { pattern: RegExp; intent: IntentKind; needsTools: boolea
   // تعديل
   { pattern: /(?:عدّل|عدل|حدّث|حدث|غيّر|غير|تعديل|صلّح|صلح|بدّل|بدل|جدّد|جدد|اضبط|اظبط|update|edit|modify)/i, intent: 'update', needsTools: true, needsLLM: true, promptTier: 'focused' },
 
-  // قراءة/بحث (تشمل عامية)
-  { pattern: /(?:اقرأ|اطلع|اعرض|أظهر|اظهر|ابحث|استكشف|بحث|عرض|وريني|ورني|هات|طلع|جيب|اعرض لي|read|search|explore|show|list)/i, intent: 'read', needsTools: true, needsLLM: true, promptTier: 'focused' },
+  // قراءة/بحث (تشمل عامية — هات/طلع بحدود لفظية)
+  { pattern: /(?:اقرأ|اطلع|اعرض|أظهر|اظهر|ابحث|استكشف|بحث|عرض|وريني|ورني|جيب|اعرض لي|read|search|explore|show|list|(?:^|[\s،؛:؟?])هات(?:[\s،؛:؟?.]|$)|(?:^|[\s،؛:؟?])طلع(?:[\s،؛:؟?.]|$))/i, intent: 'read', needsTools: true, needsLLM: true, promptTier: 'focused' },
 
   // سؤال عن بيانات
   { pattern: /(?:كم|عدد|إجمالي|مجموع|الإجمالي|المجموع|how many|total|count)/i, intent: 'question_data', needsTools: true, needsLLM: true, promptTier: 'focused' },

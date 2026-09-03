@@ -904,3 +904,4 @@
 - 2026-09-03 | 6ab25fa | تعديل تلقائي: toolLabels.ts
 - 2026-09-03 | 454b427 | تعديل تلقائي: invokeTools.ts
 - 2026-09-03 | 82a7bd5 | تعديل تلقائي: invokeTools.ts
+- 2026-09-03 | 663a502 | تعديل تلقائي: intentRouter.ts
