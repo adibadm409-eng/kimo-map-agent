@@ -181,7 +181,7 @@ export default function AssistantScreen({ navigation }: any) {
     } else if (pending?.kind === 'confirmation') {
       setSelDel([])
     }
-    if (chatItems.length) scrollToBottom()
+    if (chatItems.length && atBottomRef.current) scrollToBottom()
   }, [pending, chatItems.length, scrollToBottom])
 
   async function ensureSession(): Promise<string> {
