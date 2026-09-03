@@ -53,8 +53,8 @@ function compressMiddleToolMessages(out: ChatMessage[], budgetTokens = 9000): Ch
     const tail = out.slice(tailStart)
     const midVerified = mid.filter((m) => m.role === 'tool' && (m as any).tool_error === false).length
     const summary: ChatMessage = {
-      role: 'system',
-      content: `[ملخص السياق المضغوط] ذاكرة وسيطة مضغوطة: ${removedCount} ملاحظة قُصّرت لتوفير ${removedChars} حرف، منها ${midVerified} موثَّقة. ثقة السياق العام ${midVerified ? 75 : 45}%.`,
+      role: 'user',
+      content: `[ملخص السياق المضغوط] ذاكرة وسيطة مضغوطة: ${removedCount} ملاحظة قُصّرت لتوفير ${removedChars} حرف، منها ${midVerified} موثَّقة.`,
     }
     return [...head, summary, ...mid, ...tail]
   }
