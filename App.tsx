@@ -341,6 +341,7 @@ function Tabs() {
         },
         headerShown: false,
         tabBarLabelStyle: { fontFamily: 'Tajawal_700Bold', fontSize: 12 },
+        tabBarHideOnKeyboard: true,
         animation: 'fade',
       }}
     >
