@@ -665,9 +665,9 @@ export default function AssistantScreen({ navigation }: any) {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={busy ? (cancelling ? 'جارٍ إيقاف كيمو…' : 'إيقاف تنفيذ كيمو') : 'إرسال الرسالة إلى كيمو'}
-            disabled={(!busy && !input.trim() && !attachments.length && !audioDraft) || cancelling}
+            disabled={initializing || ((!busy && !input.trim() && !attachments.length && !audioDraft) || cancelling)}
             onPress={busy ? () => handleCancel(sessionId) : () => handleSend(input)}
-            style={[styles.sendBtn, { backgroundColor: busy ? colors.error : colors.accent, opacity: (!busy && !input.trim() && !attachments.length && !audioDraft) || cancelling ? 0.4 : 1 }]}
+            style={[styles.sendBtn, { backgroundColor: busy ? colors.error : colors.accent, opacity: initializing || ((!busy && !input.trim() && !attachments.length && !audioDraft) || cancelling) ? 0.4 : 1 }]}
           >
             <Ionicons name={busy ? 'stop' : 'arrow-up'} size={18} color="#fff" />
           </Pressable>
