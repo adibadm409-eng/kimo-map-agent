@@ -113,6 +113,10 @@ class ToolResultCache {
     this.cache.clear()
   }
 
+  invalidateAfterWrite(): void {
+    this.cache.clear()
+  }
+
   getStats(): { size: number; totalHits: number; hitRate: number } {
     let totalHits = 0
     for (const entry of this.cache.values()) {
