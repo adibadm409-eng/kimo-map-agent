@@ -101,7 +101,7 @@ export function resolveModelProfile(
   const strictTools = hasCatalog ? params.has('structured_outputs') || params.has('strict') : def.id === 'openai'
   const jsonSchema = hasCatalog ? params.has('structured_outputs') || params.has('response_format') : def.id === 'openai'
   const staticParams = def.id === 'custom'
-    ? []
+    ? ['tools', 'tool_choice', 'temperature', 'max_tokens']
     : ['tools', 'tool_choice', 'temperature', 'stream', 'max_tokens', ...(base.supportsStreamOptions ? ['stream_options'] : [])]
   if (!hasCatalog && maxTokensField === 'max_completion_tokens') staticParams.push('max_completion_tokens')
   const resolvedParams = hasCatalog ? [...params].sort() : staticParams
