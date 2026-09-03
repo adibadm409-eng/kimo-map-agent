@@ -22,10 +22,11 @@ export default function TaskCard() {
   const { colors } = useTheme()
   const plan = useChatStore((s) => s._plan)
   const statusBar = useChatStore((s) => s.statusBar)
+  const streamText = useChatStore((s) => s.streamText)
   const [expanded, setExpanded] = useState(true)
 
   if (!plan || !plan.steps?.length) {
-    if (!statusBar.visible) return null
+    if (!statusBar.visible || streamText) return null
     return (
       <View style={[styles.card, { backgroundColor: colors.bgSecondary, borderColor: colors.border }]}>
         <View style={styles.header}>
