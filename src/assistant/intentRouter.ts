@@ -54,8 +54,8 @@ const INTENT_PATTERNS: { pattern: RegExp; intent: IntentKind; needsTools: boolea
   // تقرير/ملف
   { pattern: /(?:تقرير|ملف|جدول|excel|word|pdf|download|تحميل)/i, intent: 'report', needsTools: true, needsLLM: true, promptTier: 'focused' },
 
-  // إنشاء (تشمل لهجات يمنية وصيغ بلا همزة)
-  { pattern: /(?:أنشئ|انشئ|أضف|اضف|أضيف|اضيف|ادخل|سجّل|سجل|إضافة|اضافة|أدخل|ضيف|زَيِّد|زود|دخِّل|دخل|قيِّد|قيد|احجز|سوي|سوى|اعمل|create|add)/i, intent: 'create', needsTools: true, needsLLM: true, promptTier: 'focused' },
+  // إنشاء (تشمل لهجات يمنية وصيغ بلا همزة — القصيرة بحدود لفظية حتى لا تلتقط داخل كلمات)
+  { pattern: /(?:أنشئ|انشئ|أضف|اضف|أضيف|اضيف|ادخل|سجّل|سجل|إضافة|اضافة|أدخل|ضيف|زَيِّد|زود|دخِّل|احجز|سوي|سوى|اعمل|create|add|(?:^|[\s،؛:؟?])دخل(?:[\s،؛:؟?.]|$)|(?:^|[\s،؛:؟?])قيد(?:[\s،؛:؟?.]|$))/i, intent: 'create', needsTools: true, needsLLM: true, promptTier: 'focused' },
 
   // تعديل
   { pattern: /(?:عدّل|عدل|حدّث|حدث|غيّر|غير|تعديل|صلّح|صلح|بدّل|بدل|جدّد|جدد|اضبط|اظبط|update|edit|modify)/i, intent: 'update', needsTools: true, needsLLM: true, promptTier: 'focused' },
