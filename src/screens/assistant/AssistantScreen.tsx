@@ -613,7 +613,7 @@ export default function AssistantScreen({ navigation }: any) {
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={recorderState.isRecording ? 'إيقاف التسجيل وإرساله' : 'بدء الإدخال الصوتي'}
+            accessibilityLabel={recorderState.isRecording ? 'إيقاف التسجيل ومعاينته' : 'بدء الإدخال الصوتي'}
             onPress={handleVoice}
             disabled={busy}
             style={[styles.voiceBtn, { backgroundColor: recorderState.isRecording ? colors.errorSurface : colors.surface, borderColor: recorderState.isRecording ? colors.error : colors.border, borderWidth: 1, opacity: busy ? 0.4 : 1 }]}
