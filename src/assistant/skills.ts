@@ -235,6 +235,15 @@ export function matchSkill(text: string): SkillMatch {
         score = Math.min(score, 0.3)
       }
     }
+    const hasProjectReviewFlow = /راجع|مراجعة|تدقيق|سلامة|فروقات|ناقص|يتيم|تحقق|صحح/.test(normalized)
+    if (hasProjectReviewFlow && hasProjectDomainKeyword) {
+      if (skill.id === 'project_review') {
+        score = Math.max(score, 0.98)
+        reasons.push('مسار مراجعة سلامة المشروع')
+      } else if (skill.id === 'project_operations' || skill.id === 'project_import') {
+        score = Math.min(score, 0.45)
+      }
+    }
     const hasWorkspaceFlow = /مساحة\s+عمل|جدول\s+بيانات|ورقة|داتا|بيانات\s+مخصصة/.test(normalized)
     if (hasWorkspaceFlow && !hasProjectImportFlow && !hasOfferFlow && !hasPaymentFlow) {
       if (skill.id === 'workspace_operations') {
