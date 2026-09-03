@@ -251,6 +251,15 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
         patch.streamText = ''
         patch.activeContext = { ...s.activeContext, status: o === 'completed' ? 'اكتملت المهمة' : o === 'paused' || o === 'cancelled' ? 'متوقف مؤقتاً' : 'تحتاج معالجة' }
         patch.items = [...s.items, { id: `done-${seq}`, uiComponent: 'completion_pulse', payload: { outcome: o } }]
+        if (o === 'completed' || o === 'failed' || o === 'cancelled') patch._plan = null
+        break
+      }
+      case 'error': {
+        const err = (e as Extract<AgentEvent, { type: 'error' }>).message
+        if (typeof err === 'string' && err.startsWith('تعذر الوصول للمزود (محاولة')) break
+        patch.auditTrail = [...s.auditTrail, auditEntry('error', String(err ?? ''))].slice(-200)
+        patch.statusBar = { ...s.statusBar, visible: false, thinking: false }
+        patch.streamText = ''
         break
       }
       default:
