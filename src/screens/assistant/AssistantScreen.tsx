@@ -78,6 +78,7 @@ export default function AssistantScreen({ navigation }: any) {
   const [selDel, setSelDel] = useState<number[]>([])
   const [auditFlash, setAuditFlash] = useState(false)
   const [voice, setVoice] = useState({ ready: false, error: null as string | null })
+  const [audioDraft, setAudioDraft] = useState<{ uri: string; name: string; format: string } | null>(null)
   const listRef = useRef<FlatList>(null)
   const wantedBottom = useRef(false)
   const atBottomRef = useRef(true)
