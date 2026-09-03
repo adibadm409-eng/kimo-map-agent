@@ -114,6 +114,17 @@ export async function recordUndo(sessionId: string, tool: string, args: Record<s
       const before = beforeOverride ?? await getWsRow(String(args.row_id))
       const after = await getWsRow(String(args.row_id))
       if (before) await pushUndo({ sessionId, kind: 'update', entity: 'workspace_row', entityId: String(args.row_id), before, after, summary: 'تعديل صف' })
+    } else if (tool === 'bulk_mutate' && result && Array.isArray(result.results)) {
+      const entityName = String(args.entity ?? result.entity ?? '')
+      for (const r of result.results) {
+        if (!r?.ok) continue
+        if (String(args.operation ?? result.operation) === 'create' && r.id) {
+          await pushUndo({ sessionId, kind: 'create', entity: entityName, entityId: String(r.id), summary: `إنشاء جماعي ${entityName}` })
+        } else if (r.id && r.__before) {
+          const after = await captureBefore(entityName, String(r.id)).catch(() => null)
+          await pushUndo({ sessionId, kind: 'update', entity: entityName, entityId: String(r.id), before: r.__before, after, summary: `تعديل جماعي ${entityName}/${r.id}` })
+        }
+      }
     }
   } catch (error) {
     console.warn('[Undo] Failed to record undo entry:', error)
