@@ -46,6 +46,7 @@ class ToolResultCache {
     list_offer_reminders: 1 * 60 * 1000,
     project_nodes_list: 2 * 60 * 1000,
     project_profile_get: 5 * 60 * 1000,
+    export_entity_csv: 2 * 60 * 1000,
   }
 
   private static stableStringify(v: any): string {
