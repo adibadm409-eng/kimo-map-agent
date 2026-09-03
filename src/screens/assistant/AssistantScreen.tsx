@@ -335,7 +335,7 @@ export default function AssistantScreen({ navigation }: any) {
           return
         }
         const format = Platform.OS === 'web' ? 'webm' : 'm4a'
-        await handleSend('', { uri, name: `voice-${Date.now()}.${format}`, format })
+        setAudioDraft({ uri, name: `voice-${Date.now()}.${format}`, format })
       } else {
         await audioRecorder.prepareToRecordAsync()
         audioRecorder.record()
