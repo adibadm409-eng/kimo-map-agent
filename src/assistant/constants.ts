@@ -5,6 +5,9 @@ export const MAX_HISTORY_MESSAGES = 60
 export const MAX_TOOL_ROUNDS = 30
 export const MAX_TOOL_CALLS = 100
 export const MAX_REPEATED_TOOL_CALLS = 6
+// بعد هذا العدد من الفشل المتتالي لنفس الأداة يُجبر الوكيل على تغيير استراتيجيته
+// والبحث بين الفهرس وتعريفات الأدوات الأخرى بدل تكرار فعلٍ يفشل.
+export const MAX_CONSECUTIVE_TOOL_FAILURES = 3
 export const MAX_AGENT_RUNTIME_MS = 6 * 60 * 1000
 
 export function truncateForModel(s: string, max = MAX_TOOL_RESULT_CHARS): string {
