@@ -130,9 +130,18 @@ export default function AssistantScreen({ navigation }: any) {
   }, [])
 
   const reload = useCallback(async (sid: string) => {
+    const st = useChatStore.getState()
+    const optimistic = st.items.filter((i: any) => typeof i?.id === 'string' && i.id.startsWith('local-user-'))
+    const liveCards = st.items.filter((i: any) => ['observation_card', 'decision_card', 'completion_pulse'].includes(i?.uiComponent))
     try {
       const msgs = await getMessages(sid)
-      useChatStore.getState().setMessages(msgs)
+      st.setMessages(msgs)
+      const persistedUserCount = msgs.filter((m: any) => m.role === 'user').length
+      const optimisticCount = st.items.filter((i: any) => typeof i?.id === 'string' && i.id.startsWith('local-user-')).length
+      if (optimistic.length && persistedUserCount === 0 && optimisticCount === 0) {
+        st.setMessages([...st.items, ...optimistic])
+      }
+      if (liveCards.length) st.applyEvents(liveCards.map((c: any) => ({ __restore: true, card: c })))
     } catch {
       setActionError('تعذر تحميل رسائل هذه الجلسة — تحقق من قاعدة البيانات المحلية ثم أعد المحاولة.')
       return
