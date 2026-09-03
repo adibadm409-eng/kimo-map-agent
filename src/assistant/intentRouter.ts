@@ -64,10 +64,10 @@ const INTENT_PATTERNS: { pattern: RegExp; intent: IntentKind; needsTools: boolea
   { pattern: /(?:اقرأ|اطلع|اعرض|أظهر|اظهر|ابحث|استكشف|بحث|عرض|read|search|explore|show|list)/i, intent: 'read', needsTools: true, needsLLM: true, promptTier: 'focused' },
 
   // سؤال عن بيانات
-  { pattern: /(?:كم|عدد|إجمالي|مجموع|الإجمالي|المجموع|有多少|多少|how many|total|count)/i, intent: 'question_data', needsTools: true, needsLLM: true, promptTier: 'focused' },
+  { pattern: /(?:كم|عدد|إجمالي|مجموع|الإجمالي|المجموع|how many|total|count)/i, intent: 'question_data', needsTools: true, needsLLM: true, promptTier: 'focused' },
 
   // طلب معقد (عدة أقسام)
-  { pattern: /(?:项目|مشروع.*و.*(?:عملاء|دفعات|عروض|عقارات)|عملاء.*و.*دفعات)/i, intent: 'complex', needsTools: true, needsLLM: true, promptTier: 'full' },
+  { pattern: /(?:مشروع.*و.*(?:عملاء|دفعات|عروض|عقارات)|عملاء.*و.*دفعات|عقارات.*و.*عملاء)/i, intent: 'complex', needsTools: true, needsLLM: true, promptTier: 'full' },
 ]
 
 // أنماط الكيانات
