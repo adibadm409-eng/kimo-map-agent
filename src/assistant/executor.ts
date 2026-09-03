@@ -785,25 +785,20 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
           { type: 'input_audio', input_audio: { data: audio.base64, format: audio.format } },
         ]
       } else {
-        // الموديل/الصيغة لا يدعم chat مباشرة : نحوّل إلى نص ثم نكمل بالمسار النصي الثابت.
+        // الموديل/الصيغة لا يدعم chat مباشرة: نحوّل إلى نص عبر موديل الصوت المخصص
+        // (أو المزود الرئيسي احتياطاً) بحلقات إعادة 5/10/15 ثانية كما يفعل موديل الرؤية.
         let voiceText = text.trim()
         try {
-          // نحوّل الصوت إلى نص عبر نقطة التفريغ الموثّقة (تتعامل مع m4a بنجاح).
-          const transcript = await transcribeAudio({
-            providerId: conn.providerId,
-            baseUrl: conn.baseUrl,
-            apiKey: conn.apiKey,
-            model: conn.model,
-            audioUri: opts.audio.uri,
-            audioBase64: audio.base64,
-            format: audio.format,
-          })
+          const { text: transcript } = await transcribeWithRetry(
+            { uri: opts.audio.uri, base64: audio.base64, format: audio.format },
+            { providerId: conn.providerId, baseUrl: conn.baseUrl, apiKey: conn.apiKey, model: conn.model },
+          )
           voiceText = transcript || voiceText
         } catch (err: any) {
           const note =
             err instanceof TranscribeError && err.supported
-              ? '[تعذّر فهم التسجيل الصوتي تلقائياً هذه المرة — اسأل المستخدم عن نص رسالته]'
-              : '[المزوّد الحالي لا يدعم فهم الصوت — اطلب من المستخدم كتابة طلبه نصاً]'
+              ? '[تعذّر فهم التسجيل الصوتي تلقائياً بعد 3 محاولات — اسأل المستخدم عن نص رسالته]'
+              : '[موديل الصوت غير مُعد أو لا يدعم التفريغ — اختره من إعدادات المساعد أو اكتب طلبك نصاً]'
           voiceText = voiceText || note
         }
         const spoken = voiceText.trim() || 'أرسل المستخدم تسجيلاً صوتياً. استمع إليه وفهم المطلوب ثم تعامل معه.'
