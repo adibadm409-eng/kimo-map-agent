@@ -539,6 +539,19 @@ async function runLoop(
               const countsAsEvidence = evidenceOk && !fromCache && (operationIsVerificationEarly || operationVerifiedEarly)
               runtimeEvidenceCount++
               runtimeLastEvidenceOk = evidenceOk
+              // تتبّع الفشل المتتالي لنفس الأداة: بعد حدّ ثابت يُجبر الوكيل على تغيير
+              // استراتيجيته بدل تكرار فعلٍ فاشل بلا تقدّم.
+              if (!evidenceOk) {
+                if (consecutiveFailTool === innerTool) consecutiveFailCount++
+                else { consecutiveFailTool = innerTool; consecutiveFailCount = 1 }
+              } else {
+                consecutiveFailTool = ''
+                consecutiveFailCount = 0
+              }
+              const forceChangeNote = consecutiveFailCount >= MAX_CONSECUTIVE_TOOL_FAILURES
+                ? `[إلزامي] فشلت أداة «${innerTool}» ${consecutiveFailCount} مرات متتالية بنفس النهج. توقف عن تكرارها كما هي مطلقاً. ارجع إلى فهرس الأدوات واختر أداة أخرى أو تعريفاً أدق، أو غيّر الوسائط، أو اقرأ الدليل/الحالة أولاً ثم تابع. التنفيذ باقٍ ملكك والقرار قرارك — لكن الإصرار على نفس الفعل الفاشل ممنوع.`
+                : null
+              if (forceChangeNote) consecutiveFailCount = 0
               if (countsAsEvidence) {
                 runtimeSuccessfulEvidenceCount++
                 runtimeCorrection = ''
