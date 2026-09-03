@@ -206,7 +206,7 @@ export function providerCapabilities(def: ProviderDef, model = ''): ProviderCapa
   const normalizedModel = model.toLowerCase()
   const declared = def.capabilityOverrides?.[normalizedModel] ?? DECLARED_MODEL_CAPABILITIES[`${def.id}:${normalizedModel}`]
   const newerOpenAiStyle = (
-    /^(?:gpt-5|o[1-9])/.test(normalizedModel) && ['openai', 'openrouter', 'custom'].includes(def.id)
+    /^(?:gpt-[5-9]|o[1-9])/.test(normalizedModel) && ['openai', 'openrouter', 'custom'].includes(def.id)
   ) || (
     def.id === 'alibaba' && /^(?:qwen3\.[5-9]|glm-5|kimi-k2\.[5-9]|deepseek-v4)/i.test(normalizedModel)
   )

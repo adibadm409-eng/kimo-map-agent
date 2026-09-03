@@ -837,3 +837,4 @@
 - 2026-09-03 | f51327b | تعديل تلقائي: modelProfiles.ts
 - 2026-09-03 | 6bdebc0 | تعديل تلقائي: modelProfiles.ts
 - 2026-09-03 | 6faa2c3 | تعديل تلقائي: providers.ts
+- 2026-09-03 | d0220d1 | تعديل تلقائي: providers.ts
