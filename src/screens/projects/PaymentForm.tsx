@@ -186,7 +186,7 @@ export default function PaymentForm() {
 
             {method === 'cash' && (
               <View style={styles.conditional}>
-                <Input label="اسم المستلم" value={recipient} onChangeText={setRecipient} />
+                <SuggestField label="اسم المستلم" value={recipient} onChange={setRecipient} field="name" placeholder="اسم المستلم" onPick={(c) => { if (c.name) setRecipient(c.name) }} />
                 <Input label="رقم السند" value={receiptNo} onChangeText={setReceiptNo} />
               </View>
             )}
