@@ -140,7 +140,7 @@ export interface VoiceConfig {
 export async function resolveVoiceConfig(fallback: { providerId: string; baseUrl: string; apiKey: string; model: string }): Promise<{ config: VoiceConfig; usedVoiceModel: boolean; error?: string }> {
   const { getSettings } = await import('./store')
   const { defaultProvider } = await import('./providers')
-  type ProviderId = 'gemini' | 'openai' | 'anthropic' | 'mistral' | 'deepseek' | 'alibaba' | 'openrouter' | 'nvidia' | 'custom'
+  type ProviderId = 'gemini' | 'anthropic' | 'mistral' | 'deepseek' | 'alibaba' | 'openai' | 'openrouter' | 'nvidia' | 'custom'
   const settings = await getSettings().catch(() => null)
   if (!settings) return { config: fallback, usedVoiceModel: false, error: 'no_settings' }
   const voiceKey = (settings as any).voiceProvider as string
