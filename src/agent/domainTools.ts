@@ -148,9 +148,12 @@ export const DOMAIN_TOOLS: DomainToolDef[] = [
     handler: async (args) => {
       const plan = planFromArgs(args)
       const key = planHash(plan)
-      const tokenOk = args.preview_token != null && String(args.preview_token) === key
-      const confirmedOk = args.preview_confirmed === true && previewedCommits.has(key)
-      if (!tokenOk && !confirmedOk) throw new Error('اعتماد المشروع يتطلب معاينة سابقة بنفس الصفوف: نفّذ project_import_preview أولاً ثم أعد نفس rows مع preview_token أو preview_confirmed=true.')
+      const ts = previewedCommits.get(key)
+      if (ts == null || Date.now() - ts > PREVIEW_TTL_MS) {
+        previewedCommits.delete(key)
+        throw new Error('اعتماد المشروع يتطلب معاينة سابقة بنفس الصفوف تماماً خلال 30 دقيقة: نفّذ project_import_preview أولاً ثم أعد نفس rows مع preview_token المعاد منها.')
+      }
+      if (args.preview_token != null && String(args.preview_token) !== key) throw new Error('preview_token لا يطابق الصفوف المرسلة؛ أعد المعاينة بنفس الصفوف ثم اعتمد.')
       previewedCommits.delete(key)
       return { result: await commitProjectImport(plan) }
     },
