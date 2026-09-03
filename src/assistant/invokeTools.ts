@@ -515,12 +515,22 @@ export async function deleteOne(sessionId: string, tool: string, id: string, arg
       outcome = 'تم حذف الصف'
     } else if (tool === 'ledger_reverse_payment') {
       const { reverseLedgerPayment } = await import('../domain/projectDomain')
-      const r = await reverseLedgerPayment(String(args.payment_id ?? id), args.plot_id ? String(args.plot_id) : undefined, 'موافقة المستخدم')
+      const { withAuditCtx } = await import('../database/audit')
+      const payId = String(args.payment_id ?? id)
+      before = await captureBefore('plot_payments', payId).catch(() => null)
+      undoKind = 'update'
+      const r = await withAuditCtx({ actor: 'agent', sessionId, tool: 'ledger_reverse_payment' }, () =>
+        reverseLedgerPayment(payId, args.plot_id ? String(args.plot_id) : undefined, 'موافقة المستخدم'))
       entity = 'plot_payments'
+      before = before ?? { id: payId }
       outcome = `تم عكس الدفعة بمبلغ ${r.amount} (قيد العكس ${r.reversalId})`
     } else if (tool === 'unlink_entity_media') {
       const { unlinkEntityMedia } = await import('../database/workspace')
-      await unlinkEntityMedia(String(args.link_id ?? id))
+      const { withAuditCtx } = await import('../database/audit')
+      const linkId = String(args.link_id ?? id)
+      before = { linkId }
+      undoKind = 'update'
+      await withAuditCtx({ actor: 'agent', sessionId, tool: 'unlink_entity_media' }, () => unlinkEntityMedia(linkId))
       entity = 'entity_media'
       outcome = 'تم فك ربط الوسيط دون حذف المرفق الأصلي'
     } else {
