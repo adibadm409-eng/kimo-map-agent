@@ -102,6 +102,17 @@ export async function runSubAgents(
   }
 
   const runOne = async (task: (typeof cleaned)[number], index: number) => {
+    if (BLOCKED_PARALLEL_TOOLS.has(task.tool)) {
+      return {
+        tool: task.tool,
+        label: task.label || task.tool,
+        ok: false,
+        verified: false,
+        confidence: 0.05,
+        observation: `[مرفوض] «${task.tool}» كتابة حساسة لا تُنفَّذ عبر orchestrate المتوازي؛ نفّذها تسلسلياً عبر الحلقة الرئيسية (execute) لتخضع للموافقة والتحقق والتراجع.`,
+        result: { error: 'parallel_write_blocked' },
+      }
+    }
     if (opts?.signal?.aborted) {
       return toResult(task.tool, task.label, {
         ok: false,
