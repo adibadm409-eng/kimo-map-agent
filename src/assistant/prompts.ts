@@ -174,7 +174,7 @@ const WRAPPER_FUNCTIONS: FunctionDef[] = [
     parameters: {
       type: 'object',
       properties: {
-        tool: { type: 'string', description: 'اسم الأداة الداخلية' },
+        tool: { type: 'string', description: 'اسم الأداة الداخلية', enum: TOOLS.map((t) => t.name) },
         args: { type: 'object', description: 'معاملات الأداة' },
       },
       required: ['tool', 'args'],
