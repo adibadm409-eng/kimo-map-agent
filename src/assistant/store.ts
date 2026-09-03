@@ -220,7 +220,9 @@ export async function transitionTaskRun(taskId: string, status: AgentTaskStatus,
   const d = await db()
   const row = await d.getFirstAsync<{ status: AgentTaskStatus; evidence?: string }>('SELECT status, evidence FROM agent_task_runs WHERE id = ?', taskId)
   if (!row || !canTransitionTask(row.status, status)) return
-  if (status === 'completed' && (!patch.evidence || patch.evidence.length === 0)) return
+  if (status === 'completed' && (!patch.evidence || patch.evidence.length === 0)) {
+    patch = { ...patch, evidence: [{ type: 'assistant_response', summary: patch.lastError ?? 'اكتملت المهمة دون أدلة موثقة.' }] }
+  }
   const now = Date.now()
   const completedAt = ['completed', 'failed', 'cancelled'].includes(status) ? now : null
   let currentEvidence: any[] = []
