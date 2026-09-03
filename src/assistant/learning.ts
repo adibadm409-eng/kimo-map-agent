@@ -35,6 +35,7 @@ export async function initPatternStore(): Promise<void> {
 
 // تسجيل نمط
 export async function recordPattern(pattern: Omit<UserPattern, 'id'>): Promise<void> {
+  await initPatternStore()
   const db = await getDB()
   const id = `pat-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
   await db.runAsync(
