@@ -120,6 +120,12 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
     set({ items, streamText: '', statusBar: { visible: false, phase: 'understand', thinking: false, steps: [] } })
   },
 
+  appendItems: (items) => {
+    if (!items.length) return
+    const ids = new Set(items.map((i) => i.id))
+    set((s) => ({ items: [...s.items.filter((i) => !ids.has(i.id)), ...items] }))
+  },
+
   applyEvent: (e) => {
     const s = get()
     const seq = s._seq + 1
