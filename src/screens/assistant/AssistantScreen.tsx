@@ -669,7 +669,6 @@ export default function AssistantScreen({ navigation }: any) {
             accessibilityHint="اكتب رسالتك ثم اضغط إرسال"
             value={input}
             onChangeText={setInput}
-            onBlur={() => setKbHeight(0)}
             placeholder={pending?.kind === 'ask_user' ? 'أجب على سؤال المساعد...' : 'اكتب للمساعد...'}
             placeholderTextColor={colors.textMuted}
             multiline
