@@ -17,6 +17,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTheme } from '../../theme/ThemeContext';
 import { spacing, radius, fontSize } from '../../theme/tokens';
 import { Card, Button, Input } from '../../components/ui';
+import SuggestField from '../../components/SuggestField';
 import {
   getPlot,
   getPaymentsByPlot,
