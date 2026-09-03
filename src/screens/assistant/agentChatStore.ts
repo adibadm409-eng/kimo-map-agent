@@ -238,10 +238,12 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
         break
       }
       case 'error': {
-        const err = e as Extract<AgentEvent, { type: 'error' }>
-        patch.auditTrail = [...s.auditTrail, auditEntry('error', err.message)].slice(-200)
+        const err = (e as Extract<AgentEvent, { type: 'error' }>).message
+        if (typeof err === 'string' && err.startsWith('تعذر الوصول للمزود (محاولة')) break
+        patch.auditTrail = [...s.auditTrail, auditEntry('error', String(err ?? ''))].slice(-200)
         patch.statusBar = { ...s.statusBar, visible: false, thinking: false }
         patch.streamText = ''
+        patch._plan = null
         break
       }
       case 'done': {
