@@ -144,10 +144,9 @@ export function messagesToLlm(msgs: Message[]): ChatMessage[] {
       }
     }
   }
-  // تثبيت المهمة الأصلية للمستخدم في نافذة السياق حتى لا يضيع الهدف مع طول التنفيذ
-  const firstUser = msgs.find((m) => m.role === 'user')
-  if (firstUser && !out.some((c) => c.role === 'user' && c.content === firstUser.content)) {
-    out.unshift({ role: 'user', content: `[المهمة الأصلية للمستخدم] ${firstUser.content.slice(0, 1500)}` })
+  const windowFirstUser = recent.find((m) => m.role === 'user')
+  if (windowFirstUser && !out.some((c) => c.role === 'user' && c.content === windowFirstUser.content)) {
+    out.unshift({ role: 'user', content: `[المهمة الأصلية للمستخدم] ${String(windowFirstUser.content).slice(0, 1500)}` })
   }
   return compressMiddleToolMessages(out)
 }
