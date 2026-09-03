@@ -533,7 +533,8 @@ async function runLoop(
               const evidenceOk = lastObs.meta.ok !== false
               const operationIsVerificationEarly = isVerificationToolName(innerTool, runtimeSkill)
               const operationVerifiedEarly = lastObs.meta.verified === true
-              const countsAsEvidence = evidenceOk && (operationIsVerificationEarly || operationVerifiedEarly)
+              const fromCache = String(lastObs.meta.verification ?? '').includes('الذاكرة المؤقتة')
+              const countsAsEvidence = evidenceOk && !fromCache && (operationIsVerificationEarly || operationVerifiedEarly)
               runtimeEvidenceCount++
               runtimeLastEvidenceOk = evidenceOk
               if (countsAsEvidence) {
