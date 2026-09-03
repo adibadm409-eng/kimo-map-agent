@@ -12,7 +12,7 @@ const mistralSerial = resolveModelProfile(defaultProvider('mistral'), 'mistral-m
   supportedParameters: ['tools', 'parallel_tool_calls'],
 })
 assert.equal(mistralSerial.supports.parallelTools, false)
-assert.equal(custom.supports.tools, false)
+assert.equal(custom.supports.tools, true, 'custom providers are OpenAI-compatible by construction (vLLM/Ollama/proxies) so tools are assumed')
 assert.equal(custom.supports.streaming, false)
 assert.equal(custom.supports.parallelTools, false)
 assert.equal(custom.maxTokensField, 'unknown')
