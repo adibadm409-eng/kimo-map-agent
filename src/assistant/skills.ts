@@ -235,6 +235,15 @@ export function matchSkill(text: string): SkillMatch {
         score = Math.min(score, 0.3)
       }
     }
+    const hasWorkspaceFlow = /مساحة\s+عمل|جدول\s+بيانات|ورقة|داتا|بيانات\s+مخصصة/.test(normalized)
+    if (hasWorkspaceFlow && !hasProjectImportFlow && !hasOfferFlow && !hasPaymentFlow) {
+      if (skill.id === 'workspace_operations') {
+        score = Math.max(score, 0.96)
+        reasons.push('مسار مساحة عمل/جدول بيانات مخصص')
+      } else if (skill.id === 'project_import' || skill.id === 'project_operations') {
+        score = Math.min(score, 0.35)
+      }
+    }
     // فعل كتابة مع نطاق عقاري يجب أن يبقى في مهارة العقارات؛ لا يجوز لمهارة البحث
     // أن تحجبه لمجرد أن كلمة «عقار» موجودة في triggers المهارتين.
     if (hasPropertyMutation && !hasOfferFlow && !hasProjectUpdateFlow && !hasPaymentFlow) {
