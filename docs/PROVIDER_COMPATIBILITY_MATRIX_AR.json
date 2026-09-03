@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-19T22:26:34.112Z",
+  "generatedAt": "2026-09-03T19:25:36.570Z",
   "providers": [
     "gemini",
     "openai",
@@ -21,8 +21,8 @@
     "tool_result",
     "gemini_metadata"
   ],
-  "pass": 154,
-  "blocked": 197,
+  "pass": 162,
+  "blocked": 189,
   "total": 351,
   "failures": [],
   "rows": [
@@ -4573,8 +4573,8 @@
       "supportsInputAudio": false,
       "supportsParallelTools": false,
       "profileSource": "unknown",
-      "status": "BLOCKED",
-      "detail": "الموديل custom-text-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "status": "PASS",
+      "detail": ""
     },
     {
       "provider": "custom",
@@ -4587,8 +4587,8 @@
       "supportsInputAudio": false,
       "supportsParallelTools": false,
       "profileSource": "unknown",
-      "status": "BLOCKED",
-      "detail": "الموديل custom-text-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "status": "PASS",
+      "detail": ""
     },
     {
       "provider": "custom",
@@ -4602,7 +4602,7 @@
       "supportsParallelTools": false,
       "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-text-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-text-model لا يثبت دعماً للصور. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -4616,7 +4616,7 @@
       "supportsParallelTools": false,
       "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-text-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-text-model لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -4630,7 +4630,7 @@
       "supportsParallelTools": false,
       "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-text-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-text-model لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -4643,8 +4643,8 @@
       "supportsInputAudio": false,
       "supportsParallelTools": false,
       "profileSource": "unknown",
-      "status": "BLOCKED",
-      "detail": "الموديل custom-text-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "status": "PASS",
+      "detail": ""
     },
     {
       "provider": "custom",
@@ -4658,7 +4658,7 @@
       "supportsParallelTools": false,
       "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-text-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-text-model لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -4672,7 +4672,7 @@
       "supportsParallelTools": false,
       "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-text-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-text-model لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -4685,8 +4685,8 @@
       "supportsInputAudio": false,
       "supportsParallelTools": false,
       "profileSource": "unknown",
-      "status": "BLOCKED",
-      "detail": "الموديل custom-text-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "status": "PASS",
+      "detail": ""
     },
     {
       "provider": "custom",
@@ -4699,8 +4699,8 @@
       "supportsInputAudio": false,
       "supportsParallelTools": false,
       "profileSource": "unknown",
-      "status": "BLOCKED",
-      "detail": "الموديل custom-audio-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "status": "PASS",
+      "detail": ""
     },
     {
       "provider": "custom",
@@ -4713,8 +4713,8 @@
       "supportsInputAudio": false,
       "supportsParallelTools": false,
       "profileSource": "unknown",
-      "status": "BLOCKED",
-      "detail": "الموديل custom-audio-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "status": "PASS",
+      "detail": ""
     },
     {
       "provider": "custom",
@@ -4728,7 +4728,7 @@
       "supportsParallelTools": false,
       "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-audio-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-audio-model لا يثبت دعماً للصور. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -4742,7 +4742,7 @@
       "supportsParallelTools": false,
       "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-audio-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-audio-model لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -4756,7 +4756,7 @@
       "supportsParallelTools": false,
       "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-audio-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-audio-model لا يثبت دعماً للصوت. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -4769,8 +4769,8 @@
       "supportsInputAudio": false,
       "supportsParallelTools": false,
       "profileSource": "unknown",
-      "status": "BLOCKED",
-      "detail": "الموديل custom-audio-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "status": "PASS",
+      "detail": ""
     },
     {
       "provider": "custom",
@@ -4784,7 +4784,7 @@
       "supportsParallelTools": false,
       "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-audio-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-audio-model لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -4798,7 +4798,7 @@
       "supportsParallelTools": false,
       "profileSource": "unknown",
       "status": "BLOCKED",
-      "detail": "الموديل custom-audio-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "detail": "الموديل custom-audio-model لا يثبت دعماً للتوازي؛ يجب إرسال نداء أداة واحد في كل جولة. أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
     },
     {
       "provider": "custom",
@@ -4811,8 +4811,8 @@
       "supportsInputAudio": false,
       "supportsParallelTools": false,
       "profileSource": "unknown",
-      "status": "BLOCKED",
-      "detail": "الموديل custom-audio-model لا يثبت دعماً للأدوات وفق ملف قدراته (unknown/low). أوقف كيمو الطلب قبل إرسال صيغة غير متوافقة."
+      "status": "PASS",
+      "detail": ""
     },
     {
       "provider": "custom",

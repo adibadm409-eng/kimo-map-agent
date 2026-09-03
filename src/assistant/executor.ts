@@ -163,8 +163,8 @@ async function runLoop(
           await transitionTaskRun(runtimeTaskId, 'running', { plan: runtimePlan, currentStepId: runtimePlan.currentStepId })
         }
       }
-      const shouldPlan = !!runtimeTaskId && !!runtimePlan
-      if (emitEvents && shouldPlan && runtimePlan) {
+      const planExists = !!runtimeTaskId && !!runtimePlan
+      if (emitEvents && planExists && runtimePlan) {
         publishRuntimeEvent(sessionId, { type: 'phase', phase: 'understand', label: 'أفهم طلبك', detail: match.reasons.join(' ') || 'أحدد نوع المهمة قبل اختيار المسار.' })
         publishRuntimeEvent(sessionId, { type: 'skill', skill: { id: runtimeSkill.id, label: runtimeSkill.label, description: runtimeSkill.description } })
         publishRuntimeEvent(sessionId, { type: 'plan', plan: runtimePlan })
