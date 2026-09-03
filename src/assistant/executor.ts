@@ -518,9 +518,15 @@ async function runLoop(
               : ''
             if (lastObs && lastObs.meta) {
               const evidenceOk = lastObs.meta.ok !== false
+              const operationIsVerificationEarly = isVerificationToolName(innerTool, runtimeSkill)
+              const operationVerifiedEarly = lastObs.meta.verified === true
+              const countsAsEvidence = evidenceOk && (operationIsVerificationEarly || operationVerifiedEarly)
               runtimeEvidenceCount++
               runtimeLastEvidenceOk = evidenceOk
-              if (evidenceOk) runtimeSuccessfulEvidenceCount++
+              if (countsAsEvidence) {
+                runtimeSuccessfulEvidenceCount++
+                runtimeCorrection = ''
+              }
               if (runtimeTaskId) {
                 const operationIsVerification = isVerificationToolName(innerTool, runtimeSkill)
                 const operationVerified = lastObs.meta.verified === true

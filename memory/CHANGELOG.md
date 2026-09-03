@@ -755,3 +755,4 @@
 - 2026-09-03 | d06bcf1 | تعديل تلقائي: domainTools.ts
 - 2026-09-03 | 18395fa | تعديل تلقائي: domainTools.ts
 - 2026-09-03 | fabecf1 | تعديل تلقائي: orchestrator.ts
+- 2026-09-03 | 541620e | تعديل تلقائي: toolSchemas.ts
