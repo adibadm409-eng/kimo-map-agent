@@ -741,3 +741,4 @@
 - 2026-09-03 | 3bf50d5 | تعديل تلقائي: invokeTools.ts
 - 2026-09-03 | fafef11 | تعديل تلقائي: toolSchemas.ts
 - 2026-09-03 | bd9803a | تعديل تلقائي: toolSchemas.ts
+- 2026-09-03 | af97ca8 | تعديل تلقائي: registry.tsx
