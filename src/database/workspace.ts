@@ -329,9 +329,10 @@ values: safeJson<Record<string, string>>(r.data, {}),
 export async function updateWorkspace(id: string, patch: { name?: string; description?: string }): Promise<void> {
   const d = await db()
   const before = await d.getFirstAsync<any>('SELECT * FROM workspaces WHERE id = ?', id)
+  if (!before) throw new Error('مساحة العمل غير موجودة.')
   await d.runAsync('UPDATE workspaces SET name = ?, description = ?, updated_at = ? WHERE id = ?',
-    patch.name ?? '',
-    patch.description ?? '',
+    patch.name ?? before.name ?? '',
+    patch.description ?? before.description ?? '',
     Date.now(),
     id
   )
