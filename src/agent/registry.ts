@@ -488,7 +488,7 @@ export const TOOLS: ToolDef[] = [
   },
   {
     name: 'search_everything',
-    description: 'بحث نصي شامل في بيانات التطبيق الأساسية (عقارات وعملاء وعروض ومشاريع وبلوكات وقطع وغيرها) — يعيد تصنيفات منفصلة لكل نوع',
+    description: 'بحث نصي شامل في بيانات التطبيق الأساسية — يعيد لكل نوع {rows (حتى 100), total, truncated}؛ عند truncated=true اذكر للمستخدم أن النتائج عينة وضيّق البحث.',
     args: [
       { name: 'query', type: 'string', required: true, description: 'النص المراد البحث عنه' },
     ],
