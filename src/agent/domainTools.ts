@@ -122,21 +122,36 @@ export const DOMAIN_TOOLS: DomainToolDef[] = [
       { name: 'rows', type: 'array', required: true, description: 'صفوف مصدرية؛ للأراضي استخدم block_name/plot_no، وللمباني building_name/floor/unit_no، ويمكن إضافة value/paid/remaining/status/buyer_name' },
       { name: 'update_existing', type: 'boolean', description: 'اعرض التكرار كتحديث محتمل بدلاً من تخطيه' },
     ],
-    handler: async (args) => ({ preview: await previewProjectImport(planFromArgs(args)) }),
+    handler: async (args) => {
+      const plan = planFromArgs(args)
+      const preview = await previewProjectImport(plan)
+      previewedCommits.add(planHash(plan))
+      return { preview, preview_token: planHash(plan) }
+    },
   },
   {
     name: 'project_import_commit',
-    description: 'اعتماد إدخال مشروع بعد المعاينة: ينفذ العملية محلياً داخل transaction واحدة، يمنع التكرار، ينشئ الآباء الناقصين، ويرجع batch_id ونتيجة تحقق. لا تستخدمه قبل قراءة preview ومعالجة الأخطاء.',
+    description: 'اعتماد إدخال مشروع بعد المعاينة: ينفذ العملية محلياً داخل transaction واحدة، يمنع التكرار، ينشئ الآباء الناقصين، ويرجع batch_id ونتيجة تحقق. لا تستخدمه قبل project_import_preview بنفس الصفوف تماماً.',
     args: [
       { name: 'project_name', type: 'string', required: true },
       { name: 'kind', type: 'string', required: true, description: 'land|residential_building|tower|compound|custom' },
       { name: 'project_id', type: 'string', description: 'معرف مشروع موجود للتحديث' },
       { name: 'currency', type: 'string', description: 'رمز العملة' },
       { name: 'source_name', type: 'string', description: 'اسم المصدر' },
-      { name: 'rows', type: 'array', required: true, description: 'الصفوف بعد مراجعة المعاينة' },
+      { name: 'rows', type: 'array', required: true, description: 'الصفوف بعد مراجعة المعاينة (مطابقة تماماً لما عُرض في preview)' },
       { name: 'update_existing', type: 'boolean', description: 'تحديث الأصول الموجودة بنفس المفتاح بدلاً من تخطيها' },
+      { name: 'preview_token', type: 'string', description: 'الرمز المعاد من project_import_preview لنفس الصفوف' },
+      { name: 'preview_confirmed', type: 'boolean', description: 'true بعد مراجعة المعاينة ومعالجة أخطائها' },
     ],
-    handler: async (args) => ({ result: await commitProjectImport(planFromArgs(args)) }),
+    handler: async (args) => {
+      const plan = planFromArgs(args)
+      const key = planHash(plan)
+      const tokenOk = args.preview_token != null && String(args.preview_token) === key
+      const confirmedOk = args.preview_confirmed === true && previewedCommits.has(key)
+      if (!tokenOk && !confirmedOk) throw new Error('اعتماد المشروع يتطلب معاينة سابقة بنفس الصفوف: نفّذ project_import_preview أولاً ثم أعد نفس rows مع preview_token أو preview_confirmed=true.')
+      previewedCommits.delete(key)
+      return { result: await commitProjectImport(plan) }
+    },
   },
   {
     name: 'project_integrity_check',
