@@ -621,12 +621,18 @@ export async function deleteApproved(sessionId: string, pending: PendingState): 
       outcome = `تم حذف الصف (${id})`
     } else if (tool === 'ledger_reverse_payment') {
       const { reverseLedgerPayment } = await import('../domain/projectDomain')
-      const r = await reverseLedgerPayment(String(action.args?.payment_id ?? id), action.args?.plot_id ? String(action.args.plot_id) : undefined, action.args?.reason ? String(action.args.reason) : 'موافقة المستخدم')
+      const { withAuditCtx } = await import('../database/audit')
+      const payId = String(action.args?.payment_id ?? id)
+      const beforePay = await captureBefore('plot_payments', payId).catch(() => null)
+      const r = await withAuditCtx({ actor: 'agent', sessionId, tool: 'ledger_reverse_payment' }, () =>
+        reverseLedgerPayment(payId, action.args?.plot_id ? String(action.args.plot_id) : undefined, action.args?.reason ? String(action.args.reason) : 'موافقة المستخدم'))
+      await pushUndo({ sessionId, kind: 'update', entity: 'plot_payments', entityId: payId, before: beforePay, after: { reversed: true, reversalId: r.reversalId }, summary: `عكس الدفعة ${payId}` }).catch(() => {})
       outcome = `تم عكس الدفعة بمبلغ ${r.amount} (قيد العكس ${r.reversalId})`
       entity = 'plot_payments'
     } else if (tool === 'unlink_entity_media') {
       const { unlinkEntityMedia } = await import('../database/workspace')
-      await unlinkEntityMedia(String(action.args?.link_id ?? id))
+      const { withAuditCtx } = await import('../database/audit')
+      await withAuditCtx({ actor: 'agent', sessionId, tool: 'unlink_entity_media' }, () => unlinkEntityMedia(String(action.args?.link_id ?? id)))
       outcome = 'تم فك ربط الوسيط دون حذف المرفق الأصلي'
       entity = 'entity_media'
     } else {
