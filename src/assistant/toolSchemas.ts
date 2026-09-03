@@ -524,7 +524,17 @@ export async function verifyDataExists(tool: string, args: Record<string, any>, 
     if (tool === 'unlink_entity_media' && result) return 'تحقّقت فعلاً: فُكّ ربط الوسيط وبقي المرفق الأصلي.'
     if (tool === 'bulk_mutate' && result) {
       const r = (result as any).result ?? result
-      return `تحقّقت فعلاً: دفعة جماعية ${String(r.operation ?? '')} على ${String(r.entity ?? '')} — نجح ${String(r.ok ?? '')} من ${String(r.total ?? '')}.`
+      const entity = String(r.entity ?? args.entity ?? '')
+      const items = Array.isArray(r.results) ? r.results : []
+      const okIds = items.filter((x: any) => x?.ok && x?.id).map((x: any) => String(x.id))
+      if (!okIds.length) return 'تنبيه: الدفعة الجماعية بلا نجاحات موثقة.'
+      let found = 0
+      for (const gid of okIds.slice(0, 20)) {
+        const row = await queryEntityById(entity as EntityKey, gid).catch(() => null)
+        if (row) found++
+      }
+      if (!found) return `تنبيه: لم أجد أياً من ${okIds.length} سجلاً ناجحاً في ${entity} عند إعادة القراءة.`
+      return `تحقّقت فعلاً: وجدت ${found} من ${okIds.length} سجلاً في ${entity} عند إعادة القراءة (نجح ${String(r.ok ?? '')} من ${String(r.total ?? '')}).`
     }
     if (tool === 'export_entity_csv' && result) {
       const r = (result as any).result ?? result
