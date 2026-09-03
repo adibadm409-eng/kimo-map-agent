@@ -202,9 +202,14 @@ export default function AssistantScreen({ navigation }: any) {
 
   useEffect(() => {
     if (pending?.kind === 'confirmation' && Array.isArray(pending.items)) {
-      setSelDel(pending.items.map((_, i) => i))
-    } else if (pending?.kind === 'confirmation') {
-      setSelDel([])
+      const key = pending.items.map((it) => `${it.tool}:${it.id}`).join('|')
+      if (key !== pendingKey.current) {
+        pendingKey.current = key
+        setSelDel([])
+      }
+    } else {
+      pendingKey.current = ''
+      if (pending?.kind !== 'ask_user') setSelDel([])
     }
     if (chatItems.length && atBottomRef.current) scrollToBottom()
   }, [pending, chatItems.length, scrollToBottom])
