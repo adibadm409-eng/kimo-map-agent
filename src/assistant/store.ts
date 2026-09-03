@@ -205,7 +205,7 @@ export async function createTaskRun(input: Pick<AgentTaskRun, 'sessionId' | 'use
 const TASK_TRANSITIONS: Record<AgentTaskStatus, AgentTaskStatus[]> = {
   proposed: ['running', 'awaiting_user', 'cancelled', 'failed'],
   awaiting_user: ['running', 'cancelled', 'failed'],
-  running: ['awaiting_user', 'verifying', 'cancelled', 'failed'],
+  running: ['awaiting_user', 'verifying', 'completed', 'cancelled', 'failed'],
   verifying: ['completed', 'running', 'failed', 'cancelled'],
   completed: [],
   failed: [],
