@@ -199,7 +199,12 @@ async function runLoop(
     try {
       let finished = false
       for (let round = 0; round < MAX_TOOL_ROUNDS && Date.now() - startedAt < MAX_AGENT_RUNTIME_MS; round++) {
-        if (isCancelled(sessionId)) return
+        if (isCancelled(sessionId)) {
+          if (runtimeTaskId) await transitionTaskRun(runtimeTaskId, 'cancelled', { lastError: 'أوقف المستخدم التنفيذ' }).catch(() => {})
+          await persistAssistantText(sessionId, 'تم إيقاف التنفيذ بطلب المستخدم.', 'system').catch(() => {})
+          if (emitEvents) emitForSession(sessionId, { type: 'done', outcome: 'cancelled' })
+          return
+        }
         const brainOps = await listBrain(sessionId, 12).catch(() => [] as BrainOp[])
         // حارس دورة المزود: قد يعيد Mistral نداء الأداة كنص عادي بدلاً من
         // tool_calls. إذا طلبنا جولة تصحيح والخيط ينتهي بـassistant، يرفضه
