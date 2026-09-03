@@ -129,8 +129,8 @@ export default function ClientForm() {
         <Card style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>معلومات التواصل</Text>
           <ContactPickerButton onSelect={({ name, phone }) => setForm((current) => ({ ...current, name: name || current.name, phone: phone || current.phone }))} />
-          <FormInput label="الاسم" value={form.name} onChange={(v) => setForm({ ...form, name: v })} placeholder="الاسم الكامل" />
-          <FormInput label="رقم الجوال" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} placeholder="05XXXXXXXX" keyboardType="phone-pad" />
+          <SuggestField label="الاسم" value={form.name} onChange={(v) => setForm({ ...form, name: v })} field="name" placeholder="الاسم الكامل" onPick={(c) => setForm((current) => ({ ...current, name: c.name || current.name, phone: c.phone || current.phone }))} />
+          <SuggestField label="رقم الجوال" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} field="phone" placeholder="05XXXXXXXX" keyboardType="phone-pad" onPick={(c) => setForm((current) => ({ ...current, name: c.name || current.name, phone: c.phone || current.phone }))} />
           <FormInput label="البريد الإلكتروني" value={form.email} onChange={(v) => setForm({ ...form, email: v })} placeholder="email@example.com" keyboardType="email-address" />
           <FormInput label="ملاحظات" value={form.notes} onChange={(v) => setForm({ ...form, notes: v })} placeholder="ملاحظات إضافية" multiline />
         </Card>
