@@ -873,3 +873,4 @@
 - 2026-09-03 | 9f8a0f1 | تعديل تلقائي: executor.ts
 - 2026-09-03 | 1c62a75 | تعديل تلقائي: executor.ts
 - 2026-09-03 | 45ce6dc | تعديل تلقائي: useAgentEvents.ts
+- 2026-09-03 | 4ec87fb | تعديل تلقائي: agentChatStore.ts

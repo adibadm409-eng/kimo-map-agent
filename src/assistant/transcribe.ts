@@ -139,7 +139,8 @@ export interface VoiceConfig {
 /** يحل إعداد الصوت الفعلي: موديل الصوت المخصص أولاً (كما يفعل موديل الرؤية)، ثم المزود الرئيسي. */
 export async function resolveVoiceConfig(fallback: { providerId: string; baseUrl: string; apiKey: string; model: string }): Promise<{ config: VoiceConfig; usedVoiceModel: boolean; error?: string }> {
   const { getSettings } = await import('./store')
-  const { defaultProvider, type ProviderId } = await import('./providers')
+  const { defaultProvider } = await import('./providers')
+  type ProviderId = 'gemini' | 'openai' | 'anthropic' | 'mistral' | 'deepseek' | 'alibaba' | 'openrouter' | 'nvidia' | 'custom'
   const settings = await getSettings().catch(() => null)
   if (!settings) return { config: fallback, usedVoiceModel: false, error: 'no_settings' }
   const voiceKey = (settings as any).voiceProvider as string
