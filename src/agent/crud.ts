@@ -266,7 +266,7 @@ export async function agentCreate(spec: CreateSpec): Promise<{ id: string; plot_
         if (bulkPlots) {
           const plotIds: string[] = []
           for (const p of bulkPlots) {
-            const specP = p && typeof p === 'object' ? { ...d, ...p } : { ...d, plot_no: p }
+            const specP = p && typeof p === 'object' ? { block_id: blockId, ...p } : { block_id: blockId, plot_no: p }
             plotIds.push(await upsertPlot(blockId, specP))
           }
           return { id: plotIds[0], plot_ids: plotIds }
