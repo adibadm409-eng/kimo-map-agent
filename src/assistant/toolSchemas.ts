@@ -468,14 +468,12 @@ export async function verifyDataExists(tool: string, args: Record<string, any>, 
     }
     if (tool === 'ledger_record_payment' && result?.result) {
       const r = result.result ?? result
-      const entryId = String(r.entry_id ?? r.entryId ?? r.id ?? '')
-      if (entryId) {
-        const db = await getDB()
-        const row = await db.getFirstAsync<{ id: string; amount: number }>('SELECT id, amount FROM cash_ledger_entries WHERE id = ?', [entryId])
-        if (row) return `تحقّقت فعلاً: الدفعة ${entryId} بمبلغ ${row.amount} موجودة في دفتر النقد.`
-        return 'تنبيه: قيد الدفعة غير موجود في دفتر النقد رغم نجاح العملية.'
-      }
-      return `تحقّقت فعلاً: سُجّلت دفعة بمبلغ ${String(args.amount ?? '')} للمشروع ${String(args.project_id ?? '')}.`
+      const entryId = String(r.ledgerId ?? r.ledger_id ?? r.entry_id ?? r.entryId ?? r.id ?? '')
+      if (!entryId) return 'تنبيه: نجحت الدفعة لكن بلا معرف قيد — لم يثبت التحقق، أعد قراءة الدفتر قبل الإعلان.'
+      const db = await getDB()
+      const row = await db.getFirstAsync<{ id: string; amount: number }>('SELECT id, amount FROM cash_ledger_entries WHERE id = ?', [entryId])
+      if (row) return `تحقّقت فعلاً: الدفعة ${entryId} بمبلغ ${row.amount} موجودة في دفتر النقد.`
+      return 'تنبيه: قيد الدفعة غير موجود في دفتر النقد رغم نجاح العملية.'
     }
     if (tool === 'project_import_commit' && result?.result) {
       const r = result.result ?? result
