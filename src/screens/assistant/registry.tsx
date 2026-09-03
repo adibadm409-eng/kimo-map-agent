@@ -18,7 +18,7 @@ export interface RegistryCtx {
   copiedId: string | null
   onCopy: (id: string, text: string) => void
   onChoice: (text: string) => void
-  onConfirm: (approve: boolean, selected?: number[]) => void
+  onConfirm: (approve: boolean, selected?: string[]) => void
   onOpenLink: (link: { kind: string; id: string; label?: string }) => void
   onFileDownload: (uri: string, name: string) => void
   onFileShare: (uri: string, name: string) => void
