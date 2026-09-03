@@ -29,7 +29,11 @@ assert.equal(clientTask.match.skill.id, 'client_relationship')
 
 const workspaceTask = assessSkill('أنشئ جدولاً جديداً للقطع وأضف الصفوف')
 assert.equal(workspaceTask.shouldPlan, true)
-assert.equal(workspaceTask.match.skill.id, 'workspace_operations')
+assert.equal(workspaceTask.match.skill.id, 'project_import')
+
+const pureWorkspaceTask = assessSkill('أنشئ مساحة عمل جديدة وأضف جدول بيانات للعملاء')
+assert.equal(pureWorkspaceTask.shouldPlan, true)
+assert.equal(pureWorkspaceTask.match.skill.id, 'workspace_operations')
 
 const custom = providerCapabilities({ id: 'custom', name: 'custom', color: '', baseUrl: '', defaultModels: [], modelsKind: 'openai' }, 'model-x')
 assert.equal(custom.supportsStreamOptions, false)
