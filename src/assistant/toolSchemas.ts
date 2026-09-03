@@ -478,8 +478,11 @@ export async function verifyDataExists(tool: string, args: Record<string, any>, 
     if (tool === 'project_import_commit' && result?.result) {
       const r = result.result ?? result
       const batchId = String(r.batch_id ?? r.batchId ?? '')
-      if (batchId) return `تحقّقت فعلاً: دفعة الاستيراد ${batchId} معتمدة (أنشئ ${String(r.created ?? '')} / حُدّث ${String(r.updated ?? '')} / تُجُوّز ${String(r.skipped ?? '')}).`
-      return 'تحقّقت فعلاً: اكتمل اعتماد الاستيراد ورُجع batch_id.'
+      if (!batchId) return 'تنبيه: الاعتماد عاد بلا batch_id — لم يثبت التحقق.'
+      const db = await getDB()
+      const row = await db.getFirstAsync<{ id: string; status: string; accepted_count: number; duplicate_count: number }>('SELECT id, status, accepted_count, duplicate_count FROM project_import_batches WHERE id = ?', [batchId]).catch(() => null)
+      if (!row) return `تنبيه: الدفعة ${batchId} غير موجودة في project_import_batches رغم نجاح العملية.`
+      return `تحقّقت فعلاً: الدفعة ${batchId} في قاعدة البيانات بحالة ${row.status} (مقبول ${row.accepted_count} / مكرر ${row.duplicate_count}).`
     }
     if (tool === 'create_offer_with_reminder' && result) {
       const r = (result as any).result ?? result
