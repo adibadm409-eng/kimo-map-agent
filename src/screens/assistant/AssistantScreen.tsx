@@ -222,6 +222,11 @@ export default function AssistantScreen({ navigation }: any) {
       return
     }
     if (busy) return
+    if (pending?.kind === 'ask_user' && !audio && !attachments.length) {
+      setInput('')
+      await handleChoice(trimmed)
+      return
+    }
     const sid = await ensureSession()
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
     setInput('')
