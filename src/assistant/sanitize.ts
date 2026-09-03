@@ -44,6 +44,8 @@ export function sanitizeAssistantText(text: string): string {
   // 2) إزالة المعرّفات الداخلية (نمط مثل mszh218axqdkqv أو mt0hby0a2fx5m1)
   //    فقط إذا كان看起来像 random hash (أطول من 12 حرف + 3 أرقام على الأقل)
   out = out.replace(/\b[a-z0-9]{14,}\b/g, (m) => (isInternalId(m) ? '' : m))
+  out = out.replace(/\b[a-z]{2,6}-[a-z0-9]{6,}\b/gi, (m) => (isInternalId(m.replace(/-/g, '')) ? '' : m))
+  out = out.replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, '')
   // 3) إزالة علامات backtick (ممنوعة في ردود المستخدم)
   out = out.replace(/`/g, '')
   // 4) تنظيف المسافات والأسطر الناتجة عن الحذف
