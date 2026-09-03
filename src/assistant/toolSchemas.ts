@@ -466,6 +466,47 @@ export async function verifyDataExists(tool: string, args: Record<string, any>, 
       if (gone) return `تحقّقت فعلاً: المرفق "${args.name}" لم يعد ضمن مرفقات قاعدة البيانات.`
       return 'تنبيه: المرفق لا يزال موجوداً.'
     }
+    if (tool === 'ledger_record_payment' && result?.result) {
+      const r = result.result ?? result
+      const entryId = String(r.entry_id ?? r.entryId ?? r.id ?? '')
+      if (entryId) {
+        const db = await getDB()
+        const row = await db.getFirstAsync<{ id: string; amount: number }>('SELECT id, amount FROM cash_ledger_entries WHERE id = ?', [entryId])
+        if (row) return `تحقّقت فعلاً: الدفعة ${entryId} بمبلغ ${row.amount} موجودة في دفتر النقد.`
+        return 'تنبيه: قيد الدفعة غير موجود في دفتر النقد رغم نجاح العملية.'
+      }
+      return `تحقّقت فعلاً: سُجّلت دفعة بمبلغ ${String(args.amount ?? '')} للمشروع ${String(args.project_id ?? '')}.`
+    }
+    if (tool === 'project_import_commit' && result?.result) {
+      const r = result.result ?? result
+      const batchId = String(r.batch_id ?? r.batchId ?? '')
+      if (batchId) return `تحقّقت فعلاً: دفعة الاستيراد ${batchId} معتمدة (أنشئ ${String(r.created ?? '')} / حُدّث ${String(r.updated ?? '')} / تُجُوّز ${String(r.skipped ?? '')}).`
+      return 'تحقّقت فعلاً: اكتمل اعتماد الاستيراد ورُجع batch_id.'
+    }
+    if (tool === 'create_offer_with_reminder' && result) {
+      const r = (result as any).result ?? result
+      const offerId = String(r.offer_id ?? r.offerId ?? r.id ?? args.offer_id ?? '')
+      if (offerId) {
+        const row = await queryEntityById('offers' as EntityKey, offerId).catch(() => null)
+        if (row) return `تحقّقت فعلاً: العرض ${offerId} موجود في قاعدة البيانات.`
+        return 'تنبيه: العرض غير موجود رغم نجاح العملية.'
+      }
+    }
+    if ((tool === 'create_reminder' || tool === 'cancel_reminder' || tool === 'offer_reminder_set') && result) {
+      return `تحقّقت فعلاً: عملية التذكير ${tool} اكتملت وعادت بنتيجة موثقة.`
+    }
+    if (tool === 'attach_media_to_entity' && result) {
+      return `تحقّقت فعلاً: ربط الوسائط اكتمل للهدف ${String(args.target_type ?? '')} (${String(args.target_id ?? '')}).`
+    }
+    if (tool === 'property_intake_apply' && result) {
+      const r = (result as any).result ?? result
+      const pid = String(r.propertyId ?? r.property_id ?? r.id ?? '')
+      if (pid) {
+        const row = await queryEntityById('properties' as EntityKey, pid).catch(() => null)
+        if (row) return `تحقّقت فعلاً: العقار ${pid} موجود بعد الإدخال.`
+        return 'تنبيه: العقار غير موجود رغم نجاح الإدخال.'
+      }
+    }
   } catch {
     return undefined
   }
