@@ -181,7 +181,7 @@ function isGeminiModel(model: string): boolean {
 function isKnownVisionModel(def: ProviderDef, model: string): boolean {
   const normalized = model.toLowerCase()
   if (def.id === 'gemini') return isGeminiModel(normalized) && !/image|embedding|tts|live/i.test(normalized)
-  if (def.id === 'openai') return /(?:gpt-4o|gpt-5|^o[1-9])/i.test(normalized)
+  if (def.id === 'openai') return /(?:gpt-4o|gpt-[5-9]|^o[1-9])/i.test(normalized)
   if (def.id === 'anthropic') return /^claude-/i.test(normalized)
   if (def.id === 'mistral') return /(?:pixtral|mistral-small-3\.1|ministral-3)/i.test(normalized)
   if (def.id === 'alibaba') return /qwen.*(?:vl|omni)/i.test(normalized)
