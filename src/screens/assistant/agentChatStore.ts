@@ -237,15 +237,6 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
         patch.auditTrail = [...s.auditTrail, auditEntry('link', `${l.kind}:${l.id}`)].slice(-200)
         break
       }
-      case 'error': {
-        const err = (e as Extract<AgentEvent, { type: 'error' }>).message
-        if (typeof err === 'string' && err.startsWith('تعذر الوصول للمزود (محاولة')) break
-        patch.auditTrail = [...s.auditTrail, auditEntry('error', String(err ?? ''))].slice(-200)
-        patch.statusBar = { ...s.statusBar, visible: false, thinking: false }
-        patch.streamText = ''
-        patch._plan = null
-        break
-      }
       case 'done': {
         const o = (e as Extract<AgentEvent, { type: 'done' }>).outcome ?? 'completed'
         patch.auditTrail = [...s.auditTrail, auditEntry('done', o)].slice(-200)
