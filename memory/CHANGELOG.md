@@ -964,3 +964,4 @@
 - 2026-09-04 | 2048763 | تعديل تلقائي: unified_mutation_invariants.test.ts
 - 2026-09-04 | 9f04a02 | تعديل تلقائي: App.tsx
 - 2026-09-04 | 492f64a | تعديل تلقائي: AssistantScreen.tsx
+- 2026-09-04 | c9ecee6 | تعديل تلقائي: app.json

@@ -74,7 +74,7 @@ export default function AssistantScreen({ navigation }: any) {
   const [provider, setProvider] = useState({ label: '', model: '' })
   const [modals, setModals] = useState({ history: false, audit: false })
   const [copiedId, setCopiedId] = useState<string | null>(null)
-  const [kbHeight, setKbHeight] = useState(0)
+  
   const [selDel, setSelDel] = useState<string[]>([])
   const pendingKey = useRef('')
   const [auditFlash, setAuditFlash] = useState(false)
