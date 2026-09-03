@@ -58,7 +58,7 @@ const INTENT_PATTERNS: { pattern: RegExp; intent: IntentKind; needsTools: boolea
   { pattern: /(?:أنشئ|انشئ|أضف|اضف|سجّل|سجل|إضافة|أدخل|أدخل|create|add)/i, intent: 'create', needsTools: true, needsLLM: true, promptTier: 'focused' },
 
   // تعديل
-  { pattern: /(?:عدّل|عدل|حدّth|حدث|غيّر|غيّر|تعديل|update|edit|modify)/i, intent: 'update', needsTools: true, needsLLM: true, promptTier: 'focused' },
+  { pattern: /(?:عدّل|عدل|حدّث|حدث|غيّر|غير|تعديل|update|edit|modify)/i, intent: 'update', needsTools: true, needsLLM: true, promptTier: 'focused' },
 
   // قراءة/بحث
   { pattern: /(?:اقرأ|اطلع|اعرض|أظهر|اظهر|ابحث|استكشف|بحث|عرض|read|search|explore|show|list)/i, intent: 'read', needsTools: true, needsLLM: true, promptTier: 'focused' },
