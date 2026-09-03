@@ -782,9 +782,9 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
         } catch (err: any) {
           const note =
             err instanceof TranscribeError && err.supported
-              ? ' (تعذّر فهم التسجيل الصوتي تلقائياً هذه المرة)'
-              : ' (المزوّد الحالي لا يدعم فهم الصوت تلقائياً)'
-          voiceText = (voiceText ? voiceText + ' ' : '') + note
+              ? '[تعذّر فهم التسجيل الصوتي تلقائياً هذه المرة — اسأل المستخدم عن نص رسالته]'
+              : '[المزوّد الحالي لا يدعم فهم الصوت — اطلب من المستخدم كتابة طلبه نصاً]'
+          voiceText = voiceText || note
         }
         const spoken = voiceText.trim() || 'أرسل المستخدم تسجيلاً صوتياً. استمع إليه وفهم المطلوب ثم تعامل معه.'
         content = `${content ? content + '\n\n' : ''}[رسالة صوتية محوّلة إلى نص] ${spoken}`.trim()
