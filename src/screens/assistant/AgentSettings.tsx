@@ -343,7 +343,14 @@ export default function AgentSettings({ navigation }: any) {
               <TextInput
                 value={baseUrl}
                 onChangeText={setBaseUrl}
-                onEndEditing={() => setEditingBaseUrl(false)}
+                onEndEditing={() => {
+                  setEditingBaseUrl(false)
+                  if (isCustom && baseUrl.trim()) {
+                    const cid = activeKey.slice('custom:'.length)
+                    const updated = (settings?.customProviders ?? []).map((p: any) => p.id === cid ? { ...p, baseUrl: baseUrl.trim() } : p)
+                    void save({ customProviders: updated as any })
+                  }
+                }}
                 placeholder="https://..."
                 placeholderTextColor={colors.textMuted}
                 autoCapitalize="none"
