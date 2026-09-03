@@ -27,9 +27,9 @@ const clientTask = assessSkill('أنشئ عميلاً جديداً برقم ال
 assert.equal(clientTask.shouldPlan, true)
 assert.equal(clientTask.match.skill.id, 'client_relationship')
 
-const workspaceTask = assessSkill('أنشئ جدولاً جديداً للقطع وأضف الصفوف')
-assert.equal(workspaceTask.shouldPlan, true)
-assert.equal(workspaceTask.match.skill.id, 'project_import')
+const projectTableTask = assessSkill('أنشئ جدولاً جديداً للقطع وأضف الصفوف')
+assert.equal(projectTableTask.shouldPlan, true)
+assert.equal(projectTableTask.match.skill.id, 'project_operations')
 
 const pureWorkspaceTask = assessSkill('أنشئ مساحة عمل جديدة وأضف جدول بيانات للعملاء')
 assert.equal(pureWorkspaceTask.shouldPlan, true)
