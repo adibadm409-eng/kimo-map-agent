@@ -583,6 +583,127 @@ export default function AgentSettings({ navigation }: any) {
             </View>
           )}
 
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>موديل الصوت (تحويل الكلام إلى نص)</Text>
+          <Text style={[styles.hint, { color: colors.textMuted }]}>
+            اختر المزود والموديل المخصص لتفريغ التسجيلات الصوتية. يعمل بآلية موديل الرؤية نفسها: 3 محاولات بفواصل 5/10/15 ثانية، ثم رسالة واضحة عند الفشل. عند عدم الإعداد يُستخدم المزود الرئيسي احتياطاً.
+          </Text>
+          <View style={styles.providerGrid}>
+            {PROVIDERS.filter((p) => p.id !== 'custom').map((p) => {
+              const active = voiceProvider === p.id
+              return (
+                <Pressable
+                  key={p.id}
+                  onPress={() => {
+                    setVoiceProvider(p.id)
+                    setVoiceModel(p.defaultModels[0] ?? '')
+                    setVoiceTestResult(null)
+                    void save({ voiceProvider: p.id, voiceModel: p.defaultModels[0] ?? '' } as any)
+                    Haptics.selectionAsync().catch(() => {})
+                  }}
+                  style={({ pressed }) => [
+                    styles.providerCard,
+                    {
+                      backgroundColor: active ? colors.accentSurface : colors.bgCard,
+                      borderColor: active ? colors.accent : colors.border,
+                      opacity: pressed ? 0.8 : 1,
+                    },
+                  ]}
+                >
+                  <View style={[styles.providerDot, { backgroundColor: p.color }]} />
+                  <Text numberOfLines={2} style={[styles.providerName, { color: colors.textPrimary }]}>{p.name}</Text>
+                  {active && <Ionicons name="checkmark-circle" size={16} color={colors.accent} />}
+                </Pressable>
+              )
+            })}
+            {settings.customProviders.map((c) => {
+              const active = voiceProvider === `custom:${c.id}`
+              return (
+                <Pressable key={c.id} onPress={() => {
+                  setVoiceProvider(`custom:${c.id}`)
+                  setVoiceModel(c.models[0] ?? '')
+                  setVoiceTestResult(null)
+                  void save({ voiceProvider: `custom:${c.id}`, voiceModel: c.models[0] ?? '' } as any)
+                  Haptics.selectionAsync().catch(() => {})
+                }} style={({ pressed }) => [
+                  styles.providerCard,
+                  {
+                    backgroundColor: active ? colors.accentSurface : colors.bgCard,
+                    borderColor: active ? colors.accent : colors.border,
+                    opacity: pressed ? 0.8 : 1,
+                  },
+                ]}>
+                  <View style={[styles.providerDot, { backgroundColor: '#F59E0B' }]} />
+                  <Text numberOfLines={1} style={[styles.providerName, { color: colors.textPrimary }]}>{c.name}</Text>
+                  {active && <Ionicons name="checkmark-circle" size={16} color={colors.accent} />}
+                </Pressable>
+              )
+            })}
+          </View>
+          {voiceProvider ? (
+            <>
+              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>موديل الصوت</Text>
+              <Pressable
+                onPress={() => setVoicePickerOpen(true)}
+                style={({ pressed }) => [styles.modelField, { backgroundColor: colors.bgCard, borderColor: colors.border, opacity: pressed ? 0.8 : 1 }]}
+              >
+                <View style={styles.modelLeft}>
+                  <Ionicons name="mic-outline" size={17} color={colors.accent} />
+                  <Text numberOfLines={1} style={[styles.modelName, { color: colors.textPrimary }]}>{voiceModel || 'اختر موديل الصوت...'}</Text>
+                </View>
+                <Ionicons name="chevron-down" size={18} color={colors.textMuted} />
+              </Pressable>
+              <Pressable
+                onPress={async () => {
+                  if (!voiceModel.trim()) { Alert.alert('موديل مطلوب', 'اختر موديل الصوت أولاً.'); return }
+                  setTestingVoice(true)
+                  setVoiceTestResult(null)
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {})
+                  try {
+                    const def = providerDefFor(voiceProvider, settings.customProviders)
+                    const key = voiceProvider.startsWith('custom:')
+                      ? settings.customProviders.find((c) => c.id === voiceProvider.slice(7))?.apiKey ?? ''
+                      : settings.keys[voiceProvider] ?? ''
+                    if (!key) { Alert.alert('مفتاح مطلوب', 'أدخل مفتاح API للمزود المختار أولاً.'); setTestingVoice(false); return }
+                    const res = await testConnection({
+                      provider: def,
+                      apiKey: key,
+                      model: voiceModel.trim(),
+                      timeoutMs: 45000,
+                    })
+                    setVoiceTestResult({ ok: res.ok, message: res.message })
+                    Haptics.notificationAsync(res.ok ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error).catch(() => {})
+                  } finally {
+                    setTestingVoice(false)
+                  }
+                }}
+                disabled={testingVoice}
+                style={({ pressed }) => [
+                  styles.testBtn,
+                  { backgroundColor: colors.accent, opacity: pressed || testingVoice ? 0.7 : 1 },
+                ]}
+              >
+                {testingVoice ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Ionicons name="mic-outline" size={18} color="#fff" />
+                )}
+                <Text style={styles.testBtnText}>{testingVoice ? 'جاري فحص موديل الصوت...' : 'فحص الاتصال بموديل الصوت'}</Text>
+              </Pressable>
+              {voiceTestResult && (
+                <View style={[styles.testResult, { backgroundColor: voiceTestResult.ok ? colors.successSurface : colors.errorSurface, borderColor: colors.border }]}>
+                  <Ionicons name={voiceTestResult.ok ? 'checkmark-circle' : 'alert-circle'} size={18} color={voiceTestResult.ok ? colors.success : colors.error} />
+                  <Text style={[styles.testResultText, { color: voiceTestResult.ok ? colors.success : colors.error }]}>{voiceTestResult.message}</Text>
+                </View>
+              )}
+            </>
+          ) : (
+            <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                اختر مزوداً أعلاه لتفعيل موديل الصوت. عند إرسال تسجيل صوتي سيُفرّغ عبر هذا الموديل بحلقات إعادة، وإلا استُخدم المزود الرئيسي.
+              </Text>
+            </View>
+          )}
+
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>فحص الاتصال</Text>
           <Pressable
             onPress={onTest}
