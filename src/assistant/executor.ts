@@ -353,10 +353,13 @@ async function runLoop(
         if (!result.toolCalls.length) {
           const finalText = result.content ? String(result.content).trim() : ''
           if (readIntentRequiresEvidence && finalText && !runtimeSuccessfulEvidenceCount) {
+            // القرار بيد الوكيل: نُجبره مرة واحدة فقط على إعادة الجولة لإتاحة قراءة
+            // فعلية، فإن أصرّ على الرد المباشر نُظهر إجابته موسومة "بلا تحقق" دون
+            // ملاحقة أو إيقاف. القرار الأخير للذكاء الاصطناعي.
             noEvidenceRecoveryAttempts++
-            if (noEvidenceRecoveryAttempts <= MAX_NO_EVIDENCE_RECOVERIES) {
-              runtimeCorrection = '\n[تصحيح نظام] سؤالك عن بيانات محلية يتطلب قراءة فعلية أولاً: نفّذ query أو get أو data_snapshot أو search_everything قبل أي رقم أو ملخص أو ادعاء حالة، ثم أجب بالأرقام المقروءة فقط.'
-              if (emitEvents) publishRuntimeEvent(sessionId, { type: 'observation', title: 'أحتاج دليلاً قبل الإجابة', detail: 'أقرأ قاعدة البيانات أولاً ثم أجيب.', status: 'error' })
+            if (noEvidenceRecoveryAttempts === 1) {
+              runtimeCorrection = '\n[ملاحظة نظام] إن كانت إجابتك مبنية على قراءة فعلية لـexecute+أداة قراءة فأكمل مباشرة. وإلا يمكنك الرد من معرفتك العامة وأنا سأوسم الإجابة بوضوح. القرار قرارك.'
+              if (emitEvents) publishRuntimeEvent(sessionId, { type: 'observation', title: 'حرية الرد بيدك', detail: 'يمكنك الرد مباشرة أو قراءة الدليل من قاعدة البيانات.', status: 'success' })
               continue
             }
             const conf = Math.max(10, 60 - noEvidenceRecoveryAttempts * 15)
