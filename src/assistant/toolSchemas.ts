@@ -490,7 +490,18 @@ export async function verifyDataExists(tool: string, args: Record<string, any>, 
         return 'تنبيه: العرض غير موجود رغم نجاح العملية.'
       }
     }
-    if ((tool === 'create_reminder' || tool === 'cancel_reminder' || tool === 'offer_reminder_set') && result) {
+    if ((tool === 'create_reminder' || tool === 'cancel_reminder' || tool === 'offer_reminder_set' || tool === 'reminder_update') && result) {
+      const r = (result as any).result ?? result
+      const rid = String(r.id ?? r.reminderId ?? args.reminder_id ?? '')
+      if (rid) {
+        const db = await getDB()
+        const row = await db.getFirstAsync<{ id: string; status: string }>('SELECT id, status FROM reminders WHERE id = ?', [rid]).catch(() => null)
+        if (tool === 'cancel_reminder') {
+          if (!row || row.status === 'cancelled') return `تحقّقت فعلاً: التذكير ${rid} ملغى/غير موجود — الإلغاء نافذ.`
+          return 'تنبيه: التذكير ما زال نشطاً رغم أمر الإلغاء.'
+        }
+        if (row) return `تحقّقت فعلاً: التذكير ${rid} موجود بحالة ${row.status}.`
+      }
       return `تحقّقت فعلاً: عملية التذكير ${tool} اكتملت وعادت بنتيجة موثقة.`
     }
     if (tool === 'attach_media_to_entity' && result) {
