@@ -243,7 +243,10 @@ export function buildChatRequestBody(opts: ChatOpts, stream = false): Record<str
     }))
   }
   if (opts.temperature !== undefined) body.temperature = opts.temperature
-  if (opts.maxTokens && profile.maxTokensField !== 'unknown' && profileAllowsParam(profile, profile.maxTokensField)) body[profile.maxTokensField] = opts.maxTokens
+  if (opts.maxTokens) {
+    if (profile.maxTokensField !== 'unknown' && profileAllowsParam(profile, profile.maxTokensField)) body[profile.maxTokensField] = opts.maxTokens
+    else body.max_tokens = opts.maxTokens
+  }
   return body
 }
 
