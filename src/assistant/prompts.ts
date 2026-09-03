@@ -149,12 +149,16 @@ export function buildToolIndex(limit = 300): string {
  * جسر `execute` وحيداً يحمل فهرس الأسماء، فيقرر هو متى يقرأه ومتى يستدعي
  * أي أداة بالاسم. لا يُفرض عليه تصنيف نية ولا قائمة كلمات. */
 export function getAgentFunctions(_skill?: AgentSkill | null): FunctionDef[] {
-  return WRAPPER_FUNCTIONS.map((wrapper) => wrapper.name === 'execute'
-    ? {
-        ...wrapper,
-        description: `${wrapper.description}\n\n###### فهرس أدوات التطبيق المتاحة عبر execute ######\n${buildToolIndex()}\n###### نهاية الفهرس ######`,
-      }
-    : wrapper)
+  // تواصل/تنسيق فقط يُحفظ حضورها المباشر؛ كل أدوات المجال تصل عبر execute من الفهرس.
+  const alwaysVisible = new Set(['execute', 'ask_user', 'request_confirmation', 'undo_last', 'orchestrate', 'generate_file'])
+  return WRAPPER_FUNCTIONS
+    .filter((wrapper) => alwaysVisible.has(wrapper.name))
+    .map((wrapper) => wrapper.name === 'execute'
+      ? {
+          ...wrapper,
+          description: `${wrapper.description}\n\n###### فهرس أدوات التطبيق المتاحة عبر execute ######\n${buildToolIndex()}\n###### نهاية الفهرس ######`,
+        }
+      : wrapper)
 }
 
 /** كل تعريفات الأدوات (للبوابة الداخلية لـ execute — لا تُرسل للموديل). */
