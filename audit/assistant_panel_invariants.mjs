@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
 const screen = readFileSync(new URL('../src/screens/assistant/AssistantScreen.tsx', import.meta.url), 'utf8')
+const taskCard = readFileSync(new URL('../src/components/TaskCard.tsx', import.meta.url), 'utf8')
+const store = readFileSync(new URL('../src/screens/assistant/agentChatStore.ts', import.meta.url), 'utf8')
 const executor = readFileSync(new URL('../src/assistant/executor.ts', import.meta.url), 'utf8')
 const llm = readFileSync(new URL('../src/assistant/llm.ts', import.meta.url), 'utf8')
 const history = readFileSync(new URL('../src/assistant/history.ts', import.meta.url), 'utf8')
