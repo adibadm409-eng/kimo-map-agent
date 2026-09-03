@@ -345,15 +345,18 @@ async function runLoop(
           const finalText = result.content ? String(result.content).trim() : ''
           if (readIntentRequiresEvidence && finalText && !runtimeSuccessfulEvidenceCount) {
             noEvidenceRecoveryAttempts++
+            if (noEvidenceRecoveryAttempts <= MAX_NO_EVIDENCE_RECOVERIES) {
+              runtimeCorrection = '\n[تصحيح نظام] سؤالك عن بيانات محلية يتطلب قراءة فعلية أولاً: نفّذ query أو get أو data_snapshot أو search_everything قبل أي رقم أو ملخص أو ادعاء حالة، ثم أجب بالأرقام المقروءة فقط.'
+              if (emitEvents) publishRuntimeEvent(sessionId, { type: 'observation', title: 'أحتاج دليلاً قبل الإجابة', detail: 'أقرأ قاعدة البيانات أولاً ثم أجيب.', status: 'error' })
+              continue
+            }
             const conf = Math.max(10, 60 - noEvidenceRecoveryAttempts * 15)
-            await addBrainOp(sessionId, 'confidence', `مؤشر ثقة ${conf}%: إجابة عن بيانات محلية بلا دليل موثَّق بعد (المحاولة ${noEvidenceRecoveryAttempts}). أذكر المستخدم بمستوى الثقة ولا أتوقف.`).catch(() => {})
-            if (emitEvents) publishRuntimeEvent(sessionId, { type: 'observation', title: `مؤشر ثقة ${conf}% — بلا دليل محلي`, detail: 'أجيب لكن أذكر أن هذه الإجابة بلا تحقق من قاعدة البيانات؛ يُفضَّل التحقق بأداة قراءة.', status: 'success' })
+            await addBrainOp(sessionId, 'confidence', `مؤشر ثقة ${conf}%: إجابة عن بيانات محلية بلا دليل بعد ${noEvidenceRecoveryAttempts} محاولات.`).catch(() => {})
+            if (emitEvents) publishRuntimeEvent(sessionId, { type: 'observation', title: `مؤشر ثقة ${conf}% — بلا دليل محلي`, detail: 'تعذر إثبات الأرقام من قاعدة البيانات؛ تُعرض موسومة بلا تحقق.', status: 'error' })
           }
-          // الوكيل الحر: أي إجابة نهائية تُعتمد مباشرة دون بوابة إثبات قسرية.
-          // نثق بالنموذج ونتائج أدواته الفعلية، وندعه يجيب مباشرة على الأسئلة
-          // العامة والمحادثة دون إجباره على أداة أو فرض "دليل" قبل الكلام.
           if (finalText) {
-            const safeFinal = sanitizeAssistantText(finalText)
+            const needsTag = readIntentRequiresEvidence && !runtimeSuccessfulEvidenceCount
+            const safeFinal = sanitizeAssistantText(needsTag ? `(بلا تحقق من قاعدة البيانات) ${finalText}` : finalText)
             await persistAssistantText(sessionId, safeFinal, 'text')
             if (emitEvents) {
               emitForSession(sessionId, { type: 'stream', content: safeFinal })
