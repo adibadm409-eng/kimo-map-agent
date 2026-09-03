@@ -63,6 +63,7 @@ export interface PendingDeleteItem {
   id: string
   entity?: string
   preview: string
+  args?: Record<string, any>
 }
 
 export interface PendingState {
