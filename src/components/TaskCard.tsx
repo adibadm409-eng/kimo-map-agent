@@ -29,7 +29,24 @@ export default function TaskCard() {
   const statusBar = useChatStore((s) => s.statusBar)
   const [expanded, setExpanded] = useState(true)
 
-  if (!plan || !plan.steps?.length) return null
+  if (!plan || !plan.steps?.length) {
+    if (!statusBar.visible) return null
+    return (
+      <View style={[styles.card, { backgroundColor: colors.bgSecondary, borderColor: colors.border }]}>
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <View style={[styles.badge, { backgroundColor: '#2563EB18' }]}>
+              <Text style={[styles.badgeText, { color: '#2563EB' }]}>…</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={1}>أفهم طلبك وأبني الخطة…</Text>
+              <Text style={[styles.subtitle, { color: colors.textMuted }]}>ستظهر الخطوات هنا فور جاهزيتها</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    )
+  }
 
   const done = plan.steps.filter((s) => s.status === 'done').length
   const total = plan.steps.length
