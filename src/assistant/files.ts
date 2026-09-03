@@ -506,6 +506,7 @@ export interface AttachmentData {
   mimeType?: string
   uri: string
   base64: string
+  truncated: boolean
 }
 
 export async function readAttachmentBase64(uri: string, maxBytes = 1_200_000): Promise<AttachmentData> {
@@ -518,10 +519,11 @@ export async function readAttachmentBase64(uri: string, maxBytes = 1_200_000): P
     throw new Error('تعذر قراءة الملف المرفق')
   }
   const maxBase64Len = Math.floor(maxBytes * 1.34)
-  if (base64.length > maxBase64Len) {
+  const truncated = base64.length > maxBase64Len
+  if (truncated) {
     base64 = base64.slice(0, maxBase64Len)
   }
-  return { uri, name: info.exists && 'uri' in info ? (info.uri ?? 'ملف').split('/').pop() ?? 'ملف' : 'ملف', size, base64 }
+  return { uri, name: info.exists && 'uri' in info ? (info.uri ?? 'ملف').split('/').pop() ?? 'ملف' : 'ملف', size, base64, truncated }
 }
 
 export interface AudioInputData {
