@@ -73,9 +73,10 @@ async function findNaturalDuplicate(entity: EntityKey, data: Record<string, any>
   if (entity === 'clients') {
     const phone = normalized(data.phone)
     const name = normalized(data.name)
-    if (!phone && !name) return null
+    const email = normalized(data.email)
+    if (!phone && !(name && email)) return null
     const rows = await getAllClients()
-    const found = rows.find((row: any) => (phone && normalized(row.phone) === phone) || (name && normalized(row.name) === name && normalized(row.email) === normalized(data.email)))
+    const found = rows.find((row: any) => (phone && normalized(row.phone) === phone) || (name && email && normalized(row.name) === name && normalized(row.email) === email))
     return found?.id ? String(found.id) : null
   }
   return null
