@@ -652,10 +652,10 @@ export default function AssistantScreen({ navigation }: any) {
           />
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={busy ? 'إيقاف تنفيذ كيمو' : 'إرسال الرسالة إلى كيمو'}
-            disabled={!busy && !input.trim() && !attachments.length}
-            onPress={busy ? () => cancelAgent(sessionId) : () => handleSend(input)}
-            style={[styles.sendBtn, { backgroundColor: busy ? colors.error : colors.accent, opacity: !busy && !input.trim() && !attachments.length ? 0.4 : 1 }]}
+            accessibilityLabel={busy ? (cancelling ? 'جارٍ إيقاف كيمو…' : 'إيقاف تنفيذ كيمو') : 'إرسال الرسالة إلى كيمو'}
+            disabled={(!busy && !input.trim() && !attachments.length && !audioDraft) || cancelling}
+            onPress={busy ? () => handleCancel(sessionId) : () => handleSend(input)}
+            style={[styles.sendBtn, { backgroundColor: busy ? colors.error : colors.accent, opacity: (!busy && !input.trim() && !attachments.length && !audioDraft) || cancelling ? 0.4 : 1 }]}
           >
             <Ionicons name={busy ? 'stop' : 'arrow-up'} size={18} color="#fff" />
           </Pressable>
