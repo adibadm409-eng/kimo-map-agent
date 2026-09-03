@@ -28,6 +28,23 @@ export default function ViewingForm() {
     date_time: new Date().toISOString().slice(0, 16),
     status: 'scheduled', notes: '',
   })
+  const [clientSearch, setClientSearch] = useState('')
+
+  async function handleClientPick(c: { name: string; phone: string; source: string; refId: string }) {
+    if (c.source === 'client' && c.refId) {
+      setForm((current) => ({ ...current, client_id: c.refId }))
+      setClientSearch(c.name)
+      return
+    }
+    try {
+      const id = await createClient({ name: c.name || 'عميل جديد', phone: c.phone, type: 'buyer', email: '', notes: '', budget_min: 0, budget_max: 0 })
+      setClients(await getAllClients())
+      setForm((current) => ({ ...current, client_id: id }))
+      setClientSearch(c.name)
+    } catch {
+      Alert.alert('خطأ', 'تعذر ربط العميل')
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
