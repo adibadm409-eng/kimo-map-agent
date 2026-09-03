@@ -813,6 +813,56 @@ export default function AgentSettings({ navigation }: any) {
           </View>
         </View>
       </Modal>
+
+      <Modal visible={voicePickerOpen} transparent animationType="fade" onRequestClose={() => setVoicePickerOpen(false)}>
+        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.45)' }]}>
+          <View style={[styles.modalCard, { backgroundColor: colors.bgSecondary }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>اختر موديل الصوت</Text>
+              <Pressable onPress={() => setVoicePickerOpen(false)} style={[styles.closeBtn, { backgroundColor: colors.surface }]}>
+                <Ionicons name="close" size={18} color={colors.textPrimary} />
+              </Pressable>
+            </View>
+            <ScrollView style={{ maxHeight: 420 }} contentContainerStyle={styles.modelList} keyboardShouldPersistTaps="handled">
+              {(() => {
+                const vDef = providerDefFor(voiceProvider, settings?.customProviders ?? [])
+                const builtIn = vDef.defaultModels ?? []
+                const listed = settings?.modelLists?.[voiceProvider] ?? []
+                const opts = [voiceModel, ...listed, ...builtIn].filter(Boolean)
+                const unique = Array.from(new Set(opts))
+                if (unique.length === 0) {
+                  return (
+                    <View style={{ padding: spacing.lg, alignItems: 'center' }}>
+                      <Text style={[styles.muted, { color: colors.textMuted, textAlign: 'center' }]}>
+                        لا توجد موديلات متاحة. عدّ إلى الإعدادات الرئيسية واضغط «جلب قائمة الموديلات» أولاً.
+                      </Text>
+                    </View>
+                  )
+                }
+                return unique.map((m) => (
+                  <Pressable
+                    key={m}
+                    onPress={() => {
+                      setVoiceModel(m)
+                      setVoiceTestResult(null)
+                      void save({ voiceModel: m } as any)
+                      setVoicePickerOpen(false)
+                      Haptics.selectionAsync().catch(() => {})
+                    }}
+                    style={[
+                      styles.modelOption,
+                      { backgroundColor: m === voiceModel ? colors.accentSurface : colors.bgCard, borderColor: m === voiceModel ? colors.accent : colors.border },
+                    ]}
+                  >
+                    <Text numberOfLines={1} style={[styles.modelOptionText, { color: m === voiceModel ? colors.accent : colors.textPrimary }]}>{m}</Text>
+                    {m === voiceModel && <Ionicons name="checkmark" size={16} color={colors.accent} />}
+                  </Pressable>
+                ))
+              })()}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   )
 }
