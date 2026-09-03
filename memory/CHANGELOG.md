@@ -747,3 +747,4 @@
 - 2026-09-03 | 7e358bc | تعديل تلقائي: AssistantScreen.tsx
 - 2026-09-03 | d542fd8 | تعديل تلقائي: AssistantScreen.tsx
 - 2026-09-03 | 20ac784 | تعديل تلقائي: registry.tsx
+- 2026-09-03 | 32eb09f | تعديل تلقائي: registry.tsx

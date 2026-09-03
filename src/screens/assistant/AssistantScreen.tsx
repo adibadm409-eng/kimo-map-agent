@@ -414,6 +414,8 @@ export default function AssistantScreen({ navigation }: any) {
     onCopy: handleCopy,
     onChoice: handleChoice,
     onConfirm: handleConfirm,
+    onRetry: () => { if (sessionId) reload(sessionId).catch(() => {}) },
+    onOpenSettings: () => navigation.navigate('AgentSettings'),
     onOpenLink: openLinkCard,
     onFileDownload: async (uri, name) => {
       const res = await saveToDownloads(uri, name)
