@@ -705,14 +705,19 @@ export async function updateReminder(id: string, patch: { title?: string; body?:
   let notificationId: string = before.notification_id ?? ''
   if (patch.remind_at != null && patch.remind_at !== before.remind_at) {
     await cancelLocalReminder(before.notification_id).catch(() => {})
+    await cancelOfferReminder(String(before.target_id)).catch(() => {})
     notificationId = ''
-    if (String(before.target_type) !== 'offer') {
-      try {
-        if (Platform.OS !== 'web') notificationId = await scheduleLocalReminder(new Date(nextAt), nextTitle, nextBody || nextTitle, { type: 'entity-reminder', reminderId: id, targetType: String(before.target_type), targetId: String(before.target_id ?? '') })
-      } catch { notificationId = '' }
-    } else {
+    try {
+      if (Platform.OS !== 'web') {
+        notificationId = String(before.target_type) === 'offer'
+          ? await scheduleOfferReminder(new Date(nextAt), { offerId: String(before.target_id ?? '') })
+          : await scheduleLocalReminder(new Date(nextAt), nextTitle, nextBody || nextTitle, { type: 'entity-reminder', reminderId: id, targetType: String(before.target_type), targetId: String(before.target_id ?? '') })
+      }
+    } catch { notificationId = '' }
+    if (String(before.target_type) === 'offer' && before.target_id) {
+      await db.runAsync('UPDATE offer_reminders SET remind_at = ?, notification_id = ? WHERE id = ?', [new Date(nextAt).toISOString(), notificationId, id]).catch(() => {})
       const active = await getOfferReminders(String(before.target_id))
-      const next = active.find((r: any) => String(r.id) !== String(id)) ?? active[0]
+      const next = active[0]
       await db.runAsync('UPDATE offers SET reminder_at = ?, reminder_notification_id = ? WHERE id = ?', [next?.remind_at || '', next?.notification_id || '', before.target_id])
     }
   }
