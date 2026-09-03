@@ -748,10 +748,15 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
         gemini: ['wav', 'mp3'],
         mistral: ['wav', 'mp3'],
         openai: ['mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'wav', 'webm'],
+        anthropic: [],
+        deepseek: [],
+        alibaba: [],
+        openrouter: [],
+        nvidia: [],
+        custom: [],
       }
-      const acceptedChatAudio = CHAT_AUDIO_FORMATS[conn.providerId]
-      const directAudio =
-        profile.supports.inputAudio && (acceptedChatAudio ? acceptedChatAudio.includes(audio.format) : true)
+      const acceptedChatAudio = CHAT_AUDIO_FORMATS[conn.providerId] ?? []
+      const directAudio = profile.supports.inputAudio && acceptedChatAudio.includes(audio.format)
       if (directAudio) {
         const spoken = text.trim() || 'أرسل المستخدم تسجيلاً صوتياً. استمع إليه وفهم المطلوب واستجب له.'
         content = `${content ? content + '\n\n' : ''}[رسالة صوتية مباشرة] ${spoken}`.trim()
