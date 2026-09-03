@@ -127,7 +127,7 @@ export const DOMAIN_TOOLS: DomainToolDef[] = [
     handler: async (args) => {
       const plan = planFromArgs(args)
       const preview = await previewProjectImport(plan)
-      previewedCommits.add(planHash(plan))
+      previewedCommits.set(planHash(plan), Date.now())
       return { preview, preview_token: planHash(plan) }
     },
   },
