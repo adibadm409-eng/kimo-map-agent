@@ -11,6 +11,7 @@ import * as Location from 'expo-location'
 import * as ImagePicker from 'expo-image-picker'
 import * as FileSystem from 'expo-file-system/legacy'
 import { ContactPickerButton } from '../components/ContactPickerButton'
+import SuggestField from '../components/SuggestField'
 
 const TYPES = [
   { key: 'apartment', label: 'شقة', icon: 'business-outline' },
