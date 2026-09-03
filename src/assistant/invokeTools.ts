@@ -170,7 +170,7 @@ export async function runRegistryTool(
     const label = tool === 'ledger_reverse_payment' ? `عكس الدفعة ${String(args.payment_id ?? '')}` : `فك ربط الوسيط ${String(args.link_id ?? '')}`
     const current = await getPending(sessionId).catch(() => null)
     const items = current?.kind === 'confirmation' && Array.isArray(current.items) ? [...current.items] : []
-    const item = { tool, id: String(args.payment_id ?? args.link_id ?? ''), entity: tool, preview: label }
+    const item = { tool, id: String(args.payment_id ?? args.link_id ?? ''), entity: tool, preview: label, args: { ...args } }
     if (!items.some((it: PendingDeleteItem) => it.tool === item.tool && it.id === item.id)) items.push(item)
     await setPending({ sessionId, kind: 'confirmation', question: `تأكيد ${label}. اختر ثم وافق للتنفيذ.`, title: 'تأكيد عملية حساسة', items, action: { type: 'delete', tool, id: item.id, args: { ...args, __confirmed: true } as any } })
     const pendingObservation = `[معلّق] لم تُنفَّذ ${label} بعد؛ أنتظر موافقة المستخدم الصريحة.`
