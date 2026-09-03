@@ -908,3 +908,4 @@
 - 2026-09-03 | 240da44 | تعديل تلقائي: intentRouter.ts
 - 2026-09-03 | 7dcc6f7 | تعديل تلقائي: AgentSettings.tsx
 - 2026-09-03 | 9c2bda4 | تعديل تلقائي: AgentSettings.tsx
+- 2026-09-03 | c5c2cb1 | تعديل تلقائي: TaskCard.tsx

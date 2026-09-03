@@ -169,8 +169,8 @@ function classifyIntent(text: string, match: SkillMatch): SkillAssessment['inten
   const normalized = String(text ?? '').trim().toLowerCase()
   if (!normalized || /^(مرحبا|مرحباً|هلا|أهلا|اهلا|السلام عليكم|شكرا|شكرًا|كيف حالك)[!.؟\s]*$/.test(normalized)) return 'conversation'
   if (match.skill.id === 'general_assistant') return /\?|؟|ما الذي|كيف|هل/.test(normalized) ? 'question' : 'ambiguous'
-  const readOnly = /استكشف|اكتشف|اعرض|أظهر|اظهر|ابحث|استعلم|استعلام|اقرأ|قراءة|راجع|حلل|احسب|ما هي|ماهو|ما هو|كم عدد/.test(normalized)
-  const writeIntent = /أنشئ|أنشاء|إنشاء|أضف|اضف|سجل|سجّل|عدّل|عدل|حدّث|حدث|احذف|حذف|استورد|استيراد|ذكرني|تذكير/.test(normalized)
+  const readOnly = /استكشف|اكتشف|اعرض|أظهر|اظهر|ابحث|استعلم|استعلام|اقرأ|قراءة|راجع|حلل|احسب|وريني|ورني|هات|طلع|جيب|ما هي|ماهو|ما هو|كم عدد/.test(normalized)
+  const writeIntent = /أنشئ|أنشاء|إنشاء|أضف|اضف|سجل|سجّل|عدّل|عدل|حدّث|حدث|احذف|حذف|استورد|استيراد|ذكرني|تذكير|ضيف|احجز|سوي|اعمل|صلح|بدل|شيل|مسح|قيد/.test(normalized)
   const explicitNoWrite = /لا\s+(?:تنشئ|تنشأ|تضف|تعدل|تحدّث|تحدث|تحذف|تستورد)|دون\s+(?:إنشاء|تعديل|حذف|استيراد)|بدون\s+(?:إنشاء|تعديل|حذف|استيراد)/.test(normalized)
   if (readOnly && (!writeIntent || explicitNoWrite)) return 'question'
   if (writeIntent) return 'execution'
