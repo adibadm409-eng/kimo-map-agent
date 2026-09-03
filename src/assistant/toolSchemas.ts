@@ -508,11 +508,10 @@ function verificationPassed(verification?: string): boolean {
 export async function runToolWithFeedback(tool: string, rawArgs: Record<string, any>): Promise<{ ok: boolean; args: Record<string, any>; observation: string; result: any; verified: boolean; verification?: string }> {
   const args = adaptToolArgs(tool, rawArgs ?? {})
 
-  // فحص الذاكرة المؤقتة أولاً
   const cached = toolCache.get(tool, args)
   if (cached !== null) {
     const observation = buildToolObservation(tool, cached, args, undefined)
-    return { ok: cached.ok ?? true, args, observation, result: cached.result ?? cached, verified: true, verification: 'من الذاكرة المؤقتة' }
+    return { ok: cached.ok ?? true, args, observation, result: cached.result ?? cached, verified: false, verification: 'من الذاكرة المؤقتة — غير موثّقة، أعد القراءة قبل أي قرار كتابة' }
   }
 
   let res: { ok: boolean; result?: any; error?: string }
@@ -522,10 +521,13 @@ export async function runToolWithFeedback(tool: string, rawArgs: Record<string, 
     res = { ok: false, result: { error: 'tool_exception' }, error: error?.message ?? String(error) }
   }
 
-  // حفظ النتيجة في الذاكرة المؤقتة
   if (res.ok) {
     toolCache.set(tool, args, res)
+  } else {
+    toolCache.invalidateAfterWrite()
   }
+  const WRITE_TOOLS_NO_CACHE = new Set(['mutate_record', 'create', 'update', 'delete', 'ledger_record_payment', 'project_import_commit', 'property_intake_apply', 'create_offer_with_reminder', 'offer_reminder_set', 'create_reminder', 'cancel_reminder', 'cancel_offer_reminder', 'workspace_add_row', 'workspace_update_row', 'workspace_delete_row', 'workspace_import_rows', 'workspace_create', 'workspace_update', 'workspace_delete', 'custom_field_set', 'attach_media_to_entity', 'remove_attachment'])
+  if (WRITE_TOOLS_NO_CACHE.has(tool)) toolCache.invalidateAfterWrite()
   // update idempotent: إعادة نفس patch بعد نجاح سابق ليست فشلاً جديداً إذا أثبتت
   // القراءة أن القيمة المطلوبة موجودة بالفعل. نتحقق أولاً ثم نعيد نتيجة آلية واضحة.
   const idempotentUpdate = tool === 'mutate_record'
