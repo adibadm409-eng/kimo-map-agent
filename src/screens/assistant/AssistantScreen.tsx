@@ -332,7 +332,7 @@ export default function AssistantScreen({ navigation }: any) {
   }
 
   function handleAttach() {
-    if (busy || recorderState.isRecording) return
+    if (initializing || recorderState.isRecording) return
     Alert.alert('إرفاق', 'ماذا تريد إرفاقه؟', [
       { text: 'ملف', onPress: () => pickFiles() },
       { text: 'صورة', onPress: () => pickImages() },
