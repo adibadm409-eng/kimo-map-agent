@@ -262,7 +262,7 @@ export default function AssistantScreen({ navigation }: any) {
         name: a.name ?? 'ملف',
         mime: a.mimeType ?? undefined,
         size: a.size ?? undefined,
-        kind: /^(xlsx?|csv)$/i.test(a.name ?? '') ? 'spreadsheet' as const : undefined,
+        kind: /\.(xlsx?|csv)$/i.test(a.name ?? '') ? 'spreadsheet' as const : undefined,
       }))
       setAttachments((prev) => [...prev, ...items])
     } catch {}
