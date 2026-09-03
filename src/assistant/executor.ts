@@ -388,7 +388,11 @@ async function runLoop(
 
         let paused = false
         for (const call of result.toolCalls) {
-          if (isCancelled(sessionId)) return
+          if (isCancelled(sessionId)) {
+            if (runtimeTaskId) await transitionTaskRun(runtimeTaskId, 'cancelled', { lastError: 'أوقف المستخدم التنفيذ' }).catch(() => {})
+            if (emitEvents) emitForSession(sessionId, { type: 'done', outcome: 'cancelled' })
+            return
+          }
           const sig = toolSig(call)
           totalCalls++
           if (totalCalls > MAX_TOOL_CALLS) {
