@@ -30,7 +30,7 @@ assert.ok(badBatch.some((issue) => issue.code === 'unknown_tool'))
 assert.ok(badBatch.some((issue) => issue.code === 'parallel_not_allowed'))
 const executor = fs.readFileSync(new URL('../src/assistant/executor.ts', import.meta.url), 'utf8')
 assert.match(executor, /execute هو envelope/)
-assert.match(executor, /validateToolCallAgainstDefinitions\(innerCall, agentFunctions\)/)
+assert.match(executor, /validateToolCallAgainstDefinitions\(innerCall, getAllAgentFunctions\(\)\)/)
 assert.match(executor, /inner_tool_validation/)
 
 console.log('Tool validation invariants: PASS')
