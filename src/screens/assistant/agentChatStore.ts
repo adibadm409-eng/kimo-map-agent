@@ -260,6 +260,7 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
         patch.auditTrail = [...s.auditTrail, auditEntry('error', String(err ?? ''))].slice(-200)
         patch.statusBar = { ...s.statusBar, visible: false, thinking: false }
         patch.streamText = ''
+        patch._plan = null
         break
       }
       default:

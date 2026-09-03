@@ -865,3 +865,4 @@
 - 2026-09-03 | b6d455f | تعديل تلقائي: AgentSettings.tsx
 - 2026-09-03 | 228377f | تعديل تلقائي: AgentSettings.tsx
 - 2026-09-03 | 0bb174a | تعديل تلقائي: AgentSettings.tsx
+- 2026-09-03 | 6dbbb87 | تعديل تلقائي: agentChatStore.ts
