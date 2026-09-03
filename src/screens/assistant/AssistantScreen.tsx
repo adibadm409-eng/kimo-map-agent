@@ -79,6 +79,24 @@ export default function AssistantScreen({ navigation }: any) {
   const [auditFlash, setAuditFlash] = useState(false)
   const [voice, setVoice] = useState({ ready: false, error: null as string | null })
   const [audioDraft, setAudioDraft] = useState<{ uri: string; name: string; format: string } | null>(null)
+  const [cancelling, setCancelling] = useState(false)
+  const cancelTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function handleCancel(sid: string) {
+    cancelAgent(sid)
+    setCancelling(true)
+    if (cancelTimer.current) clearTimeout(cancelTimer.current)
+    cancelTimer.current = setTimeout(() => {
+      setCancelling(false)
+      setBusy((b) => {
+        if (b) setActionError('تعذر الإيقاف خلال 10 ثوانٍ — قد تكون الجولة عالقة عند المزود؛ أعد فتح المحادثة أو أرسل طلباً جديداً.')
+        return false
+      })
+    }, 10000)
+  }
+
+  useEffect(() => () => { if (cancelTimer.current) clearTimeout(cancelTimer.current) }, [])
+  useEffect(() => { if (!busy && cancelling) { setCancelling(false); if (cancelTimer.current) clearTimeout(cancelTimer.current) } }, [busy, cancelling])
   const listRef = useRef<FlatList>(null)
   const wantedBottom = useRef(false)
   const atBottomRef = useRef(true)

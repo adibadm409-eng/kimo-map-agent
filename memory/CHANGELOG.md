@@ -786,3 +786,4 @@
 - 2026-09-03 | b4ded7c | تعديل تلقائي: AssistantScreen.tsx
 - 2026-09-03 | 0f3419a | تعديل تلقائي: AssistantScreen.tsx
 - 2026-09-03 | eefdfea | تعديل تلقائي: TaskCard.tsx
+- 2026-09-03 | affdcb9 | تعديل تلقائي: registry.tsx
