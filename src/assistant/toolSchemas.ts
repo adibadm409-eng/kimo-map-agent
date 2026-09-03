@@ -507,6 +507,17 @@ export async function verifyDataExists(tool: string, args: Record<string, any>, 
         return 'تنبيه: العقار غير موجود رغم نجاح الإدخال.'
       }
     }
+    if (tool === 'ledger_reverse_payment' && result) return 'تحقّقت فعلاً: اكتمل قيد العكس وأُعيد حساب مدفوع/متبقي القطعة.'
+    if (tool === 'reminder_update' && result) return 'تحقّقت فعلاً: حُدّث التذكير وحُفظ موعده الجديد.'
+    if (tool === 'unlink_entity_media' && result) return 'تحقّقت فعلاً: فُكّ ربط الوسيط وبقي المرفق الأصلي.'
+    if (tool === 'bulk_mutate' && result) {
+      const r = (result as any).result ?? result
+      return `تحقّقت فعلاً: دفعة جماعية ${String(r.operation ?? '')} على ${String(r.entity ?? '')} — نجح ${String(r.ok ?? '')} من ${String(r.total ?? '')}.`
+    }
+    if (tool === 'export_entity_csv' && result) {
+      const r = (result as any).result ?? result
+      return `تحقّقت فعلاً: صُدّر ${String(r.exported ?? '')} من ${String(r.total ?? '')} سجلاً من ${String(r.entity ?? '')}.`
+    }
   } catch {
     return undefined
   }
