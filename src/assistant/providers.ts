@@ -175,7 +175,7 @@ export function providerLabel(p: ProviderDef | undefined): string {
 
 /** ملف قدرات محافظ: لا نرسل خياراً لا يثبت أن المزود يدعمه. */
 function isGeminiModel(model: string): boolean {
-  return /(?:^|[/:_-])gemini-(?:2\.5|3)(?:[./:_-]|$)/i.test(model)
+  return /(?:^|[/:_-])gemini-(?:2\.5|3)(?:[./:_-]|$)|deep-research-preview|antigravity-preview/i.test(model)
 }
 
 function isKnownVisionModel(def: ProviderDef, model: string): boolean {
