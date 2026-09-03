@@ -1,6 +1,6 @@
 import { agentCreate, agentUpdate } from './crud'
-import { cancelReminder, createReminder, createOfferReminder, deleteOffer, getAllOffers, getAllReminders, getOfferReminders, getRemindersForTarget, getReminder, cancelOfferReminderById } from '../database/db'
-import { linkAttachmentToEntity, type MediaTargetType } from '../database/workspace'
+import { cancelReminder, createReminder, updateReminder, createOfferReminder, deleteOffer, getAllOffers, getAllReminders, getOfferReminders, getRemindersForTarget, getReminder, cancelOfferReminderById } from '../database/db'
+import { linkAttachmentToEntity, listEntityMedia, unlinkEntityMedia, clearProjectMemory, deleteProjectMemoryEntry, type MediaTargetType } from '../database/workspace'
 import { previewPropertyChange } from './propertyIntake'
 import {
   commitProjectImport,
