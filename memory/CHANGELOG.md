@@ -828,3 +828,4 @@
 - 2026-09-03 | bf96e07 | تعديل تلقائي: AssistantScreen.tsx
 - 2026-09-03 | 6d52df5 | تعديل تلقائي: agentChatStore.ts
 - 2026-09-03 | c075dc3 | تعديل تلقائي: agentChatStore.ts
+- 2026-09-03 | d106322 | تعديل تلقائي: AssistantScreen.tsx
