@@ -620,7 +620,10 @@ export default function AssistantScreen({ navigation }: any) {
 
       <TaskCard />
 
-      <View style={[styles.inputArea, { paddingBottom: kbHeight > 0 ? kbHeight + 4 : 0, backgroundColor: colors.bgSecondary, borderTopColor: colors.border }]}>
+      {/* `softwareKeyboardLayoutMode: resize` في app.json يعيد تجميع Layout تلقائياً
+      عند إظهار لوحة المفاتيح؛ حقل bottom-push يدوي هنا كان يتسبب باندفاع الخانة
+      فوق اللوحة ولصقها بشريط المفاتيح بدل الالتفاف البكاري بالحافة الدقيقة. */}
+      <View style={[styles.inputArea, { backgroundColor: colors.bgSecondary, borderTopColor: colors.border }]}>
         {!atBottom && (
           <Pressable
             accessibilityRole="button"
