@@ -46,8 +46,10 @@ const gemini = providerCapabilities({ id: 'gemini', name: 'Gemini', color: '', b
 assert.equal(gemini.supportsStreamOptions, false)
 
 const normalized = normalizeToolCallId('call_01JABCD-legacy')
-assert.match(normalized, /^[A-Za-z0-9]{9}$/)
+assert.equal(normalized, 'call_01JABCD-legacy', 'معرّف المزود يعاد كما ورد — لا تُختصر معرّفات المزود')
 assert.equal(normalizeToolCallId('call_01JABCD-legacy'), normalized)
+assert.equal(normalizeToolCallId('').length, 9, 'المعرّف الفارغ يولّد معرّفاً بديلاً بطول 9 أحرف')
+assert.match(normalizeToolCallId(''), /^[A-Za-z0-9]{9}$/)
 assert.equal(new LlmError('rate_limit', 'x', 429).retryable, true)
 assert.equal(new LlmError('server', 'x', 503).retryable, true)
 assert.equal(new LlmError('auth', 'x', 401).retryable, false)
