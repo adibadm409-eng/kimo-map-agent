@@ -440,10 +440,26 @@ export default function App() {
       <SafeAreaProvider>
         <ThemeProvider>
           <RootNav />
+          <WhatsNewGate />
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   )
+}
+
+function WhatsNewGate() {
+  const [visible, setVisible] = React.useState(false)
+  React.useEffect(() => {
+    let live = true
+    const t = setTimeout(() => {
+      void shouldShowWhatsNew().then((show) => {
+        if (live && show) setVisible(true)
+      })
+    }, 1200)
+    return () => { live = false; clearTimeout(t) }
+  }, [])
+  if (!visible) return null
+  return <WhatsNewCard visible={visible} onClose={() => setVisible(false)} />
 }
 
 const styles = StyleSheet.create({
