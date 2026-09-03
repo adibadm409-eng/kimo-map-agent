@@ -66,18 +66,8 @@ export function SaveWaypointCard({ visible, form, setForm, coord, onClose, onSav
           />
 
           <Text style={s.sectionTitle}>معلومات المالك</Text>
-          <View style={s.row}>
-            <TextInput
-              placeholder="اسم المالك" placeholderTextColor="#94A3B8"
-              value={form.ownerName} onChangeText={(v) => setForm({ ...form, ownerName: v })}
-              style={[s.input, { flex: 1 }]}
-            />
-            <TextInput
-              placeholder="رقم الجوال" placeholderTextColor="#94A3B8" keyboardType="numeric"
-              value={form.ownerPhone} onChangeText={(v) => setForm({ ...form, ownerPhone: v })}
-              style={[s.input, { flex: 1 }]}
-            />
-          </View>
+          <SuggestField label="اسم المالك" value={form.ownerName} onChange={(v) => setForm({ ...form, ownerName: v })} field="name" placeholder="اسم المالك" onPick={(c) => setForm({ ...form, ownerName: c.name || form.ownerName, ownerPhone: c.phone || form.ownerPhone })} />
+          <SuggestField label="رقم الجوال" value={form.ownerPhone} onChange={(v) => setForm({ ...form, ownerPhone: v })} field="phone" placeholder="رقم الجوال" keyboardType="phone-pad" onPick={(c) => setForm({ ...form, ownerName: c.name || form.ownerName, ownerPhone: c.phone || form.ownerPhone })} />
           <TextInput
             placeholder="وسائل تواصل إضافية" placeholderTextColor="#94A3B8"
             value={form.ownerContact} onChangeText={(v) => setForm({ ...form, ownerContact: v })}
