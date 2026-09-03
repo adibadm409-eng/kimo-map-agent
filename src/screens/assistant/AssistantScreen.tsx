@@ -110,8 +110,13 @@ export default function AssistantScreen({ navigation }: any) {
   }, [])
 
   const reload = useCallback(async (sid: string) => {
-    const msgs = await getMessages(sid).catch(() => [])
-    useChatStore.getState().setMessages(msgs)
+    try {
+      const msgs = await getMessages(sid)
+      useChatStore.getState().setMessages(msgs)
+    } catch {
+      setActionError('تعذر تحميل رسائل هذه الجلسة — تحقق من قاعدة البيانات المحلية ثم أعد المحاولة.')
+      return
+    }
     const p = await getPending(sid).catch(() => null)
     setPending(p)
     scrollToBottom(false)
