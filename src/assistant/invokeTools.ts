@@ -510,6 +510,16 @@ export async function deleteOne(sessionId: string, tool: string, id: string, arg
       entity = 'workspace_row'
       await deleteWsRow(id)
       outcome = 'تم حذف الصف'
+    } else if (tool === 'ledger_reverse_payment') {
+      const { reverseLedgerPayment } = await import('../domain/projectDomain')
+      const r = await reverseLedgerPayment(String(args.payment_id ?? id), args.plot_id ? String(args.plot_id) : undefined, 'موافقة المستخدم')
+      entity = 'plot_payments'
+      outcome = `تم عكس الدفعة بمبلغ ${r.amount} (قيد العكس ${r.reversalId})`
+    } else if (tool === 'unlink_entity_media') {
+      const { unlinkEntityMedia } = await import('../database/workspace')
+      await unlinkEntityMedia(String(args.link_id ?? id))
+      entity = 'entity_media'
+      outcome = 'تم فك ربط الوسيط دون حذف المرفق الأصلي'
     } else {
       entity = String(args.entity ?? '')
       if (entity) before = await captureBefore(entity, id)
