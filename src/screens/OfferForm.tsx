@@ -8,6 +8,7 @@ import { useTheme } from '../theme/ThemeContext'
 import { spacing, radius, fontSize } from '../theme/tokens'
 import { Card } from '../components/ui'
 import { ContactPickerButton } from '../components/ContactPickerButton'
+import SuggestField from '../components/SuggestField'
 import { getAllProperties, getAllClients, getOffer, createClient, createOffer, updateOffer } from '../database/db'
 import { formatPrice } from '../utils/helpers'
 
