@@ -32,13 +32,18 @@ export const WRITE_TOOLS = new Set([
   'remove_attachment',
   'project_import_commit',
   'ledger_record_payment',
+  'ledger_reverse_payment',
   'create_offer_with_reminder',
   'offer_reminder_set',
   'create_reminder',
+  'reminder_update',
   'cancel_reminder',
+  'unlink_entity_media',
+  'project_memory_clear',
+  'bulk_mutate',
 ])
 
-export const DELETE_CONFIRM_TOOLS = new Set(['mutate_record', 'delete', 'workspace_delete', 'workspace_delete_table', 'workspace_delete_row'])
+export const DELETE_CONFIRM_TOOLS = new Set(['mutate_record', 'delete', 'workspace_delete', 'workspace_delete_table', 'workspace_delete_row', 'ledger_reverse_payment', 'unlink_entity_media', 'bulk_mutate'])
 
 /** أدوات القراءة الآمنة المتاحة لكل مهارة؛ لا تمنح صلاحية كتابة. */
 export const UNIVERSAL_TOOLS = new Set([
