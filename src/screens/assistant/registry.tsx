@@ -22,6 +22,8 @@ export interface RegistryCtx {
   onOpenLink: (link: { kind: string; id: string; label?: string }) => void
   onFileDownload: (uri: string, name: string) => void
   onFileShare: (uri: string, name: string) => void
+  onRetry?: () => void
+  onOpenSettings?: () => void
 }
 
 function stepIcon(tool: string): string {
