@@ -698,15 +698,14 @@ export async function chatWithRetry(
   let lastErr: LlmError = new LlmError('unknown', 'فشل غير معروف')
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     const controller = new AbortController()
+    let detachAbort: (() => void) | null = null
     if (externalSignal) {
       if (externalSignal.aborted) {
         controller.abort()
       } else {
         const onAbort = () => controller.abort()
         externalSignal.addEventListener('abort', onAbort, { once: true })
-        try {
-          controller.signal.addEventListener('abort', () => externalSignal.removeEventListener('abort', onAbort), { once: true })
-        } catch {}
+        detachAbort = () => externalSignal.removeEventListener('abort', onAbort)
       }
     }
     const timer = setTimeout(() => controller.abort(), opts.timeoutMs ?? DEFAULT_TIMEOUT_MS)
