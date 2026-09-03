@@ -672,7 +672,7 @@ export default function AgentSettings({ navigation }: any) {
                     } else {
                       setVoiceTestResult({ ok: true, message: `المفتاح صالح والموديل "${voiceModel.trim()}" متاح للتفريغ الصوتي.` })
                     }
-                    Haptics.notificationAsync(res.ok ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error).catch(() => {})
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
                   } finally {
                     setTestingVoice(false)
                   }

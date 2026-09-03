@@ -906,3 +906,4 @@
 - 2026-09-03 | 82a7bd5 | تعديل تلقائي: invokeTools.ts
 - 2026-09-03 | 663a502 | تعديل تلقائي: intentRouter.ts
 - 2026-09-03 | 240da44 | تعديل تلقائي: intentRouter.ts
+- 2026-09-03 | 7dcc6f7 | تعديل تلقائي: AgentSettings.tsx
