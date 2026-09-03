@@ -404,4 +404,108 @@ export const DOMAIN_TOOLS: DomainToolDef[] = [
     args: [],
     handler: async () => { await ensureProjectDomainSchema(); return { ok: true } },
   },
+  {
+    name: 'ledger_reverse_payment',
+    description: 'عكس دفعة مسجلة خطأً: يحذف القيد ويعيد حساب مدفوع/متبقي القطعة وحالتها داخل transaction. يتطلب موافقة المستخدم للدفعات المالية.',
+    args: [
+      { name: 'payment_id', type: 'string', required: true, description: 'معرف الدفعة (plot_payments) المراد عكسها' },
+      { name: 'plot_id', type: 'string', description: 'معرف القطعة للتأكيد (اختياري لكنه يمنع العكس الخاطئ)' },
+      { name: 'reason', type: 'string', description: 'سبب العكس للتدقيق' },
+    ],
+    handler: async (args) => {
+      const { reverseLedgerPayment } = await import('../domain/projectDomain')
+      return reverseLedgerPayment(String(args.payment_id || ''), args.plot_id ? String(args.plot_id) : undefined, args.reason ? String(args.reason) : '')
+    },
+  },
+  {
+    name: 'reminder_update',
+    description: 'تعديل عنوان/تفاصيل/موعد تذكير موجود (الموعد مستقبلي ISO). بديل آمن للإلغاء+إنشاء.',
+    args: [
+      { name: 'reminder_id', type: 'string', required: true },
+      { name: 'title', type: 'string' },
+      { name: 'body', type: 'string' },
+      { name: 'remind_at', type: 'string', description: 'موعد ISO مستقبلي' },
+    ],
+    handler: async (args) => {
+      await updateReminder(String(args.reminder_id || ''), { title: args.title ? String(args.title) : undefined, body: args.body ? String(args.body) : undefined, remind_at: args.remind_at ? String(args.remind_at) : undefined })
+      return { id: String(args.reminder_id), updated: true }
+    },
+  },
+  {
+    name: 'list_entity_media',
+    description: 'سرد روابط الوسائط لكيان (عقار/عرض) قبل فك ربط أو مراجعة.',
+    args: [
+      { name: 'target_type', type: 'string', required: true },
+      { name: 'target_id', type: 'string', required: true },
+    ],
+    handler: async (args) => ({ links: await listEntityMedia(String(args.target_type), String(args.target_id)) }),
+  },
+  {
+    name: 'unlink_entity_media',
+    description: 'فك ربط وسيط عن كيان دون حذف المرفق الأصلي. يتطلب موافقة عند الوسائط المهمة.',
+    args: [{ name: 'link_id', type: 'string', required: true }],
+    handler: async (args) => { await unlinkEntityMedia(String(args.link_id)); return { id: String(args.link_id), unlinked: true } },
+  },
+  {
+    name: 'project_memory_clear',
+    description: 'مسح ذاكرة مشروع ملوثة/قديمة أو حذف إدخال واحد منها.',
+    args: [
+      { name: 'workspace_id', type: 'string', description: 'مسح كل ذاكرة المشروع' },
+      { name: 'entry_id', type: 'string', description: 'حذف إدخال واحد بالمعرف' },
+    ],
+    handler: async (args) => {
+      if (args.entry_id) { await deleteProjectMemoryEntry(String(args.entry_id)); return { entry_id: String(args.entry_id), deleted: true } }
+      if (!args.workspace_id) throw new Error('workspace_id أو entry_id مطلوب.')
+      await clearProjectMemory(String(args.workspace_id))
+      return { workspace_id: String(args.workspace_id), cleared: true }
+    },
+  },
+  {
+    name: 'bulk_mutate',
+    description: 'تنفيذ עד 20 عملية إنشاء/تعديل متجانسة دفعة واحدة مع ملخص نجاح/فشل لكل عنصر. للقراءات المتوازية استخدم orchestrate؛ للكتابة الحساسة استخدم الحلقة تسلسلياً.',
+    args: [
+      { name: 'operation', type: 'string', required: true, description: 'create أو update' },
+      { name: 'entity', type: 'string', required: true },
+      { name: 'items', type: 'array', required: true, description: 'مصفوفة {id?, data} — حد أقصى 20' },
+    ],
+    handler: async (args) => {
+      const op = String(args.operation || '')
+      const entity = String(args.entity || '')
+      const items = Array.isArray(args.items) ? args.items : []
+      if (!['create', 'update'].includes(op)) throw new Error('operation يجب أن يكون create أو update.')
+      if (!items.length || items.length > 20) throw new Error('items يجب أن تكون 1..20 عنصراً.')
+      const results: any[] = []
+      for (const it of items) {
+        try {
+          const out = op === 'create'
+            ? await agentCreate({ entity: entity as any, data: (it?.data ?? {}) as any })
+            : await agentUpdate({ entity: entity as any, id: String(it?.id ?? ''), data: (it?.data ?? {}) as any })
+          results.push({ ok: true, ...out })
+        } catch (e: any) { results.push({ ok: false, error: e?.message ?? String(e) }) }
+      }
+      return { entity, operation: op, total: results.length, ok: results.filter((r) => r.ok).length, failed: results.filter((r) => !r.ok).length, results }
+    },
+  },
+  {
+    name: 'export_entity_csv',
+    description: 'تصدير كيان إلى CSV نصي (حتى 500 صف) لمراجعته أو توليد ملف عبر generate_file. يعيد النص والعدد.',
+    args: [
+      { name: 'entity', type: 'string', required: true },
+      { name: 'search', type: 'string' },
+      { name: 'limit', type: 'number', description: 'حتى 500' },
+    ],
+    handler: async (args) => {
+      const { queryEntities } = await import('./query')
+      const { getEntityDef } = await import('./catalog')
+      const entity = String(args.entity)
+      const def = getEntityDef(entity)
+      if (!def) throw new Error(`كيان غير معروف: ${entity}`)
+      const limit = Math.min(500, Math.max(1, Number(args.limit ?? 200)))
+      const page = await queryEntities({ entity: entity as any, search: args.search ? String(args.search) : undefined, limit, offset: 0 })
+      const cols = def.fields.filter((f) => f.name !== 'geojson').map((f) => f.name)
+      const esc = (v: any) => `"${String(v ?? '').replace(/"/g, '""')}"`
+      const csv = [cols.join(','), ...page.rows.map((r: any) => cols.map((c) => esc(r[c])).join(','))].join('\n')
+      return { entity, total: page.total, exported: page.rows.length, csv: csv.slice(0, 60000) }
+    },
+  },
 ]
