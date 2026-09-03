@@ -24,6 +24,13 @@ export interface DomainToolDef {
 
 const projectKinds: ProjectKind[] = ['land', 'residential_building', 'tower', 'compound', 'custom']
 
+const previewedCommits = new Set<string>()
+function planHash(plan: ProjectImportPlan): string {
+  const s = `${plan.projectName}|${plan.kind}|${plan.rows.length}|${JSON.stringify(plan.rows).length}`
+  let h = 0
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0
+  return `${plan.projectName}|${plan.kind}|${plan.rows.length}|${h}`
+}
 function planFromArgs(args: Record<string, any>): ProjectImportPlan {
   const kind = String(args.kind ?? 'land') as ProjectKind
   if (!projectKinds.includes(kind)) throw new Error(`نوع المشروع غير مدعوم: ${kind}`)
