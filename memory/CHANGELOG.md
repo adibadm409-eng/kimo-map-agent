@@ -888,3 +888,4 @@
 - 2026-09-03 | 7c549fc | تعديل تلقائي: PlotDetail.tsx
 - 2026-09-03 | 6531a1a | تعديل تلقائي: SuggestField.tsx
 - 2026-09-03 | 7aee2da | تعديل تلقائي: SuggestField.tsx
+- 2026-09-03 | 6795560 | تعديل تلقائي: OfferForm.tsx

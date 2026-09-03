@@ -97,6 +97,24 @@ export default function OfferForm() {
     property_id: '', client_id: '', type: 'buy_offer', amount: '',
     status: 'pending', date: new Date().toISOString().split('T')[0], notes: '',
   })
+  const [clientSearch, setClientSearch] = useState('')
+
+  async function handleClientPick(c: { name: string; phone: string; source: string; refId: string }) {
+    if (c.source === 'client' && c.refId) {
+      setForm((current) => ({ ...current, client_id: c.refId }))
+      setClientSearch(c.name)
+      return
+    }
+    try {
+      const id = await createClient({ name: c.name || 'عميل جديد', phone: c.phone, type: 'buyer', email: '', notes: c.refId ? `من ${c.refId}` : '', budget_min: 0, budget_max: 0 })
+      const nextClients = await getAllClients()
+      setClients(nextClients)
+      setForm((current) => ({ ...current, client_id: id }))
+      setClientSearch(c.name)
+    } catch {
+      Alert.alert('خطأ', 'تعذر ربط العميل')
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
