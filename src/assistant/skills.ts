@@ -182,7 +182,7 @@ export function matchSkill(text: string): SkillMatch {
   const hasOfferFlow = /عرض\s*(شراء|بيع)|تنبيه|تذكير|ذكرني|موعد متابعة|إشعار|اشعار/.test(normalized)
   const hasClientFlow = /عميل|عميلة|مشتري|بائع|جهة اتصال|هاتف العميل|رقم العميل/.test(normalized)
   const hasPropertyFlow = /عقار|عقارات|بيت|فندق|عمارة|برج سكني|مزرعة|قطعة أرض|هنجر|محل/.test(normalized)
-  const hasPropertyMutation = hasPropertyFlow && /أنشئ|انشئ|إنشاء|انشاء|أضف|اضف|عدّل|عدل|حدّث|حدث|غيّر|غير|صحّح|صحح|احذف|حذف/.test(normalized)
+  const hasPropertyMutation = hasPropertyFlow && /أنشئ|انشئ|إنشاء|انشاء|أضف|اضف|عدّل|عدل|حدّث|حدث|غيّر|غير|صحّح|صحح|احذف|حذف|ضيف|احجز|سوي|اعمل|صلح/.test(normalized)
   const hasProjectImportFlow = /استيراد|استورد|جدول|صفوف|بلوكات|قطع|ملف مشروع/.test(normalized)
   const hasPaymentFlow = /دفعة|دفع|قسط|أقساط|تحصيل|متبقي|سند|تدفق نقدي|دفتر نقد/.test(normalized)
   const hasProjectUpdateFlow = /(?:عدّل|عدل|حدّث|حدث|غيّر|غير|صحّح|صحح)[^.!؟\n]{0,100}(?:المشروع|القطعة|البلوك|الوحدة|التقسيط|القسط|نوع التقسيط)/.test(normalized)
