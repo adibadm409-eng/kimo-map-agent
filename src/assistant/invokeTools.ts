@@ -593,15 +593,17 @@ export async function deletePreview(tool: string, args: Record<string, any>): Pr
 
 export async function deleteApproved(sessionId: string, pending: PendingState): Promise<void> {
   const items = Array.isArray(pending.items) && pending.items.length ? pending.items : null
+  const doneKeys = new Set<string>()
   if (items && items.length) {
     for (const it of items) {
       const iargs = it.args && typeof it.args === 'object' ? it.args : (it.entity ? { entity: it.entity, id: it.id } : { id: it.id })
       await deleteOne(sessionId, it.tool, it.id, iargs)
+      doneKeys.add(`${it.tool}:${it.id}`)
     }
   }
   const action = pending.action
   if (items && items.length && (!action || action.type !== 'delete')) return
-  if (!action || action.type !== 'delete') {
+  if (action && action.type === 'delete' && doneKeys.has(`${action.tool}:${action.id}`)) return
     // وافق المستخدم لكن الموافقة لم تُربط بأي إجراء حذف (مسار request_confirmation بلا action)
     const call: ToolCall = { id: `synth_${Date.now().toString(36)}`, name: 'execute', arguments: '{"tool":"confirmation_note"}' }
     await persistAssistantText(sessionId, 'وافقت على الإجراء، لكنه لم يُحدد بدقة — لا شيء نُفِّذ بعد.', 'system')
