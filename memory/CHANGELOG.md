@@ -942,3 +942,4 @@
 - 2026-09-03 | 04d344b | تعديل تلقائي: skills.ts
 - 2026-09-03 | 40918cb | تعديل تلقائي: skills.ts
 - 2026-09-03 | d14d8df | تعديل تلقائي: agent_contract_invariants.mjs
+- 2026-09-03 | 01d2f3f | تعديل تلقائي: probe.mjs
