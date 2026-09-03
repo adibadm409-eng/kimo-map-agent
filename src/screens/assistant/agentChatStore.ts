@@ -58,6 +58,7 @@ interface ChatStoreState {
   _seq: number
 
   setMessages: (messages: Message[]) => void
+  appendItems: (items: ChatItem[]) => void
   applyEvent: (e: AgentEvent) => void
   setPending: (p: PendingState | null) => void
   reset: () => void
