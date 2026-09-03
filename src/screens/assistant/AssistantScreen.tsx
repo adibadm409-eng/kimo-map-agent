@@ -340,7 +340,7 @@ export default function AssistantScreen({ navigation }: any) {
     ])
   }
 
-  async function handleVoice() {    if (busy) return
+  async function handleVoice() {    if (initializing) return
     if (!voice.ready) {
       try {
         const permission = await AudioModule.requestRecordingPermissionsAsync()
