@@ -199,16 +199,17 @@ function plotPatch(p: Record<string, any>): Record<string, any> {
   return out
 }
 
-/** إنشاء أو تحديث قطعة داخل بلوك: إن وُجدت بنفس الرقم تُحدَّث، وإلا تُنشأ (يُكمل عدد القطع). */
+/** إنشاء قطعة داخل بلوك: إن وُجدت بنفس الرقم يُرفض صراحةً بدل الكتابة فوقها.
+ * التحديث يتم فقط عبر مسار update الصريح أو project_import_commit مع update_existing. */
 async function upsertPlot(blockId: string, p: Record<string, any>): Promise<string> {
   const norm = normalizePlotFields(p)
-  // إكمال المتبقي تلقائياً إن لم يُذكر: القيمة ناقص المدفوع (العدّادات تُبنى عليه)
   if ((norm.remaining_amount == null || norm.remaining_amount === '') && norm.value != null && norm.value !== '' && norm.paid_amount != null && norm.paid_amount !== '') {
     norm.remaining_amount = Math.max(0, num(norm.value) - num(norm.paid_amount))
   }
   const plotNo = norm.plot_no != null ? str(norm.plot_no) : ''
   const existing = plotNo ? await findExistingPlotInBlock(blockId, plotNo) : null
-  const id = existing ? existing.id : await createPlotSlot(blockId, plotNo || undefined)
+  if (existing) throw new Error(`القطعة ${plotNo} موجودة سلفاً في هذا البلوك؛ استخدم update على القطعة أو project_import_commit مع update_existing بدل الكتابة فوقها.`)
+  const id = await createPlotSlot(blockId, plotNo || undefined)
   await savePlot(id, plotPatch(norm))
   return id
 }
