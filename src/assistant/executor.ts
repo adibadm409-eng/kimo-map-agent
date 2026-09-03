@@ -879,51 +879,54 @@ export async function answerAsk(sessionId: string, answer: string): Promise<bool
     return
   }
   await clearPending(sessionId)
-  await persistUser(sessionId, `[إجابة المستخدم على سؤالك] ${answer}`)
+  await persistUser(sessionId, `${ASK_PREFIX} ${answer}`)
   const outcome = await runGuarded(sessionId, conn)
   emitForSession(sessionId, { type: 'done', outcome })
+  return true
 }
 
-/** الموافقة أو الرفض على طلب تأكيد (حذف...) ومواصلة عمل الوكيل. */
-export async function answerConfirmation(sessionId: string, approve: boolean, selected?: number[]): Promise<void> {
-  if (isAgentBusy(sessionId)) return
+/** الموافقة أو الرفض على طلب تأكيد. selected مصفوفة معرفات عناصر (tool:id). يعيد false إذا تعذر. */
+export async function answerConfirmation(sessionId: string, approve: boolean, selected?: string[]): Promise<boolean> {
+  if (isAgentBusy(sessionId)) return false
   const pending = await getPending(sessionId)
-  if (!pending || pending.kind !== 'confirmation') return
+  if (!pending || pending.kind !== 'confirmation') return false
   let conn: ConnConfig
   try {
     conn = await withConfig(async (c) => c)
   } catch (e: any) {
     await persistAssistantText(sessionId, e?.message ?? 'إعداد ناقص', 'error')
     emitForSession(sessionId, { type: 'error', message: e?.message ?? 'إعداد ناقص' })
-    return
+    return false
   }
 
   await clearPending(sessionId)
   if (approve) {
     const items = Array.isArray(pending.items) && pending.items.length ? pending.items : null
     if (items) {
-      const chosen = (selected ?? items.map((_, i) => i)).filter((i) => i >= 0 && i < items.length).map((i) => items[i])
+      const chosen = selected?.length ? items.filter((it) => selected.includes(pendingItemId(it))) : items
       if (chosen.length) {
         const labels = chosen.map((it) => it.preview).join('، ')
-        await persistUser(sessionId, `[موافقة المستخدم على حذف: ${labels}]`)
+        await persistUser(sessionId, `${APPROVE_PREFIX} حذف: ${labels}]`)
         await persistAssistantText(sessionId, `تمت الموافقة على حذف ${chosen.length} عنصر`, 'system')
         for (const it of chosen) {
-          const outcome = await deleteOne(sessionId, it.tool, it.id, it.entity ? { entity: it.entity, id: it.id } : { id: it.id })
-          emitForSession(sessionId, { type: 'tool', name: it.tool, args: { ...(it.entity ? { entity: it.entity } : {}), id: it.id }, result: outcome })
+          const iargs = it.args && typeof it.args === 'object' ? it.args : (it.entity ? { entity: it.entity, id: it.id } : { id: it.id })
+          const outcome = await deleteOne(sessionId, it.tool, it.id, iargs)
+          emitForSession(sessionId, { type: 'tool', name: it.tool, args: { ...iargs, id: it.id }, result: outcome })
         }
       } else {
-        await persistUser(sessionId, '[لم يُحدد المستخدم أي عنصر — رفض الحذف]')
+        await persistUser(sessionId, `${REFUSE_PREFIX}: لم يحدد أي عنصر]`)
       }
     } else {
-      await persistUser(sessionId, '[موافقة المستخدم على الإجراء]')
+      await persistUser(sessionId, `${APPROVE_PREFIX} الإجراء]`)
       await deleteApproved(sessionId, pending)
     }
   } else {
-    await persistUser(sessionId, '[رفض المستخدم للإجراء]')
+    await persistUser(sessionId, `${REFUSE_PREFIX}]`)
     await deleteRefused(sessionId)
   }
   const outcome = await runGuarded(sessionId, conn)
   emitForSession(sessionId, { type: 'done', outcome })
+  return true
 }
 
 export { createSession as newSession, listUndo }
