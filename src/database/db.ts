@@ -705,7 +705,6 @@ export async function updateReminder(id: string, patch: { title?: string; body?:
   let notificationId: string = before.notification_id ?? ''
   if (patch.remind_at != null && patch.remind_at !== before.remind_at) {
     await cancelLocalReminder(before.notification_id).catch(() => {})
-    await cancelOfferReminder(String(before.target_id)).catch(() => {})
     notificationId = ''
     try {
       if (Platform.OS !== 'web') {
