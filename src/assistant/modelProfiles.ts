@@ -48,8 +48,9 @@ function hasAny(values: Set<string>, names: string[]): boolean {
 
 function staticMaxTokensField(def: ProviderDef, model: string): ModelProfile['maxTokensField'] {
   const normalized = model.toLowerCase()
-  if (def.id === 'openai' && /^(?:gpt-5|o[1-9])/.test(normalized)) return 'max_completion_tokens'
-  if (def.id === 'alibaba' && /^(?:qwen3\.[5-9]|glm-5|kimi-k2\.[5-9]|deepseek-v4)/i.test(normalized)) return 'max_completion_tokens'
+  if (def.id === 'openai' && /^(?:gpt-[5-9]|o[1-9])/.test(normalized)) return 'max_completion_tokens'
+  if (def.id === 'alibaba' && /^(?:qwen3\.[5-9]|glm-5|kimi-k2\.[5-9]|deepseek-v[4-9])/i.test(normalized)) return 'max_completion_tokens'
+  if (def.id === 'deepseek' && /^deepseek-v[4-9]/i.test(normalized)) return 'max_tokens'
   if (def.id === 'openrouter') return 'unknown'
   if (def.id === 'custom') return 'unknown'
   return 'max_tokens'
