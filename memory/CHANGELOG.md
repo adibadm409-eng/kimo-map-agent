@@ -965,3 +965,4 @@
 - 2026-09-04 | 9f04a02 | تعديل تلقائي: App.tsx
 - 2026-09-04 | 492f64a | تعديل تلقائي: AssistantScreen.tsx
 - 2026-09-04 | c9ecee6 | تعديل تلقائي: app.json
+- 2026-09-04 | 32cd566 | تعديل تلقائي: AssistantScreen.tsx
