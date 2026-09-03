@@ -715,16 +715,17 @@ export default function AssistantScreen({ navigation }: any) {
                 nestedScrollEnabled
                 showsVerticalScrollIndicator
               >
-                {pending.items.map((it, i) => {
-                  const checked = selDel.includes(i)
+                {pending.items.map((it) => {
+                  const itemId = `${it.tool}:${it.id}`
+                  const checked = selDel.includes(itemId)
                   return (
                     <Pressable
-                      key={`${it.tool}-${i}`}
+                      key={itemId}
                       accessibilityRole="checkbox"
                       accessibilityState={{ checked }}
                       accessibilityLabel={it.preview}
                       onPress={() =>
-                        setSelDel((prev) => (prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]))
+                        setSelDel((prev) => (prev.includes(itemId) ? prev.filter((x) => x !== itemId) : [...prev, itemId]))
                       }
                       style={[styles.delItem, { backgroundColor: colors.surface, borderColor: checked ? colors.error : colors.border }]}
                     >
