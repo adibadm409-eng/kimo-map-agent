@@ -314,6 +314,23 @@ export default function AgentSettings({ navigation }: any) {
                 value={apiKey}
                 onChangeText={(t) => {
                   setApiKey(t)
+                  setKeySaved(false)
+                }}
+                onBlur={() => {
+                  const v = apiKey.trim()
+                  if (!v) return
+                  void saveAgentApiKey(activeKey, v)
+                    .then(() => {
+                      setSettingsState((current) => current ? {
+                        ...current,
+                        keys: activeKey.startsWith('custom:') ? current.keys : { ...current.keys, [activeKey]: v },
+                        customProviders: activeKey.startsWith('custom:')
+                          ? current.customProviders.map((provider) => provider.id === activeKey.slice('custom:'.length) ? { ...provider, apiKey: v } : provider)
+                          : current.customProviders,
+                      } : current)
+                      setKeySaved(true)
+                    })
+                    .catch(() => {})
                 }}
                 placeholder="sk-..."
                 placeholderTextColor={colors.textMuted}

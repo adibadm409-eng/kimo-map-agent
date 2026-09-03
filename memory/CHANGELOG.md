@@ -791,3 +791,4 @@
 - 2026-09-03 | 1fc7a2f | تعديل تلقائي: AssistantScreen.tsx
 - 2026-09-03 | b21f57c | تعديل تلقائي: executor.ts
 - 2026-09-03 | 813fa04 | تعديل تلقائي: executor.ts
+- 2026-09-03 | cb9a767 | تعديل تلقائي: AgentSettings.tsx
