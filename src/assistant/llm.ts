@@ -725,9 +725,11 @@ export async function chatWithRetry(
         if (opts.onDelta) opts.onDelta({ content: result.content ?? '', toolCalls: result.toolCalls, done: true })
       }
       clearTimeout(timer)
+      detachAbort?.()
       return result
     } catch (e: any) {
       clearTimeout(timer)
+      detachAbort?.()
       const err = e instanceof LlmError ? e : new LlmError('unknown', e?.message ?? String(e), undefined, false)
       lastErr = err
       if (externalSignal?.aborted) throw err
