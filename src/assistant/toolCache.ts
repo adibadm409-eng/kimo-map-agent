@@ -18,16 +18,14 @@ class ToolResultCache {
   private cache = new Map<string, CacheEntry>()
   private maxEntries = 100
 
-  // TTL بالميلي ثانية لكل نوع أداة
+  // TTL بالميلي ثانية لكل نوع أداة — أي أداة غير مذكورة = 0 (بلا كاش افتراضياً)
   private static TTL: Record<string, number> = {
-    // قراءة: 5 دقائق
     query: 5 * 60 * 1000,
     get: 5 * 60 * 1000,
     search_everything: 3 * 60 * 1000,
     list_entities: 10 * 60 * 1000,
     catalog: 30 * 60 * 1000,
     schema_inspect: 30 * 60 * 1000,
-    // مالية: 5 دقائق
     project_tree: 5 * 60 * 1000,
     project_financials: 5 * 60 * 1000,
     installment_schedule: 5 * 60 * 1000,
@@ -36,28 +34,38 @@ class ToolResultCache {
     dashboard_kpis: 5 * 60 * 1000,
     project_cashflow: 5 * 60 * 1000,
     data_snapshot: 2 * 60 * 1000,
-    // وقت: دقيقة واحدة
     current_local_time: 1 * 60 * 1000,
-    // مراجعة: 3 دقائق
     review_my_work: 3 * 60 * 1000,
     project_integrity_check: 3 * 60 * 1000,
-    // كتابة: لا cache
-    mutate_record: 0,
-    create: 0,
-    update: 0,
-    delete: 0,
-    ledger_record_payment: 0,
-    workspace_add_row: 0,
-    workspace_import_rows: 0,
+    list_attachments: 2 * 60 * 1000,
+    list_workspaces: 2 * 60 * 1000,
+    workspace_get: 2 * 60 * 1000,
+    audit_log_query: 2 * 60 * 1000,
+    audit_log_summary: 2 * 60 * 1000,
+    list_reminders: 1 * 60 * 1000,
+    list_offer_reminders: 1 * 60 * 1000,
+    project_nodes_list: 2 * 60 * 1000,
+    project_profile_get: 5 * 60 * 1000,
+  }
+
+  private static stableStringify(v: any): string {
+    if (v === null || typeof v !== 'object') return JSON.stringify(v)
+    if (Array.isArray(v)) return `[${v.map((x) => ToolResultCache.stableStringify(x)).join(',')}]`
+    const keys = Object.keys(v).sort()
+    return `{${keys.map((k) => `${JSON.stringify(k)}:${ToolResultCache.stableStringify(v[k])}`).join(',')}}`
   }
 
   private makeKey(tool: string, args: Record<string, any>): string {
-    return `${tool}:${JSON.stringify(args, Object.keys(args).sort())}`
+    return `${tool}:${ToolResultCache.stableStringify(args ?? {})}`
+  }
+
+  private static ttlFor(tool: string): number {
+    return ToolResultCache.TTL[tool] ?? 0
   }
 
   get(tool: string, args: Record<string, any>): any | null {
-    const ttl = ToolResultCache.TTL[tool]
-    if (ttl === 0) return null // لا cache للكتابة
+    const ttl = ToolResultCache.ttlFor(tool)
+    if (ttl === 0) return null
 
     const key = this.makeKey(tool, args)
     const entry = this.cache.get(key)
