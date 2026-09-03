@@ -12,7 +12,7 @@ const workspace = readFileSync(new URL('../src/database/workspace.ts', import.me
 
 assert.match(skills, /export interface SkillAssessment/)
 assert.match(skills, /shouldPlan = intent === 'execution'/)
-assert.match(prompts, /getAgentFunctions\(skill\?/) 
+assert.match(prompts, /getAgentFunctions\(_skill\?/) 
 assert.match(prompts, /visibleTools = TOOLS\.filter/)
 assert.match(executor, /const skillAllowsTool =/)
 assert.match(registry, /export function validateToolArgs/)
