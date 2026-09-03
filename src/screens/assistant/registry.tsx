@@ -210,11 +210,11 @@ function ObservationCardView({ item, ctx }: { item: ChatItem; ctx: RegistryCtx }
 const OUTCOME_LABELS: Record<string, string> = { completed: 'اكتملت المهمة', cancelled: 'أُلغيت المهمة', paused: 'المهمة متوقفة مؤقتاً', error: 'تعثرت المهمة', failed: 'فشلت المهمة' }
 function CompletionPulse({ item }: { item: ChatItem }) {
   const outcome = String(item.payload?.outcome ?? 'completed')
-  if (outcome === 'completed') return null
+  const ok = outcome === 'completed'
   return (
     <View style={styles.observeRow}>
-      <Ionicons name="checkmark-circle-outline" size={14} color={'#888'} />
-      <Text style={[styles.sub, { color: '#888' }]}>{OUTCOME_LABELS[outcome] ?? `انتهت المهمة (${outcome})`}</Text>
+      <Ionicons name={ok ? 'checkmark-circle' : 'checkmark-circle-outline'} size={14} color={ok ? '#16A34A' : '#888'} />
+      <Text style={[styles.sub, { color: ok ? '#16A34A' : '#888' }]}>{OUTCOME_LABELS[outcome] ?? `انتهت المهمة (${outcome})`}</Text>
     </View>
   )
 }
