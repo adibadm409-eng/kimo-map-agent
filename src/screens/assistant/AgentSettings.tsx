@@ -664,13 +664,14 @@ export default function AgentSettings({ navigation }: any) {
                       ? settings.customProviders.find((c) => c.id === voiceProvider.slice(7))?.apiKey ?? ''
                       : settings.keys[voiceProvider] ?? ''
                     if (!key) { Alert.alert('مفتاح مطلوب', 'أدخل مفتاح API للمزود المختار أولاً.'); setTestingVoice(false); return }
-                    const res = await testConnection({
-                      provider: def,
-                      apiKey: key,
-                      model: voiceModel.trim(),
-                      timeoutMs: 45000,
-                    })
-                    setVoiceTestResult({ ok: res.ok, message: res.message })
+                    const listed = await fetchProviderModels(def, key, voiceProvider.startsWith('custom:') ? (settings.customProviders.find((c) => c.id === voiceProvider.slice(7))?.baseUrl) : undefined).catch(() => [] as string[])
+                    if (!listed.length) {
+                      setVoiceTestResult({ ok: false, message: 'تعذر جلب قائمة الموديلات — تحقق من المفتاح والرابط.' })
+                    } else if (!listed.some((m) => m.toLowerCase() === voiceModel.trim().toLowerCase())) {
+                      setVoiceTestResult({ ok: true, message: `المفتاح صالح (${listed.length} موديلاً)، لكن "${voiceModel.trim()}" ليس في القائمة — تأكد من الاسم (موديلات التفريغ لا تُختبر بالمحادثة).` })
+                    } else {
+                      setVoiceTestResult({ ok: true, message: `المفتاح صالح والموديل "${voiceModel.trim()}" متاح للتفريغ الصوتي.` })
+                    }
                     Haptics.notificationAsync(res.ok ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error).catch(() => {})
                   } finally {
                     setTestingVoice(false)
