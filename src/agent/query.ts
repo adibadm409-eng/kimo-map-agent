@@ -72,7 +72,10 @@ function buildWhere(entity: EntityDef, spec: QuerySpec): { where: string; params
   if (spec.filters && spec.filters.length) {
     for (const c of spec.filters) {
       const fieldDef = entity.fields.filter((x) => x.name === c.field)[0]
-      if (!fieldDef || !fieldDef.filterable) continue
+      if (!fieldDef) throw new Error(`حقل التصفية غير معروف في ${entity.key}: ${String(c.field)}.`)
+      if (!fieldDef.filterable) throw new Error(`الحقل ${String(c.field)} غير قابل للتصفية في ${entity.key}؛ استخدم البحث النصي أو حقلاً مفلتراً.`)
+      if ((c.op === 'in' || c.op === 'not_in') && Array.isArray(c.value) && c.value.length > 50) throw new Error(`فلتر IN واسع (${c.value.length} قيمة) مرفوض؛ ضيّق الاسم أولاً أو اسأل المستخدم. التوسيع التلقائي محدود بـ 50.`)
+      if ((c.op === 'contains' || c.op === 'starts_with' || c.op === 'ends_with') && String(c.value ?? '').trim().length < 2) throw new Error('البحث الجزئي يحتاج حرفين على الأقل لتجنب مطابقة الجدول كاملاً.')
       const op = decodeOperator(c.op)
       const col = `e.${c.field}`
       switch (op) {
