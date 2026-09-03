@@ -75,6 +75,8 @@ export default function AgentSettings({ navigation }: any) {
       setMode(s.mode)
       setVisionProvider(s.visionProvider ?? '')
       setVisionModel(s.visionModel ?? '')
+      setVoiceProvider((s as any).voiceProvider ?? '')
+      setVoiceModel((s as any).voiceModel ?? '')
     })()
   }, [])
 
