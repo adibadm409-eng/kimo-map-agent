@@ -948,3 +948,4 @@
 - 2026-09-03 | efea554 | تعديل تلقائي: agent_contract_invariants.mjs
 - 2026-09-03 | 810ddfb | تعديل تلقائي: agent_contract_invariants.mjs
 - 2026-09-03 | 35150c9 | تعديل تلقائي: probe.mjs
+- 2026-09-03 | 9d55bc5 | تعديل تلقائي: skills.ts

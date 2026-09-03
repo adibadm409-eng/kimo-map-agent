@@ -233,10 +233,11 @@ async function runLoop(
 
         const agentFunctions = getAgentFunctions(runtimeSkill)
 
-        // شبكة أمان ضد سوء التصنيف: طلب قراءة/كتابة واضح يفرض الأدوات حتى لو سقطت النية
-        const WRITE_VERBS = /(?:أنشئ|انشئ|أضف|اضف|ضيف|سجّل|سجل\s+(?:دفعة|دفع|مبلغ|قسط|إيصال|تحويل)|عدّل|عدل|حدّث|حدث|احذف|حذف|مسح|شيل|سوي|اعمل|احجز|قيد|صلح|delete|create|update)/i
-        const needsToolsEffective = classifiedIntent.needsTools || readIntentRequiresEvidence || WRITE_VERBS.test(lastUserText)
-        const functionsToSend = needsToolsEffective ? agentFunctions : []
+        // الأدوات حاضرة دائماً للموديل: من يقرر متى يحتاج أداة هو الذكاء الاصطناعي،
+        // لا تصنيف سابق في الكود يفرض على النموذج أفعالاً بكلمات معينة ويعطل بحثه.
+        // لا نستثني إلا التحية الخالصة المحلية (لا تحتاج أدوات إطلاقاً) وكلفتها عالية بلا داعٍ.
+        const chronicGreeting = classifiedIntent.kind === 'greeting' && classifiedIntent.promptTier === 'minimal' && !readIntentRequiresEvidence
+        const functionsToSend = chronicGreeting ? [] : agentFunctions
 
         let result
         try {
