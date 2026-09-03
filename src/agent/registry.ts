@@ -49,12 +49,16 @@ type QueryFilterInput = { field?: string; op?: string; value?: any; value2?: any
 
 const SEARCH_EVERYTHING_ENTITIES: EntityKey[] = ['properties', 'clients', 'offers', 'campaigns', 'viewings', 'waypoints', 'areas', 'projects', 'blocks', 'plots']
 
-async function searchEverything(query: string): Promise<Record<string, any[]>> {
+async function searchEverything(query: string): Promise<Record<string, any>> {
   const needle = query.trim()
-  const result: Record<string, any[]> = {}
+  const result: Record<string, any> = {}
   await Promise.all(SEARCH_EVERYTHING_ENTITIES.map(async (entity) => {
     const page = await queryEntities({ entity, search: needle, limit: 100, offset: 0, withCustomValues: false })
-    result[entity] = page.rows
+    result[entity] = {
+      rows: page.rows,
+      total: page.total,
+      truncated: page.total > page.rows.length,
+    }
   }))
   return result
 }
