@@ -5,6 +5,7 @@ import * as ImagePicker from "expo-image-picker"
 import * as Haptics from "expo-haptics"
 import { spacing, fontSize, radius, SCREEN_HEIGHT as SH } from "../../../theme/tokens"
 import { toDMS } from "../../map/utils"
+import SuggestField from "../../../components/SuggestField"
 import type { WaypointForm, LatLng } from "../types"
 
 const CATS = [
