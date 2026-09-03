@@ -72,8 +72,12 @@ function buildWhere(entity: EntityDef, spec: QuerySpec): { where: string; params
   if (spec.filters && spec.filters.length) {
     for (const c of spec.filters) {
       const fieldDef = entity.fields.filter((x) => x.name === c.field)[0]
-      if (!fieldDef) throw new Error(`حقل التصفية غير معروف في ${entity.key}: ${String(c.field)}.`)
-      if (!fieldDef.filterable) throw new Error(`الحقل ${String(c.field)} غير قابل للتصفية في ${entity.key}؛ استخدم البحث النصي أو حقلاً مفلتراً.`)
+      if (!fieldDef) {
+        if (String(c.field) === 'id') throw new Error(`التصفية بـ id تتم عبر أداة get مباشرة (get {entity:"${entity.key}", id:"..."}) وليس عبر query.`)
+        throw new Error(`حقل التصفية غير معروف في ${entity.key}: ${String(c.field)}. الأسماء المفوترة: ${entity.fields.filter((x) => x.filterable).map((x) => x.name).join('، ')}.`)
+      }
+      if (!fieldDef.filterable) throw new Error(`الحقل ${String(c.field)} غير قابل للتصفية في ${entity.key}؛ استخدم البحث النصي search أو أحد الحقول: ${entity.fields.filter((x) => x.filterable).map((x) => x.name).join('، ')}.`)
+      if (String(c.field) === 'id' && c.op !== 'eq' && c.op !== 'in') throw new Error('التصفية بـ id تدعم eq/in فقط؛ للتفاصيل استخدم get.')
       if ((c.op === 'in' || c.op === 'not_in') && Array.isArray(c.value) && c.value.length > 50) throw new Error(`فلتر IN واسع (${c.value.length} قيمة) مرفوض؛ ضيّق الاسم أولاً أو اسأل المستخدم. التوسيع التلقائي محدود بـ 50.`)
       if ((c.op === 'contains' || c.op === 'starts_with' || c.op === 'ends_with') && String(c.value ?? '').trim().length < 2) throw new Error('البحث الجزئي يحتاج حرفين على الأقل لتجنب مطابقة الجدول كاملاً.')
       const op = decodeOperator(c.op)
