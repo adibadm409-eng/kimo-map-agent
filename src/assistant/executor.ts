@@ -30,7 +30,7 @@ import { handleToolCall, deleteOne, deleteApproved, deleteRefused } from './invo
 import { performUndo, toolSig } from './undo'
 import { appendTaskEvidence, createTaskRun, getLatestTaskRun, transitionTaskRun } from './store'
 import { emitForSession, subscribeAgent, isAgentBusy, cancelAgent, markRunning, clearRunning, isCancelled, setAborter, clearAborter, deriveAgentOutcome, type AgentEvent, type AgentOutcome } from './agentRun'
-import { MAX_AGENT_RUNTIME_MS, MAX_REPEATED_TOOL_CALLS, MAX_TOOL_CALLS, MAX_TOOL_ROUNDS } from './constants'
+import { MAX_AGENT_RUNTIME_MS, MAX_CONSECUTIVE_TOOL_FAILURES, MAX_REPEATED_TOOL_CALLS, MAX_TOOL_CALLS, MAX_TOOL_ROUNDS } from './constants'
 import { classifyIntent, getLocalResponse, type ClassifiedIntent } from './intentRouter'
 import { toolCache } from './toolCache'
 import { recordPattern } from './learning'
