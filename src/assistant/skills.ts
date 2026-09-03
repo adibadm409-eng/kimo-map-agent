@@ -185,7 +185,7 @@ export function matchSkill(text: string): SkillMatch {
   const hasPropertyMutation = hasPropertyFlow && /أنشئ|انشئ|إنشاء|انشاء|أضف|اضف|عدّل|عدل|حدّث|حدث|غيّر|غير|صحّح|صحح|احذف|حذف|ضيف|احجز|سوي|اعمل|صلح/.test(normalized)
   const hasProjectImportFlow = /استيراد|استورد|جدول|صفوف|بلوكات|قطع|ملف مشروع/.test(normalized)
   const hasPaymentFlow = /دفعة|دفع|قسط|أقساط|تحصيل|متبقي|سند|تدفق نقدي|دفتر نقد/.test(normalized)
-  const hasProjectUpdateFlow = /(?:عدّل|عدل|حدّث|حدث|غيّر|غير|صحّح|صحح)[^.!؟\n]{0,100}(?:المشروع|القطعة|البلوك|الوحدة|التقسيط|القسط|نوع التقسيط)/.test(normalized)
+  const hasProjectUpdateFlow = /(?:عدّل|عدل|حدّث|حدث|غيّر|غير|صحّح|صحح|صلح|بدل)[^.!؟\n]{0,100}(?:المشروع|القطعة|البلوك|الوحدة|التقسيط|القسط|نوع التقسيط)/.test(normalized)
   const ranked = AGENT_SKILLS.map((skill) => {
     const hits = skill.triggers.filter((trigger) => normalized.includes(trigger.toLowerCase()))
     const specificityBonus = skill.id === 'general_assistant' || skill.id === 'data_search' ? 0 : 0.08

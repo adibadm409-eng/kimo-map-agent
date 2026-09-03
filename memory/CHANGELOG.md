@@ -910,3 +910,4 @@
 - 2026-09-03 | 9c2bda4 | تعديل تلقائي: AgentSettings.tsx
 - 2026-09-03 | c5c2cb1 | تعديل تلقائي: TaskCard.tsx
 - 2026-09-03 | b103e7a | تعديل تلقائي: skills.ts
+- 2026-09-03 | 7b1edbd | تعديل تلقائي: skills.ts
