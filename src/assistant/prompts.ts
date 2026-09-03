@@ -135,35 +135,26 @@ export function buildMinimalPrompt(providerName: string, model: string): string 
 المزود: ${providerName} — الموديل: ${model}`
 }
 
-/** تعريفات الأدوات المرئية للنموذج. نُرسل فقط الأدوات الأكثر استخداماً
- * لتقليل حجم الطلب، والوكيل يصل لأي أداة عبر execute wrapper. */
+/** فهرس غني مضغوط لأسماء كل أدوات التطبيق مع وصف مختصر لكل منها.
+ * يُدمج في وصف أداة `execute`، فيقرأه الموديل عند الحاجة دون إغراق تعريفاته
+ * بالمخططات الكاملة في كل جولة. القرار —متى يقرأ الفهرس ومتى يستدعي—
+ * يبقى بيد الذكاء الاصطناعي وحده. */
+export function buildToolIndex(limit = 300): string {
+  return TOOLS
+    .map((t) => `- ${t.name}: ${String(t.description).slice(0, limit)}`)
+    .join('\n')
+}
+
+/** تعريفات الأدوات المرئية للنموذج. لا نُغرق الموديل تعريفات المجال؛ نقدّم له
+ * جسر `execute` وحيداً يحمل فهرس الأسماء، فيقرر هو متى يقرأه ومتى يستدعي
+ * أي أداة بالاسم. لا يُفرض عليه تصنيف نية ولا قائمة كلمات. */
 export function getAgentFunctions(_skill?: AgentSkill | null): FunctionDef[] {
-  const schemas = buildToolSchemas()
-  // الأدوات الأساسية فقط — الباقي متاح عبر execute wrapper
-  const CORE_TOOLS = new Set([
-    'query', 'get', 'mutate_record', 'search_everything',
-    'ask_user', 'request_confirmation', 'undo_last',
-    'list_entities', 'catalog', 'schema_inspect',
-    'current_local_time', 'generate_file',
-    'review_my_work', 'data_snapshot',
-    'attach_media_to_entity', 'list_attachments', 'remove_attachment',
-    'create_offer_with_reminder', 'offer_reminder_set',
-    'create_reminder', 'list_reminders', 'cancel_reminder', 'reminder_update',
-    'property_change_preview', 'property_intake_apply',
-    'preview_update', 'custom_field_set', 'list_entity_media',
-    'ledger_reverse_payment', 'bulk_mutate', 'export_entity_csv',
-  ])
-  const toolFns: FunctionDef[] = TOOLS
-    .filter((t) => CORE_TOOLS.has(t.name))
-    .map((t) => ({
-      name: t.name,
-      description: t.description,
-      parameters: schemas[t.name] ?? { type: 'object', properties: {}, required: [] },
-    }))
-  const wrappers = WRAPPER_FUNCTIONS.map((wrapper) => wrapper.name === 'execute'
-    ? { ...wrapper, description: `${wrapper.description}\nكل أدوات التطبيق متاحة لك عبر execute — اختر الأداة المناسبة واكتب اسمها ووسائطها.` }
+  return WRAPPER_FUNCTIONS.map((wrapper) => wrapper.name === 'execute'
+    ? {
+        ...wrapper,
+        description: `${wrapper.description}\n\n###### فهرس أدوات التطبيق المتاحة عبر execute ######\n${buildToolIndex()}\n###### نهاية الفهرس ######`,
+      }
     : wrapper)
-  return [...toolFns, ...wrappers]
 }
 
 /** كل تعريفات الأدوات (للبوابة الداخلية لـ execute — لا تُرسل للموديل). */
