@@ -449,8 +449,8 @@ export default function PropertyForm() {
         <Card style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>الدلال / صاحب العرض الأصلي</Text>
           <ContactPickerButton label="اختيار جهة اتصال الدلال" onSelect={({ name, phone }) => setForm((current) => ({ ...current, broker_name: name || current.broker_name, broker_phone: phone || current.broker_phone }))} />
-          <FormInput label="اسم الدلال" value={form.broker_name} onChange={(v) => setForm({ ...form, broker_name: v })} placeholder="اسم الدلال" />
-          <FormInput label="رقم الدلال" value={form.broker_phone} onChange={(v) => setForm({ ...form, broker_phone: v })} placeholder="رقم الهاتف" keyboardType="phone-pad" />
+          <SuggestField label="اسم الدلال" value={form.broker_name} onChange={(v) => setForm({ ...form, broker_name: v })} field="name" placeholder="اسم الدلال" onPick={(c) => setForm((current) => ({ ...current, broker_name: c.name || current.broker_name, broker_phone: c.phone || current.broker_phone }))} />
+          <SuggestField label="رقم الدلال" value={form.broker_phone} onChange={(v) => setForm({ ...form, broker_phone: v })} field="phone" placeholder="رقم الهاتف" keyboardType="phone-pad" onPick={(c) => setForm((current) => ({ ...current, broker_name: c.name || current.broker_name, broker_phone: c.phone || current.broker_phone }))} />
           <Text style={[styles.hint, { color: colors.textMuted }]}>هذه البيانات اختيارية وتحفظ مع العقار لتسهيل الرجوع إلى مصدر العرض.</Text>
         </Card>
 

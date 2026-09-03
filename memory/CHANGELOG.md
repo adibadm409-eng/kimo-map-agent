@@ -882,3 +882,4 @@
 - 2026-09-03 | a6568a4 | تعديل تلقائي: ClientForm.tsx
 - 2026-09-03 | 9eb9915 | تعديل تلقائي: ClientForm.tsx
 - 2026-09-03 | 84e1375 | تعديل تلقائي: PropertyForm.tsx
+- 2026-09-03 | 2311e07 | تعديل تلقائي: PropertyForm.tsx
