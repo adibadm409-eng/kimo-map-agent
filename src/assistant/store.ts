@@ -23,6 +23,10 @@ export interface AgentSettings {
   visionProvider: string
   /** اسم موديل الرؤية المخصص لتحليل الصور. */
   visionModel: string
+  /** مزود موديل الصوت (تحويل الكلام إلى نص) — يُستخدم لتفريغ التسجيلات الصوتية بدل المزود الرئيسي. */
+  voiceProvider: string
+  /** اسم موديل الصوت المخصص للتفريغ الصوتي. */
+  voiceModel: string
 }
 
 export interface SessionMeta {
