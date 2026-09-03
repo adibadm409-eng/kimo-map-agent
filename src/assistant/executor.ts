@@ -811,7 +811,7 @@ export async function sendUserMessage(sessionId: string, text: string, opts?: Se
 
   // تحليل الصور عبر موديل الرؤية إذا كان المستخدم يطلب استخراج بيانات
   if (userImages.length > 0) {
-    const isDataExtraction = /استخراج|استخرج|بيانات|عقار|سعر|مساحة|عنوان|معلومات|أضف.*للتطبيق|أدخل.*البيانات|حل.?ل|تمع.?ن|ما.?في.?هذه.?الصورة|ما.?هي.?البيانات/i.test(content)
+    const isDataExtraction = /استخراج|استخرج|بيانات|عقار|سعر|مساحة|عنوان|معلومات|أضف|أدخل|حل.?ل|تمع.?ن|صف|اشرح|صورة|مرفق|describe|extract|show|what.*image|price|area|address/i.test(content)
     if (isDataExtraction) {
       try {
         const { analyzeImageWithVision } = await import('./visionAnalysis')
