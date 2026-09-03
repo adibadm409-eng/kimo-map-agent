@@ -659,7 +659,7 @@ export default function AssistantScreen({ navigation }: any) {
             placeholder={pending?.kind === 'ask_user' ? 'أجب على سؤال المساعد...' : 'اكتب للمساعد...'}
             placeholderTextColor={colors.textMuted}
             multiline
-            editable={!busy}
+            editable={!initializing}
             style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.textPrimary }]}
           />
           <Pressable
