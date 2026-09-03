@@ -148,9 +148,10 @@ export function getAgentFunctions(_skill?: AgentSkill | null): FunctionDef[] {
     'review_my_work', 'data_snapshot',
     'attach_media_to_entity', 'list_attachments', 'remove_attachment',
     'create_offer_with_reminder', 'offer_reminder_set',
-    'create_reminder', 'list_reminders', 'cancel_reminder',
+    'create_reminder', 'list_reminders', 'cancel_reminder', 'reminder_update',
     'property_change_preview', 'property_intake_apply',
-    'preview_update', 'custom_field_set',
+    'preview_update', 'custom_field_set', 'list_entity_media',
+    'ledger_reverse_payment', 'bulk_mutate', 'export_entity_csv',
   ])
   const toolFns: FunctionDef[] = TOOLS
     .filter((t) => CORE_TOOLS.has(t.name))
