@@ -605,7 +605,7 @@ async function runLoop(
               thread.push({
                 role: 'tool',
                 tool_call_id: call.id,
-                content: repetitionNote ? `${repetitionNote}\n${obsText}` : obsText,
+                content: [repetitionNote, forceChangeNote, obsText].filter(Boolean).join('\n'),
               })
             }
             // تسجيل آخر نتيجة لهذه البصمة للمقارنة عند التكرار القادم
