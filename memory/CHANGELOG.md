@@ -779,3 +779,4 @@
 - 2026-09-03 | f0a67ff | تعديل تلقائي: intentRouter.ts
 - 2026-09-03 | 36f63fc | تعديل تلقائي: dynamicPrompt.ts
 - 2026-09-03 | 031510f | تعديل تلقائي: dynamicPrompt.ts
+- 2026-09-03 | 0cd8e4b | تعديل تلقائي: constants.ts
