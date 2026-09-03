@@ -11,6 +11,7 @@ import { Tajawal_400Regular, Tajawal_500Medium, Tajawal_700Bold, Tajawal_800Extr
 
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext'
 import { HeaderCtx } from './src/navigation/headerContext'
+import WhatsNewCard, { shouldShowWhatsNew } from './src/components/WhatsNewCard'
 import './src/agent'
 
 I18nManager.forceRTL(true)
