@@ -604,6 +604,7 @@ export async function deleteApproved(sessionId: string, pending: PendingState): 
   const action = pending.action
   if (items && items.length && (!action || action.type !== 'delete')) return
   if (action && action.type === 'delete' && doneKeys.has(`${action.tool}:${action.id}`)) return
+  if (!action || action.type !== 'delete') {
     // وافق المستخدم لكن الموافقة لم تُربط بأي إجراء حذف (مسار request_confirmation بلا action)
     const call: ToolCall = { id: `synth_${Date.now().toString(36)}`, name: 'execute', arguments: '{"tool":"confirmation_note"}' }
     await persistAssistantText(sessionId, 'وافقت على الإجراء، لكنه لم يُحدد بدقة — لا شيء نُفِّذ بعد.', 'system')
