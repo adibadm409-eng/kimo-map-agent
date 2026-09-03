@@ -129,6 +129,68 @@ export async function transcribeAudio(input: TranscribeInput): Promise<string> {
   throw new TranscribeError('المزوّد الحالي لا يدعم تحويل الصوت إلى نص تلقائياً.', false)
 }
 
+export interface VoiceConfig {
+  providerId: string
+  baseUrl: string
+  apiKey: string
+  model: string
+}
+
+/** يحل إعداد الصوت الفعلي: موديل الصوت المخصص أولاً (كما يفعل موديل الرؤية)، ثم المزود الرئيسي. */
+export async function resolveVoiceConfig(fallback: { providerId: string; baseUrl: string; apiKey: string; model: string }): Promise<{ config: VoiceConfig; usedVoiceModel: boolean; error?: string }> {
+  const { getSettings } = await import('./store')
+  const { defaultProvider, type ProviderId } = await import('./providers')
+  const settings = await getSettings().catch(() => null)
+  if (!settings) return { config: fallback, usedVoiceModel: false, error: 'no_settings' }
+  const voiceKey = (settings as any).voiceProvider as string
+  const voiceModel = (settings as any).voiceModel as string
+  if (!voiceKey || !voiceModel) return { config: fallback, usedVoiceModel: false }
+  const isCustom = voiceKey.startsWith('custom:')
+  const custom = isCustom ? settings.customProviders.find((c: any) => c.id === voiceKey.slice(7)) : null
+  const def = custom
+    ? { id: 'custom', baseUrl: custom.baseUrl }
+    : defaultProvider(voiceKey as ProviderId)
+  const apiKey = isCustom ? custom?.apiKey ?? '' : (settings.keys[voiceKey] ?? '')
+  if (!apiKey) return { config: fallback, usedVoiceModel: false, error: 'no_api_key' }
+  return { config: { providerId: isCustom ? 'custom' : voiceKey, baseUrl: def.baseUrl, apiKey, model: voiceModel }, usedVoiceModel: true }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms))
+}
+
+/** تفريغ صوتي بحلقات إعادة مماثلة لموديل الرؤية: 3 محاولات بفواصل 5/10/15 ثانية. */
+export async function transcribeWithRetry(
+  audio: { uri: string; base64: string; format: 'm4a' | 'wav' | 'mp3' | 'webm' },
+  fallback: { providerId: string; baseUrl: string; apiKey: string; model: string },
+): Promise<{ text: string; usedVoiceModel: boolean }> {
+  const resolved = await resolveVoiceConfig(fallback)
+  if (resolved.error === 'no_api_key' || resolved.error === 'no_settings') {
+    throw new TranscribeError('لم يُعدَّ موديل الصوت بعد: اختر المزود والموديل من إعدادات المساعد.', false)
+  }
+  const RETRY_DELAYS = [5000, 10000, 15000]
+  let lastErr: any = null
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const text = await transcribeAudio({
+        providerId: resolved.config.providerId,
+        baseUrl: resolved.config.baseUrl,
+        apiKey: resolved.config.apiKey,
+        model: resolved.config.model,
+        audioUri: audio.uri,
+        audioBase64: audio.base64,
+        format: audio.format,
+      })
+      return { text, usedVoiceModel: resolved.usedVoiceModel }
+    } catch (err: any) {
+      lastErr = err
+      if (err instanceof TranscribeError && !err.supported) throw err
+      if (attempt < 2) await sleep(RETRY_DELAYS[attempt])
+    }
+  }
+  throw lastErr instanceof TranscribeError ? lastErr : new TranscribeError(lastErr?.message ?? String(lastErr), true)
+}
+
 export function audioMimeFor(format: string): string {
   return MIME_BY_FORMAT[format] ?? 'audio/m4a'
 }
