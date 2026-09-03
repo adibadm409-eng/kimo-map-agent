@@ -58,6 +58,11 @@ export default function AgentSettings({ navigation }: any) {
   const [visionPickerOpen, setVisionPickerOpen] = useState(false)
   const [testingVision, setTestingVision] = useState(false)
   const [visionTestResult, setVisionTestResult] = useState<{ ok: boolean; message: string } | null>(null)
+  const [voiceProvider, setVoiceProvider] = useState('')
+  const [voiceModel, setVoiceModel] = useState('')
+  const [voicePickerOpen, setVoicePickerOpen] = useState(false)
+  const [testingVoice, setTestingVoice] = useState(false)
+  const [voiceTestResult, setVoiceTestResult] = useState<{ ok: boolean; message: string } | null>(null)
 
   useEffect(() => {
     ;(async () => {
