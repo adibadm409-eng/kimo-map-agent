@@ -462,7 +462,7 @@ export const DOMAIN_TOOLS: DomainToolDef[] = [
   },
   {
     name: 'bulk_mutate',
-    description: 'تنفيذ עד 20 عملية إنشاء/تعديل متجانسة دفعة واحدة مع ملخص نجاح/فشل لكل عنصر. للقراءات المتوازية استخدم orchestrate؛ للكتابة الحساسة استخدم الحلقة تسلسلياً.',
+    description: 'تنفيذ حتى 20 عملية إنشاء/تعديل متجانسة دفعة واحدة مع ملخص نجاح/فشل لكل عنصر.',
     args: [
       { name: 'operation', type: 'string', required: true, description: 'create أو update' },
       { name: 'entity', type: 'string', required: true },
