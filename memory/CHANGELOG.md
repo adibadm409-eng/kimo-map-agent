@@ -794,3 +794,4 @@
 - 2026-09-03 | cb9a767 | تعديل تلقائي: AgentSettings.tsx
 - 2026-09-03 | 3f5fb40 | تعديل تلقائي: AgentSettings.tsx
 - 2026-09-03 | a9ddb53 | تعديل تلقائي: AgentSettings.tsx
+- 2026-09-03 | aa4ed07 | تعديل تلقائي: AgentSettings.tsx

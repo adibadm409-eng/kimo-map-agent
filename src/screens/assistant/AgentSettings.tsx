@@ -135,6 +135,7 @@ export default function AgentSettings({ navigation }: any) {
           : current.customProviders,
       } : current)
       setApiKey(value)
+      setKeySaved(true)
       Alert.alert('تم الحفظ', 'تم حفظ مفتاح API والتحقق من وجوده داخل قاعدة البيانات المحلية.')
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
     } catch (error: any) {
