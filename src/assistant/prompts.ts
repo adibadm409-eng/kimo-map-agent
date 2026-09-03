@@ -43,7 +43,7 @@ export const WRITE_TOOLS = new Set([
   'bulk_mutate',
 ])
 
-export const DELETE_CONFIRM_TOOLS = new Set(['mutate_record', 'delete', 'workspace_delete', 'workspace_delete_table', 'workspace_delete_row', 'ledger_reverse_payment', 'unlink_entity_media', 'bulk_mutate'])
+export const DELETE_CONFIRM_TOOLS = new Set(['mutate_record', 'delete', 'workspace_delete', 'workspace_delete_table', 'workspace_delete_row'])
 
 /** أدوات القراءة الآمنة المتاحة لكل مهارة؛ لا تمنح صلاحية كتابة. */
 export const UNIVERSAL_TOOLS = new Set([
